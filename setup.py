@@ -3,6 +3,10 @@ try:
 except ImportError:
     from distutils.core import setup
 
+install_requires = [
+    "testgres.common @ git+https://git.postgrespro.ru/d.kovalenko/preview-testgres.common.git",
+]
+
 setup(
     version="0.0.1",
     name="testgres.os_ops",
@@ -17,4 +21,5 @@ setup(
     author='Postgres Professional',
     author_email='testgres@postgrespro.ru',
     keywords=['testgres'],
+    install_requires=install_requires,
 )

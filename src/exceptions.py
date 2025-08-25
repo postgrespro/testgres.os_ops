@@ -1,10 +1,8 @@
 # coding: utf-8
 
+from testgres.common.exceptions import TestgresException
+from testgres.common.exceptions import InvalidOperationException
 import six
-
-
-class TestgresException(Exception):
-    pass
 
 
 class ExecUtilException(TestgresException):
@@ -48,5 +46,8 @@ class ExecUtilException(TestgresException):
         return six.text_type('\n').join(str_list)
 
 
-class InvalidOperationException(TestgresException):
-    pass
+__all__ = [
+    type(TestgresException).__name__,
+    type(InvalidOperationException).__name__,
+    type(ExecUtilException).__name__,
+]
