@@ -4,7 +4,7 @@ except ImportError:
     from distutils.core import setup
 
 install_requires = [
-    "testgres.common @ git+https://git.postgrespro.ru/d.kovalenko/preview-testgres.common.git",
+    "testgres.common @ git+https://github.com/dmitry-lipetsk/testgres.common.git",
 ]
 
 setup(
