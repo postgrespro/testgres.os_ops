@@ -1,8 +1,8 @@
 # coding: utf-8
-from .helpers.global_data import OsOpsDescr
-from .helpers.global_data import OsOpsDescrs
-from .helpers.global_data import OsOperations
-from .helpers.run_conditions import RunConditions
+from tests.helpers.global_data import OsOpsDescr
+from tests.helpers.global_data import OsOpsDescrs
+from tests.helpers.global_data import OsOperations
+from tests.helpers.run_conditions import RunConditions
 
 import os
 
