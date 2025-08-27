@@ -1,0 +1,61 @@
+ARG PYTHON_VERSION 
+
+# --------------------------------------------- base1
+FROM python:${PYTHON_VERSION}-alpine as base1
+
+# --------------------------------------------- base1
+FROM base1 as base2
+
+RUN apk add python3-dev build-base musl-dev linux-headers
+RUN apk add git 
+
+# --------------------------------------------- final
+FROM base2 as final
+
+RUN apk add mc
+RUN apk add bash
+
+# Full version of "ps" command
+RUN apk add --no-cache procps
+
+RUN apk add --no-cache openssh
+RUN apk add --no-cache sudo
+
+RUN adduser -D test
+
+RUN addgroup -S sudo
+RUN adduser test sudo
+
+EXPOSE 22
+RUN ssh-keygen -A
+
+ADD . /home/test/testgres
+RUN chown -R test /home/test/testgres 
+WORKDIR /home/test/testgres
+
+# It allows to use sudo without password
+RUN sh -c "echo \"test ALL=(ALL:ALL) NOPASSWD:ALL\"">>/etc/sudoers
+
+# THIS CMD IS NEEDED TO CONNECT THROUGH SSH WITHOUT PASSWORD
+RUN sh -c "echo "test:*" | chpasswd -e"
+
+USER test
+
+# THIS CMD IS NEEDED TO CONNECT THROUGH SSH WITHOUT PASSWORD
+RUN chmod 700 ~/
+
+RUN mkdir -p ~/.ssh
+#RUN chmod 700 ~/.ssh
+
+ENTRYPOINT sh -c " \
+set -eux; \
+echo HELLO FROM ENTRYPOINT; \
+echo HOME DIR IS [`realpath ~/`]; \
+ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''; \
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys; \
+chmod 600 ~/.ssh/authorized_keys; \
+ls -la ~/.ssh/; \
+sudo /usr/sbin/sshd; \
+ssh-keyscan -H localhost >> ~/.ssh/known_hosts; \
+ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts; \
+bash run_tests3.sh;"
