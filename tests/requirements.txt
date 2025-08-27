@@ -1,0 +1,8 @@
+pytest
+pytest-xdist
+psutil
+six
+git+https://github.com/dmitry-lipetsk/testgres.common.git@master
+black
+flake8
+
