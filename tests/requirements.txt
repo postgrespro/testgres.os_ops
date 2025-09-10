@@ -2,7 +2,7 @@ pytest
 pytest-xdist
 psutil
 six
-git+https://github.com/postgrespro/testgres.common.git@master
+git+https://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@github.com/postgrespro/testgres.common.git@master
 black
 flake8
 
