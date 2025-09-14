@@ -7,7 +7,7 @@ except ImportError:
 install_requires = [
     "psutil",
     "six>=1.9.0",
-    "testgres.common @ git+https://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@github.com/postgrespro/testgres.common.git",
+    "testgres.common @ git+https://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@github.com/postgrespro/testgres.common.git",
 ]
 
 setup(
