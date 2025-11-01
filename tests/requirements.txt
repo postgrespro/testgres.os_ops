@@ -2,6 +2,6 @@ pytest
 pytest-xdist
 psutil
 six
-git+https://github.com/postgrespro/testgres.common.git@master
+testgres.common>=0.0.2,<1.0.0
 black
 flake8
