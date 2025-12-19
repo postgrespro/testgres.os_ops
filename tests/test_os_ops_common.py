@@ -5,6 +5,7 @@ from tests.helpers.global_data import OsOperations
 from tests.helpers.run_conditions import RunConditions
 
 import os
+import sys
 
 import pytest
 import re
@@ -14,6 +15,10 @@ import socket
 import threading
 import typing
 import uuid
+import subprocess
+import psutil
+import time
+import signal as os_signal
 
 from src.exceptions import InvalidOperationException
 from src.exceptions import ExecUtilException
@@ -1136,4 +1141,102 @@ class TestOsOpsCommon:
                     ))
 
         logging.info("Test is finished! Total error count is {}.".format(nErrors))
+        return
+
+    T_KILL_SIGNAL_DESCR = typing.Tuple[
+        str,
+        typing.Union[int, os_signal.Signals],
+        str
+    ]
+
+    sm_kill_signal_ids: typing.List[T_KILL_SIGNAL_DESCR] = [
+        ("SIGKILL", os_signal.SIGKILL, "9"),
+        ("SIGQUIT", os_signal.SIGQUIT, "3"),
+        ("9", 9, "9"),
+        ("3", 3, "3"),
+    ]
+
+    @pytest.fixture(
+        params=sm_kill_signal_ids,
+        ids=["signal: {}".format(x[0]) for x in sm_kill_signal_ids],
+    )
+    def kill_signal_id(self, request: pytest.FixtureRequest) -> T_KILL_SIGNAL_DESCR:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param) == tuple  # noqa: E721
+        return request.param
+
+    def test_kill_signal(
+        self,
+        kill_signal_id: T_KILL_SIGNAL_DESCR,
+    ):
+        assert type(kill_signal_id) == tuple  # noqa: E721
+        assert "{}".format(kill_signal_id[1]) == kill_signal_id[2]
+
+    def test_kill(
+        self,
+        os_ops: OsOperations,
+        kill_signal_id: T_KILL_SIGNAL_DESCR,
+    ):
+        """
+        Test listdir for listing directory contents.
+        """
+        assert isinstance(os_ops, OsOperations)
+        assert type(kill_signal_id) == tuple  # noqa: E721
+
+        cmd = [
+            sys.executable,
+            "-c",
+            "import time; print('ENTER');time.sleep(300);print('EXIT')"
+        ]
+
+        logging.info("Local test process is creating ...")
+        proc = subprocess.Popen(
+            cmd,
+            text=True,
+        )
+
+        assert proc is not None
+        assert type(proc) == subprocess.Popen  # noqa: E721
+        proc_pid = proc.pid
+        assert type(proc_pid) == int  # noqa: E721
+        logging.info("Test process pid is {}".format(proc_pid))
+
+        logging.info("Get this test process ...")
+        p1 = psutil.Process(proc_pid)
+        assert p1 is not None
+        del p1
+
+        logging.info("Kill this test process ...")
+        os_ops.kill(proc_pid, kill_signal_id[1])
+
+        logging.info("Wait for finish ...")
+        proc.wait()
+
+        logging.info("Try to get this test process ...")
+
+        attempt = 0
+        while True:
+            if attempt == 20:
+                raise RuntimeError("Process did not die,")
+
+            attempt += 1
+
+            if attempt > 1:
+                logging.info("Sleep 1 seconds...")
+                time.sleep(1)
+
+            try:
+                psutil.Process(proc_pid)
+            except psutil.ZombieProcess as e:
+                logging.info("Exception {}: {}".format(
+                    type(e).__name__,
+                    str(e),
+                ))
+            except psutil.NoSuchProcess:
+                logging.info("OK. Process died.")
+                break
+
+            logging.info("Process is alive!")
+            continue
+
         return
