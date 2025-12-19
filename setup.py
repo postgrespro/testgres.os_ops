@@ -15,7 +15,7 @@ install_requires = [
 ]
 
 setup(
-    version="0.0.2",
+    version="1.0.0",
     name="testgres.os_ops",
     packages=[
         "testgres.operations",
