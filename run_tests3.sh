@@ -16,6 +16,8 @@ pip install -r tests/requirements.txt
 export PYTHONPATH=$(pwd)
 # $PIP install .
 
+flake8
+
 pytest -l -v -n 4
 
 set +eux
