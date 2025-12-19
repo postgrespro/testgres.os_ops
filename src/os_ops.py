@@ -126,8 +126,10 @@ class OsOperations:
         raise NotImplementedError()
 
     # Processes control
-    def kill(self, pid, signal):
+    def kill(self, pid: int, signal: int):
         # Kill the process
+        assert type(pid) == int  # noqa: E721
+        assert type(signal) == int  # noqa: E721
         raise NotImplementedError()
 
     def get_pid(self):
