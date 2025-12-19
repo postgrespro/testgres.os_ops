@@ -568,10 +568,11 @@ class LocalOperations(OsOperations):
         return os.remove(filename)
 
     # Processes control
-    def kill(self, pid, signal, expect_error=False):
+    def kill(self, pid: int, signal: int):
         # Kill the process
-        cmd = "kill -{} {}".format(signal, pid)
-        return self.exec_command(cmd, expect_error=expect_error)
+        assert type(pid) == int  # noqa: E721
+        assert type(signal) == int  # noqa: E721
+        os.kill(pid, signal)
 
     def get_pid(self):
         # Get current process id
