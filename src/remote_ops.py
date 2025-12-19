@@ -11,6 +11,7 @@ import logging
 import typing
 import copy
 import re
+import signal as os_signal
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -658,10 +659,10 @@ class RemoteOperations(OsOperations):
         return self.exec_command(cmd)
 
     # Processes control
-    def kill(self, pid: int, signal: int):
+    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
         assert type(pid) == int  # noqa: E721
-        assert type(signal) == int  # noqa: E721
+        assert type(signal) in [int, os_signal.Signals]  # noqa: E721
         cmd = "kill -{} {}".format(signal, pid)
         return self.exec_command(cmd)
 
