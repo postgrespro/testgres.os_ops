@@ -1217,7 +1217,7 @@ class TestOsOpsCommon:
         attempt = 0
         while True:
             if attempt == 20:
-                raise RuntimeError("Process did not die,")
+                raise RuntimeError("Process did not die.")
 
             attempt += 1
 
