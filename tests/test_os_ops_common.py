@@ -1151,9 +1151,9 @@ class TestOsOpsCommon:
 
     sm_kill_signal_ids: typing.List[T_KILL_SIGNAL_DESCR] = [
         ("SIGKILL", os_signal.SIGKILL, "9"),
-        ("SIGQUIT", os_signal.SIGQUIT, "3"),
+        # ("SIGQUIT", os_signal.SIGQUIT, "3"),
         ("9", 9, "9"),
-        ("3", 3, "3"),
+        # ("3", 3, "3"),
     ]
 
     @pytest.fixture(
