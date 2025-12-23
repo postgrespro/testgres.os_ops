@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import locale
+import typing
+import signal as os_signal
 
 
 class ConnectionParams:
@@ -126,8 +128,10 @@ class OsOperations:
         raise NotImplementedError()
 
     # Processes control
-    def kill(self, pid, signal):
+    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
+        assert type(pid) == int  # noqa: E721
+        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
         raise NotImplementedError()
 
     def get_pid(self):

@@ -14,6 +14,7 @@ import psutil
 import typing
 import threading
 import copy
+import signal as os_signal
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -568,10 +569,11 @@ class LocalOperations(OsOperations):
         return os.remove(filename)
 
     # Processes control
-    def kill(self, pid, signal, expect_error=False):
+    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
-        cmd = "kill -{} {}".format(signal, pid)
-        return self.exec_command(cmd, expect_error=expect_error)
+        assert type(pid) == int  # noqa: E721
+        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
+        os.kill(pid, signal)
 
     def get_pid(self):
         # Get current process id
