@@ -1175,6 +1175,7 @@ class TestOsOpsCommon:
     ):
         assert type(kill_signal_id) == tuple  # noqa: E721
         assert "{}".format(kill_signal_id[1]) == kill_signal_id[2]
+        assert "{}".format(int(kill_signal_id[1])) == kill_signal_id[2]
 
     def test_kill(
         self,
