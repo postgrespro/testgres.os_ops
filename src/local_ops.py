@@ -572,7 +572,7 @@ class LocalOperations(OsOperations):
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
         assert type(pid) == int  # noqa: E721
-        assert type(signal) in [int, os_signal.Signals]  # noqa: E721
+        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
         os.kill(pid, signal)
 
     def get_pid(self):
