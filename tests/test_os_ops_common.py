@@ -1245,3 +1245,94 @@ class TestOsOpsCommon:
             continue
 
         return
+
+    def test_kill__unk_pid(
+        self,
+        os_ops: OsOperations,
+        kill_signal_id: T_KILL_SIGNAL_DESCR,
+    ):
+        """
+        Test listdir for listing directory contents.
+        """
+        assert isinstance(os_ops, OsOperations)
+        assert type(kill_signal_id) == tuple  # noqa: E721
+
+        cmd = [
+            sys.executable,
+            "-c",
+            "import sys; print(\"a\", file=sys.stdout); print(\"b\", file=sys.stderr)"
+        ]
+
+        logging.info("Local test process is creating ...")
+        proc = subprocess.Popen(
+            cmd,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        assert proc is not None
+        assert type(proc) == subprocess.Popen  # noqa: E721
+        proc_pid = proc.pid
+        assert type(proc_pid) == int  # noqa: E721
+        logging.info("Test process pid is {}".format(proc_pid))
+
+        logging.info("Wait for finish ...")
+        pout, perr = proc.communicate()
+        logging.info("STDOUT: {}".format(pout))
+        logging.info("STDERR: {}".format(pout))
+        assert type(pout) == str  # noqa: E721
+        assert type(perr) == str  # noqa: E721
+        assert pout == "a\n"
+        assert perr == "b\n"
+        assert type(proc.returncode) == int  # noqa: E721
+        assert proc.returncode == 0
+
+        logging.info("Try to get this test process ...")
+
+        attempt = 0
+        while True:
+            if attempt == 20:
+                raise RuntimeError("Process did not die.")
+
+            attempt += 1
+
+            if attempt > 1:
+                logging.info("Sleep 1 seconds...")
+                time.sleep(1)
+
+            try:
+                psutil.Process(proc_pid)
+            except psutil.ZombieProcess as e:
+                logging.info("Exception {}: {}".format(
+                    type(e).__name__,
+                    str(e),
+                ))
+            except psutil.NoSuchProcess:
+                logging.info("OK. Process died.")
+                break
+
+            logging.info("Process is alive!")
+            continue
+
+        # --------------------
+        with pytest.raises(expected_exception=Exception) as x:
+            os_ops.kill(proc_pid, kill_signal_id[1])
+
+        assert x is not None
+        assert isinstance(x.value, Exception)
+        assert not isinstance(x.value, AssertionError)
+
+        logging.info("Our error is [{}]".format(str(x.value)))
+        logging.info("Our exception has type [{}]".format(type(x.value).__name__))
+
+        if type(os_ops).__name__ == "LocalOsOperations":
+            assert type(x.value) == ProcessLookupError  # noqa: E721
+            assert "No such process" in str(x.value)
+        elif type(os_ops).__name__ == "RemoteOsOperations":
+            assert type(x.value) == ExecUtilException  # noqa: E721
+            assert "No such process" in str(x.value)
+        else:
+            RuntimeError("Unknown os_ops type: {}".format(type(os_ops).__name__))
+
+        return
