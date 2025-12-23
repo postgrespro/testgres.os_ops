@@ -1150,9 +1150,13 @@ class TestOsOpsCommon:
     ]
 
     sm_kill_signal_ids: typing.List[T_KILL_SIGNAL_DESCR] = [
+        ("SIGINT", os_signal.SIGINT, "2"),
         ("SIGKILL", os_signal.SIGKILL, "9"),
+        ("SIGTERM", os_signal.SIGTERM, "15"),
         # ("SIGQUIT", os_signal.SIGQUIT, "3"),
+        ("2", 2, "2"),
         ("9", 9, "9"),
+        ("15", 15, "15"),
         # ("3", 3, "3"),
     ]
 
