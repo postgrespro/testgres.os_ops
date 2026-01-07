@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+"testgres.operations" = "src"
+
+[tool.flake8]
+extend-ignore = ["E501"]
+exclude = [".git", "__pycache__", "env", "venv"]
+
+[project]
+name = "testgres.os_ops"
+version = "1.0.0"
+
+description = "Testgres subsystem to work with OS"
+readme = "README.md"
+
+# [2026-01-05]
+#  This old format is used to ensure compatibility with Python 3.7.
+license = {text = "PostgreSQL"}
+
+authors = [
+    {name = "Postgres Professional", email = "testgres@postgrespro.ru"},
+]
+
+keywords = [
+    'testgres',
+]
+
+requires-python = ">=3.7.17"
+
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: Unix",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Testing",
+]
+
+dependencies = [
+    "psutil",
+    "six>=1.9.0",
+    "testgres.common>=0.0.3,<1.0.0",
+]
+
+[project.urls]
+"HomePage" = "https://github.com/postgrespro/testgres.os_ops"
