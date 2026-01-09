@@ -117,7 +117,7 @@ class ExecUtilException(TestgresException):
 
         assert type(self) == ExecUtilException  # noqa: E721
         assert __class__ == ExecUtilException  # noqa: E721
-        
+
         result = "{}(".format(__class__.__name__)
         sep = ""
         for a in args:
