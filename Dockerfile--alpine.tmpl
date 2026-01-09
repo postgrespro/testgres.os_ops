@@ -51,6 +51,7 @@ ENTRYPOINT sh -c " \
 set -eux; \
 echo HELLO FROM ENTRYPOINT; \
 echo HOME DIR IS [`realpath ~/`]; \
+echo WORK DIR IS [$(pwd)]; \
 ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''; \
 cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys; \
 chmod 600 ~/.ssh/authorized_keys; \

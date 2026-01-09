@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2017-2025 Postgres Professional
-
 set -eux
 
 # prepare python environment
@@ -13,12 +11,12 @@ source "${VENV_PATH}/bin/activate"
 pip install -r tests/requirements.txt
 
 # install testgres' dependencies
-export PYTHONPATH=$(pwd)
+# export PYTHONPATH=$(pwd)
 # $PIP install .
 
-flake8
+flake8 .
 
-pytest -l -v -n 4
+python -m pytest -l -vvv -n 4
 
 set +eux
 
