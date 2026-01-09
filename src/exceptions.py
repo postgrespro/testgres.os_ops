@@ -89,14 +89,6 @@ class ExecUtilException(TestgresException):
         assert self._error is None or type(self._error) in [str, bytes]  # noqa: E721
         return self._error
 
-    def __str__(self) -> str:
-        #
-        # To backward compatibility. Remove this when testgres.common v1.0.0 start using.
-        #
-        r = self.message
-        assert type(r) == str  # noqa: E721
-        return r
-
     def __repr__(self) -> str:
         args = []
 

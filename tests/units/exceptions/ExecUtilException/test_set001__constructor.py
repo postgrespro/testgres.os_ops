@@ -4,6 +4,7 @@ from src.exceptions import ExecUtilException
 class TestSet001_Constructor:
     def test_001__default(self):
         e = ExecUtilException()
+        assert e.source is None
         assert e.message == ""
         assert e.description is None
         assert e.command is None
@@ -16,6 +17,7 @@ class TestSet001_Constructor:
 
     def test_002__description(self):
         e = ExecUtilException("operation description")
+        assert e.source is None
         assert e.message == "operation description"
         assert e.description == "operation description"
         assert e.command is None
@@ -28,6 +30,7 @@ class TestSet001_Constructor:
 
     def test_003__commandList(self):
         e = ExecUtilException(command=["ls", "."])
+        assert e.source is None
         assert e.message == "Command: ls ."
         assert e.description is None
         assert e.command == ["ls", "."]
@@ -40,6 +43,7 @@ class TestSet001_Constructor:
 
     def test_004__commandStr(self):
         e = ExecUtilException(command="ls /home")
+        assert e.source is None
         assert e.message == "Command: ls /home"
         assert e.description is None
         assert e.command == "ls /home"
@@ -52,6 +56,7 @@ class TestSet001_Constructor:
 
     def test_005__exit_code(self):
         e = ExecUtilException(exit_code=123)
+        assert e.source is None
         assert e.message == "Exit code: 123"
         assert e.description is None
         assert e.command is None
@@ -64,6 +69,7 @@ class TestSet001_Constructor:
 
     def test_006__outBytes(self):
         e = ExecUtilException(out=b'abcdefg\n123456')
+        assert e.source is None
         assert e.message == "---- Out:\nb'abcdefg\\n123456'"
         assert e.description is None
         assert e.command is None
@@ -76,6 +82,7 @@ class TestSet001_Constructor:
 
     def test_007__outStr(self):
         e = ExecUtilException(out='abcdefg\n123456')
+        assert e.source is None
         assert e.message == "---- Out:\nabcdefg\n123456"
         assert e.description is None
         assert e.command is None
@@ -88,6 +95,7 @@ class TestSet001_Constructor:
 
     def test_008__errorBytes(self):
         e = ExecUtilException(error=b'abcdefg\n123456')
+        assert e.source is None
         assert e.message == "---- Error:\nb'abcdefg\\n123456'"
         assert e.description is None
         assert e.command is None
@@ -100,6 +108,7 @@ class TestSet001_Constructor:
 
     def test_009__errorStr(self):
         e = ExecUtilException(error='abcdefg\n123456')
+        assert e.source is None
         assert e.message == "---- Error:\nabcdefg\n123456"
         assert e.description is None
         assert e.command is None
@@ -115,6 +124,7 @@ class TestSet001_Constructor:
 
         expected_msg = "descr\nCommand: rm me\nExit code: -1\n---- Error:\nb'error\\n321'\n---- Out:\nout\n123456"
 
+        assert e.source is None
         assert e.message == expected_msg
         assert e.description == "descr"
         assert e.command == ['rm', 'me']
