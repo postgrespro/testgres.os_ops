@@ -113,9 +113,8 @@ class ExecUtilException(TestgresException):
         result = "{}(".format(__class__.__name__)
         sep = ""
         for a in args:
-            if a[1] is not None:
-                result += sep + a[0] + "=" + repr(a[1])
-                sep = ", "
+            result += sep + a[0] + "=" + repr(a[1])
+            sep = ", "
             continue
         result += ")"
         return result
