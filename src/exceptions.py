@@ -90,9 +90,6 @@ class ExecUtilException(TestgresException):
         return self._error
 
     def __repr__(self) -> str:
-        assert type(self) == ExecUtilException  # noqa: E721
-        assert __class__ == ExecUtilException  # noqa: E721
-
         args = []
 
         if self._description is not None:
@@ -110,12 +107,11 @@ class ExecUtilException(TestgresException):
         if self._error is not None:
             args.append(("error", self._error))
 
-        result = "{}(".format(__class__.__name__)
+        result = "{}(".format(type(self).__name__)
         sep = ""
         for a in args:
-            if a[1] is not None:
-                result += sep + a[0] + "=" + repr(a[1])
-                sep = ", "
+            result += sep + a[0] + "=" + repr(a[1])
+            sep = ", "
             continue
         result += ")"
         return result
