@@ -2,7 +2,7 @@ pytest
 pytest-xdist
 psutil
 six
-git+https://github.com/postgrespro/testgres.common.git@1.0.0
+testgres.common>=1.0.0,<2.0.0
 black
 flake8
 flake8-pyproject
