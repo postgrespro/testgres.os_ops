@@ -1,0 +1,63 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python Verification
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "alpine"
+            python: "3.7"
+          - platform: "alpine"
+            python: "3.8.0"
+          - platform: "alpine"
+            python: "3.8"
+          - platform: "alpine"
+            python: "3.9"
+          - platform: "alpine"
+            python: "3.10"
+          - platform: "alpine"
+            python: "3.11"
+          - platform: "alpine"
+            python: "3.12"
+          - platform: "alpine"
+            python: "3.13"
+          - platform: "alpine"
+            python: "3.14"
+
+    steps:
+    - name: Prepare variables
+      run: |
+        RUN_CFG__LOGS_DIR="logs-${{ matrix.platform }}-py${{ matrix.python }}"
+        echo "RUN_CFG__LOGS_DIR=$RUN_CFG__LOGS_DIR" >> $GITHUB_ENV
+        RUN_CFG__DOCKER_IMAGE_NAME="tests-${{ matrix.platform }}-py${{ matrix.python }}"
+        echo "RUN_CFG__DOCKER_IMAGE_NAME=$RUN_CFG__DOCKER_IMAGE_NAME" >> $GITHUB_ENV
+        echo "---------- [$GITHUB_ENV]"
+        cat $GITHUB_ENV
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Prepare logs folder on the host
+      run: mkdir -p "${{ env.RUN_CFG__LOGS_DIR }}"
+    - name: Adjust logs folder permission
+      run: chmod -R 777 "${{ env.RUN_CFG__LOGS_DIR }}"
+    - name: Build local image ${{ matrix.alpine }}
+      run: docker build --build-arg PYTHON_VERSION="${{ matrix.python }}" -t "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" -f Dockerfile--${{ matrix.platform }}.tmpl .
+    - name: Run
+      run: docker run -t -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
+    - name: Upload Logs
+      uses: actions/upload-artifact@v4
+      if: always() # IT IS IMPORTANT!
+      with:
+        name: container-logs--${{ matrix.platform }}-py${{ matrix.python }}
+        path: "${{ env.RUN_CFG__LOGS_DIR }}/"
