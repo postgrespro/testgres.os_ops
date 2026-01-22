@@ -832,7 +832,7 @@ class RemoteOperations(OsOperations):
                 assert type(envvar[1]) == str  # noqa: E721
                 qvalue = __class__._quote_envvar(envvar[1])
                 assert type(qvalue) == str  # noqa: E721
-                result.append(envvar[0] + "=" + qvalue)
+                result.append("export " + envvar[0] + "=" + qvalue)
             continue
 
         return result
