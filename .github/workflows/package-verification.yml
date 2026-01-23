@@ -55,6 +55,10 @@ jobs:
             python: "3.13"
           - platform: "alpine"
             python: "3.14"
+          - platform: "altlinux_10"
+            python: "3"
+          - platform: "altlinux_11"
+            python: "3"
 
     steps:
     - name: Prepare variables
