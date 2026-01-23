@@ -1,0 +1,72 @@
+ARG PYTHON_VERSION 
+
+# --------------------------------------------- base1
+FROM alt:p11 as base1
+
+RUN apt-get update
+RUN apt-get install -y sudo curl ca-certificates
+RUN apt-get update
+RUN apt-get install -y openssh-server openssh-clients
+RUN apt-get install -y time
+
+# pgrep (for testgres.os_ops)
+RUN apt-get install -y procps
+
+# RUN apt-get install -y mc
+
+RUN apt-get install -y libsqlite3-devel
+
+EXPOSE 22
+
+RUN ssh-keygen -A
+
+# --------------------------------------------- dev_tools
+FROM base1 as base1_with_dev_tools
+
+RUN apt-get update
+RUN apt-get install -y git
+
+# --------------------------------------------- base2_with_python-3
+FROM base1_with_dev_tools as base2_with_python-3
+RUN apt-get install -y python3
+RUN apt-get install -y python3-dev
+# RUN apt-get install -y python3-module-virtualenv
+RUN apt-get install -y python3-modules-sqlite3
+
+ENV PYTHON_VERSION=3
+
+# --------------------------------------------- final
+FROM base2_with_python-${PYTHON_VERSION} as final
+
+RUN adduser test -G wheel
+
+# It enables execution of "sudo service ssh start" without password
+RUN sh -c "echo \"WHEEL_USERS ALL=(ALL:ALL) NOPASSWD: ALL\"" >> /etc/sudoers
+
+ADD . /home/test/testgres
+RUN chown -R test /home/test/testgres 
+WORKDIR /home/test/testgres
+
+ENV LANG=C.UTF-8
+
+USER test
+
+RUN chmod 700 ~/
+RUN mkdir -p ~/.ssh
+
+#
+# Altlinux 10 and 11 too slowly create a new SSH connection (x6).
+#
+
+ENTRYPOINT sh -c " \
+set -eux; \
+echo HELLO FROM ENTRYPOINT; \
+echo HOME DIR IS [`realpath ~/`]; \
+sudo /usr/sbin/sshd; \
+ssh-keyscan -H localhost >> ~/.ssh/known_hosts; \
+ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts; \
+ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''; \
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys; \
+chmod 600 ~/.ssh/authorized_keys; \
+ls -la ~/.ssh/; \
+TEST_FILTER=\"\" bash ./run_tests3.sh;"
