@@ -11,8 +11,6 @@ RUN apt-get install -y time
 
 # RUN apt-get install -y mc
 
-RUN apt-get install -y libsqlite3-devel
-
 EXPOSE 22
 
 RUN ssh-keygen -A
@@ -27,8 +25,6 @@ RUN apt-get install -y git
 FROM base1_with_dev_tools as base2_with_python-3
 RUN apt-get install -y python3
 RUN apt-get install -y python3-dev
-# RUN apt-get install -y python3-module-virtualenv
-RUN apt-get install -y python3-modules-sqlite3
 
 ENV PYTHON_VERSION=3
 
