@@ -65,6 +65,8 @@ jobs:
     steps:
     - name: Prepare variables
       run: |
+        RUN_CFG__NOW="$(date +'%Y%m%d_%H%M%S')"
+        echo "RUN_CFG__NOW=$RUN_CFG__NOW" >> $GITHUB_ENV
         RUN_CFG__LOGS_DIR="logs-${{ matrix.platform }}-py${{ matrix.python }}"
         echo "RUN_CFG__LOGS_DIR=$RUN_CFG__LOGS_DIR" >> $GITHUB_ENV
         RUN_CFG__DOCKER_IMAGE_NAME="tests-${{ matrix.platform }}-py${{ matrix.python }}"
@@ -85,5 +87,5 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always() # IT IS IMPORTANT!
       with:
-        name: container-logs--${{ matrix.platform }}-py${{ matrix.python }}
+        name: testgres.os_ops--test_logs--${{ env.RUN_CFG__NOW }}-${{ matrix.platform }}-py${{ matrix.python }}-id${{ github.run_id }}
         path: "${{ env.RUN_CFG__LOGS_DIR }}/"
