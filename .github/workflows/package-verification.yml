@@ -61,6 +61,8 @@ jobs:
             python: "3"
           - platform: "altlinux_11"
             python: "3"
+          - platform: "astralinux_1_7"
+            python: "3"
 
     steps:
     - name: Prepare variables
