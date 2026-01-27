@@ -8,6 +8,7 @@ rm -rf $VENV_PATH
 python3 -m venv "${VENV_PATH}"
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 source "${VENV_PATH}/bin/activate"
+pip install --upgrade pip setuptools wheel
 python3 -m pip install -r tests/requirements.txt
 
 # run builtin tests
