@@ -37,10 +37,9 @@ FROM base2_with_python-${PYTHON_VERSION} AS final
 RUN adduser test -G wheel
 
 # It enables execution of "sudo service ssh start" without password
-RUN sh -c "echo \"WHEEL_USERS ALL=(ALL:ALL) NOPASSWD: ALL\"" >> /etc/sudoers
+RUN echo "test ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-ADD . /home/test/testgres
-RUN chown -R test /home/test/testgres 
+ADD --chown=test:test . /home/test/testgres
 WORKDIR /home/test/testgres
 
 ENV LANG=C.UTF-8
