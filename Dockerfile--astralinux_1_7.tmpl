@@ -33,14 +33,13 @@ RUN useradd -m test
 # MY OLD:
 # RUN sh -c "echo test ALL=NOPASSWD:ALL" >> /etc/sudoers
 # AI:
-RUN echo "test ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN echo "test ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # THIS CMD IS NEEDED TO CONNECT THROUGH SSH WITHOUT PASSWORD
 RUN sh -c "echo "test:*" | chpasswd -e"
 RUN sed -i 's/UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
 
-ADD . /home/test/testgres
-RUN chown -R test /home/test/testgres 
+ADD --chown=test:test . /home/test/testgres
 WORKDIR /home/test/testgres
 
 ENV LANG=C.UTF-8
