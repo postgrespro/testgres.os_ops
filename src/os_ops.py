@@ -23,6 +23,9 @@ class OsOperations:
     def __init__(self):
         pass
 
+    def get_platform(self) -> str:
+        raise NotImplementedError()
+
     def create_clone(self) -> OsOperations:
         raise NotImplementedError()
 
