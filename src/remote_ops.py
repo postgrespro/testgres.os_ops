@@ -3,7 +3,6 @@ from __future__ import annotations
 import getpass
 import os
 import posixpath
-import sys
 import subprocess
 import tempfile
 import io
@@ -47,6 +46,9 @@ class PsUtilProcessProxy:
 
 
 class RemoteOperations(OsOperations):
+    #
+    # Target system is Linux only.
+    #
     sm_dummy_conn_params = ConnectionParams()
 
     conn_params: ConnectionParams
@@ -59,9 +61,6 @@ class RemoteOperations(OsOperations):
     ssh_dest: str
 
     def __init__(self, conn_params: ConnectionParams):
-        if sys.platform != "linux":
-            raise EnvironmentError("Remote operations are supported only on Linux!")
-
         if conn_params is None:
             raise ValueError("Argument 'conn_params' is None.")
 
