@@ -3,7 +3,7 @@ from __future__ import annotations
 import getpass
 import os
 import posixpath
-import platform
+import sys
 import subprocess
 import tempfile
 import io
@@ -59,7 +59,7 @@ class RemoteOperations(OsOperations):
     ssh_dest: str
 
     def __init__(self, conn_params: ConnectionParams):
-        if not platform.system().lower() == "linux":
+        if sys.platform != "linux":
             raise EnvironmentError("Remote operations are supported only on Linux!")
 
         if conn_params is None:
@@ -85,6 +85,9 @@ class RemoteOperations(OsOperations):
 
     def __enter__(self):
         return self
+
+    def get_platform(self) -> str:
+        return "linux"
 
     def create_clone(self) -> RemoteOperations:
         clone = __class__(__class__.sm_dummy_conn_params)

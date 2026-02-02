@@ -3,6 +3,7 @@ from __future__ import annotations
 import getpass
 import logging
 import os
+import sys
 import shutil
 import stat
 import subprocess
@@ -74,6 +75,9 @@ class LocalOperations(OsOperations):
         assert __class__.sm_single_instance is not None
         assert type(__class__.sm_single_instance) == __class__  # noqa: E721
         return __class__.sm_single_instance
+
+    def get_platform(self) -> str:
+        return str(sys.platform)
 
     def create_clone(self) -> LocalOperations:
         clone = __class__(__class__.sm_dummy_conn_params)
