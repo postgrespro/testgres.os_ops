@@ -27,10 +27,10 @@ class ExecUtilException(TestgresException):
         error: typing.Optional[T_ERR_DATA] = None,
     ):
         assert message is None or type(message) is str
-        assert command is None or type(command) in [str, list]  # noqa: E721
+        assert command is None or type(command) in [str, list]
         assert exit_code is None or type(exit_code) is int
-        assert out is None or type(out) in [str, bytes]  # noqa: E721
-        assert error is None or type(error) in [str, bytes]  # noqa: E721
+        assert out is None or type(out) in [str, bytes]
+        assert error is None or type(error) in [str, bytes]
 
         super().__init__(message)
 
@@ -71,7 +71,7 @@ class ExecUtilException(TestgresException):
 
     @property
     def command(self) -> typing.Optional[T_CMD]:
-        assert self._command is None or type(self._command) in [str, list]  # noqa: E721
+        assert self._command is None or type(self._command) in [str, list]
         return self._command
 
     @property
@@ -81,12 +81,12 @@ class ExecUtilException(TestgresException):
 
     @property
     def out(self) -> typing.Optional[T_OUT_DATA]:
-        assert self._out is None or type(self._out) in [str, bytes]  # noqa: E721
+        assert self._out is None or type(self._out) in [str, bytes]
         return self._out
 
     @property
     def error(self) -> typing.Optional[T_ERR_DATA]:
-        assert self._error is None or type(self._error) in [str, bytes]  # noqa: E721
+        assert self._error is None or type(self._error) in [str, bytes]
         return self._error
 
     def __repr__(self) -> str:

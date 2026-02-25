@@ -121,7 +121,7 @@ class RemoteOperations(OsOperations):
         if not get_process:
             input_prepared = Helpers.PrepareProcessInput(input, encoding)  # throw
 
-        assert input_prepared is None or (type(input_prepared) == bytes)  # noqa: E721
+        assert input_prepared is None or type(input_prepared) is bytes
 
         cmds = []
 
@@ -664,7 +664,7 @@ class RemoteOperations(OsOperations):
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
         assert type(pid) is int
-        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
+        assert type(signal) is int or type(signal) is os_signal.Signals
         assert int(signal) == signal
         cmd = "kill -{} {}".format(int(signal), pid)
         return self.exec_command(cmd, encoding=get_default_encoding())
@@ -792,9 +792,9 @@ class RemoteOperations(OsOperations):
 
     @staticmethod
     def _ensure_cmdline(cmd) -> typing.List[str]:
-        if type(cmd) == str:  # noqa: E721
+        if type(cmd) is str:
             cmd_s = cmd
-        elif type(cmd) == list:  # noqa: E721
+        elif type(cmd) is list:
             cmd_s = subprocess.list2cmdline(cmd)
         else:
             raise ValueError("Invalid 'cmd' argument type - {0}".format(type(cmd).__name__))

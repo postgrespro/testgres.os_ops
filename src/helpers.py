@@ -43,7 +43,7 @@ class Helpers:
         if not input:
             return None
 
-        if type(input) == str:  # noqa: E721
+        if type(input) is str:
             if encoding is None:
                 return input.encode(__class__.GetDefaultEncoding())
 

@@ -134,7 +134,7 @@ class OsOperations:
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
         assert type(pid) is int
-        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
+        assert type(signal) is int or type(signal) is os_signal.Signals
         raise NotImplementedError()
 
     def get_pid(self):

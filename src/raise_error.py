@@ -40,7 +40,7 @@ class RaiseError:
         if data is None:
             return ""
 
-        if type(data) == bytes:  # noqa: E721
+        if type(data) is bytes:
             return __class__._TranslateDataIntoString__FromBinary(data)
 
         return str(data)

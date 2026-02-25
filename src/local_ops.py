@@ -66,14 +66,14 @@ class LocalOperations(OsOperations):
         assert __class__.sm_single_instance_guard is not None
 
         if __class__.sm_single_instance is not None:
-            assert type(__class__.sm_single_instance) == __class__  # noqa: E721
+            assert type(__class__.sm_single_instance) is __class__
             return __class__.sm_single_instance
 
         with __class__.sm_single_instance_guard:
             if __class__.sm_single_instance is None:
                 __class__.sm_single_instance = __class__()
         assert __class__.sm_single_instance is not None
-        assert type(__class__.sm_single_instance) == __class__  # noqa: E721
+        assert type(__class__.sm_single_instance) is __class__
         return __class__.sm_single_instance
 
     def get_platform(self) -> str:
@@ -164,7 +164,7 @@ class LocalOperations(OsOperations):
         if not get_process:
             input_prepared = Helpers.PrepareProcessInput(input, encoding)  # throw
 
-        assert input_prepared is None or (type(input_prepared) == bytes)  # noqa: E721
+        assert input_prepared is None or type(input_prepared) is bytes
 
         extParams: typing.Dict[str, str] = dict()
 
@@ -334,7 +334,7 @@ class LocalOperations(OsOperations):
         assert type(path) is str
         assert type(ignore_errors) is bool
         assert type(attempts) is int
-        assert type(delay) == int or type(delay) == float  # noqa: E721
+        assert type(delay) is int or type(delay) is float
         assert attempts > 0
         assert delay >= 0
 
@@ -576,7 +576,7 @@ class LocalOperations(OsOperations):
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
         assert type(pid) is int
-        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
+        assert type(signal) is int or type(signal) is os_signal.Signals
         os.kill(pid, signal)
 
     def get_pid(self):
