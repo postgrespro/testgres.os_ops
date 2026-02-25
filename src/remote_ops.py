@@ -114,7 +114,7 @@ class RemoteOperations(OsOperations):
         """
         assert type(expect_error) is bool
         assert type(ignore_errors) is bool
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
         input_prepared = None

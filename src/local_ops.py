@@ -102,7 +102,7 @@ class LocalOperations(OsOperations):
             exec_env: typing.Optional[dict],
             cwd: typing.Optional[str],
     ):
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
         # TODO: why don't we use the data from input?
@@ -115,7 +115,7 @@ class LocalOperations(OsOperations):
             pass
         else:
             env = os.environ.copy()
-            assert type(env) == dict  # noqa: E721
+            assert type(env) is dict
             for v in exec_env.items():
                 assert type(v) == tuple  # noqa: E721
                 assert len(v) == 2
@@ -157,7 +157,7 @@ class LocalOperations(OsOperations):
             exec_env: typing.Optional[dict],
             cwd: typing.Optional[str],
     ):
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
         input_prepared = None
@@ -174,7 +174,7 @@ class LocalOperations(OsOperations):
             pass
         else:
             env = os.environ.copy()
-            assert type(env) == dict  # noqa: E721
+            assert type(env) is dict
             for v in exec_env.items():
                 assert type(v) == tuple  # noqa: E721
                 assert len(v) == 2
@@ -222,7 +222,7 @@ class LocalOperations(OsOperations):
     ):
         """Execute a command and return the process and its output."""
 
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
         if os.name == 'nt' and stdout is None:  # Windows
@@ -244,7 +244,7 @@ class LocalOperations(OsOperations):
         """
         assert type(expect_error) is bool
         assert type(ignore_errors) is bool
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
         process, output, error = self._run_command(
