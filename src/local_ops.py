@@ -242,8 +242,8 @@ class LocalOperations(OsOperations):
         """
         Execute a command in a subprocess and handle the output based on the provided parameters.
         """
-        assert type(expect_error) == bool  # noqa: E721
-        assert type(ignore_errors) == bool  # noqa: E721
+        assert type(expect_error) is bool
+        assert type(ignore_errors) is bool
         assert exec_env is None or type(exec_env) == dict  # noqa: E721
         assert cwd is None or type(cwd) is str
 
@@ -332,7 +332,7 @@ class LocalOperations(OsOperations):
         :param delay: Delay between attempts in seconds.
         """
         assert type(path) is str
-        assert type(ignore_errors) == bool  # noqa: E721
+        assert type(ignore_errors) is bool
         assert type(attempts) is int
         assert type(delay) == int or type(delay) == float  # noqa: E721
         assert attempts > 0
@@ -469,7 +469,7 @@ class LocalOperations(OsOperations):
     def read(self, filename, encoding=None, binary=False):
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
-        assert type(binary) == bool  # noqa: E721
+        assert type(binary) is bool
 
         if binary:
             if encoding is not None:
@@ -505,7 +505,7 @@ class LocalOperations(OsOperations):
         """
         assert type(num_lines) is int
         assert type(filename) is str
-        assert type(binary) == bool  # noqa: E721
+        assert type(binary) is bool
         assert encoding is None or type(encoding) is str
         assert num_lines >= 0
 

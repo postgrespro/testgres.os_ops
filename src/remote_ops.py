@@ -112,8 +112,8 @@ class RemoteOperations(OsOperations):
         Args:
         - cmd (str): The command to be executed.
         """
-        assert type(expect_error) == bool  # noqa: E721
-        assert type(ignore_errors) == bool  # noqa: E721
+        assert type(expect_error) is bool
+        assert type(ignore_errors) is bool
         assert exec_env is None or type(exec_env) == dict  # noqa: E721
         assert cwd is None or type(cwd) is str
 
@@ -287,7 +287,7 @@ class RemoteOperations(OsOperations):
         - ignore_errors (bool): If True, do not raise error if directory does not exist.
         """
         assert type(path) is str
-        assert type(ignore_errors) == bool  # noqa: E721
+        assert type(ignore_errors) is bool
 
         # ENOENT = 2 - No such file or directory
         # ENOTDIR = 20 - Not a directory
@@ -504,7 +504,7 @@ class RemoteOperations(OsOperations):
     def read(self, filename, binary=False, encoding=None):
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
-        assert type(binary) == bool  # noqa: E721
+        assert type(binary) is bool
 
         if binary:
             if encoding is not None:
@@ -539,7 +539,7 @@ class RemoteOperations(OsOperations):
     def readlines(self, filename, num_lines=0, binary=False, encoding=None):
         assert type(num_lines) is int
         assert type(filename) is str
-        assert type(binary) == bool  # noqa: E721
+        assert type(binary) is bool
         assert encoding is None or type(encoding) is str
 
         if num_lines > 0:
