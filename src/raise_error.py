@@ -5,7 +5,7 @@ from .helpers import Helpers
 class RaiseError:
     @staticmethod
     def UtilityExitedWithNonZeroCode(cmd, exit_code, msg_arg, error, out):
-        assert type(exit_code) == int  # noqa: E721
+        assert type(exit_code) is int
 
         msg_arg_s = __class__._TranslateDataIntoString(msg_arg)
         assert type(msg_arg_s) == str  # noqa: E721
@@ -24,7 +24,7 @@ class RaiseError:
 
     @staticmethod
     def CommandExecutionError(cmd, exit_code, message, error, out):
-        assert type(exit_code) == int  # noqa: E721
+        assert type(exit_code) is int
         assert type(message) == str  # noqa: E721
         assert message != ""
 

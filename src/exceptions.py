@@ -28,7 +28,7 @@ class ExecUtilException(TestgresException):
     ):
         assert message is None or type(message) == str  # noqa: E721
         assert command is None or type(command) in [str, list]  # noqa: E721
-        assert exit_code is None or type(exit_code) == int  # noqa: E721
+        assert exit_code is None or type(exit_code) is int
         assert out is None or type(out) in [str, bytes]  # noqa: E721
         assert error is None or type(error) in [str, bytes]  # noqa: E721
 
@@ -76,7 +76,7 @@ class ExecUtilException(TestgresException):
 
     @property
     def exit_code(self) -> typing.Optional[int]:
-        assert self._exit_code is None or type(self._exit_code) == int  # noqa: E721
+        assert self._exit_code is None or type(self._exit_code) is int
         return self._exit_code
 
     @property

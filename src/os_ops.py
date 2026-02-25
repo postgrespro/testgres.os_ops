@@ -113,7 +113,7 @@ class OsOperations:
 
     def read_binary(self, filename, offset):
         assert type(filename) == str  # noqa: E721
-        assert type(offset) == int  # noqa: E721
+        assert type(offset) is int
         assert offset >= 0
         raise NotImplementedError()
 
@@ -133,7 +133,7 @@ class OsOperations:
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
         raise NotImplementedError()
 
@@ -145,7 +145,7 @@ class OsOperations:
         raise NotImplementedError()
 
     def is_port_free(self, number: int):
-        assert type(number) == int  # noqa: E721
+        assert type(number) is int
         raise NotImplementedError()
 
     def get_tempdir(self) -> str:

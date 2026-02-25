@@ -333,7 +333,7 @@ class LocalOperations(OsOperations):
         """
         assert type(path) == str  # noqa: E721
         assert type(ignore_errors) == bool  # noqa: E721
-        assert type(attempts) == int  # noqa: E721
+        assert type(attempts) is int
         assert type(delay) == int or type(delay) == float  # noqa: E721
         assert attempts > 0
         assert delay >= 0
@@ -503,7 +503,7 @@ class LocalOperations(OsOperations):
         Read lines from a local file.
         If num_lines is greater than 0, only the last num_lines lines will be read.
         """
-        assert type(num_lines) == int  # noqa: E721
+        assert type(num_lines) is int
         assert type(filename) == str  # noqa: E721
         assert type(binary) == bool  # noqa: E721
         assert encoding is None or type(encoding) == str  # noqa: E721
@@ -547,7 +547,7 @@ class LocalOperations(OsOperations):
 
     def read_binary(self, filename, offset):
         assert type(filename) == str  # noqa: E721
-        assert type(offset) == int  # noqa: E721
+        assert type(offset) is int
 
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
@@ -575,7 +575,7 @@ class LocalOperations(OsOperations):
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
         os.kill(pid, signal)
 
@@ -584,11 +584,11 @@ class LocalOperations(OsOperations):
         return os.getpid()
 
     def get_process_children(self, pid):
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         return psutil.Process(pid).children()
 
     def is_port_free(self, number: int) -> bool:
-        assert type(number) == int  # noqa: E721
+        assert type(number) is int
         assert number >= 0
         assert number <= 65535  # OK?
 

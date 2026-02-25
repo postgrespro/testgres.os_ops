@@ -24,19 +24,19 @@ error_markers = [b'error', b'Permission denied', b'fatal', b'No such file or dir
 class PsUtilProcessProxy:
     def __init__(self, ssh, pid):
         assert isinstance(ssh, RemoteOperations)
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         self.ssh = ssh
         self.pid = pid
 
     def kill(self):
         assert isinstance(self.ssh, RemoteOperations)
-        assert type(self.pid) == int  # noqa: E721
+        assert type(self.pid) is int
         command = ["kill", str(self.pid)]
         self.ssh.exec_command(command, encoding=get_default_encoding())
 
     def cmdline(self):
         assert isinstance(self.ssh, RemoteOperations)
-        assert type(self.pid) == int  # noqa: E721
+        assert type(self.pid) is int
         command = ["ps", "-p", str(self.pid), "-o", "cmd", "--no-headers"]
         output = self.ssh.exec_command(command, encoding=get_default_encoding())
         assert type(output) == str  # noqa: E721
@@ -387,7 +387,7 @@ class RemoteOperations(OsOperations):
 
         exec_exitcode, exec_output, exec_error = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
 
-        assert type(exec_exitcode) == int  # noqa: E721
+        assert type(exec_exitcode) is int
         assert type(exec_output) == str  # noqa: E721
         assert type(exec_error) == str  # noqa: E721
 
@@ -415,7 +415,7 @@ class RemoteOperations(OsOperations):
 
         exec_exitcode, exec_output, exec_error = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
 
-        assert type(exec_exitcode) == int  # noqa: E721
+        assert type(exec_exitcode) is int
         assert type(exec_output) == str  # noqa: E721
         assert type(exec_error) == str  # noqa: E721
 
@@ -537,7 +537,7 @@ class RemoteOperations(OsOperations):
         return content
 
     def readlines(self, filename, num_lines=0, binary=False, encoding=None):
-        assert type(num_lines) == int  # noqa: E721
+        assert type(num_lines) is int
         assert type(filename) == str  # noqa: E721
         assert type(binary) == bool  # noqa: E721
         assert encoding is None or type(encoding) == str  # noqa: E721
@@ -572,7 +572,7 @@ class RemoteOperations(OsOperations):
 
     def read_binary(self, filename, offset):
         assert type(filename) == str  # noqa: E721
-        assert type(offset) == int  # noqa: E721
+        assert type(offset) is int
 
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
@@ -663,7 +663,7 @@ class RemoteOperations(OsOperations):
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
         assert int(signal) == signal
         cmd = "kill -{} {}".format(int(signal), pid)
@@ -674,7 +674,7 @@ class RemoteOperations(OsOperations):
         return int(self.exec_command("echo $$", encoding=get_default_encoding()))
 
     def get_process_children(self, pid):
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         command = ["ssh"] + self.ssh_args + [self.ssh_dest, "pgrep", "-P", str(pid)]
 
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -686,7 +686,7 @@ class RemoteOperations(OsOperations):
         raise ExecUtilException(f"Error in getting process children. Error: {result.stderr}")
 
     def is_port_free(self, number: int) -> bool:
-        assert type(number) == int  # noqa: E721
+        assert type(number) is int
         assert number >= 0
         assert number <= 65535  # OK?
 
@@ -743,7 +743,7 @@ class RemoteOperations(OsOperations):
             ignore_errors=True
         )
 
-        assert type(exec_exitcode) == int  # noqa: E721
+        assert type(exec_exitcode) is int
         assert type(exec_output) == str  # noqa: E721
         assert type(exec_error) == str  # noqa: E721
 

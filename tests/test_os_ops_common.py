@@ -91,7 +91,7 @@ class TestOsOpsCommon:
             try:
                 os_ops.exec_command(cmd)
             except ExecUtilException as e:
-                assert type(e.exit_code) == int  # noqa: E721
+                assert type(e.exit_code) is int
                 assert e.exit_code == 127
 
                 assert type(e.message) == str  # noqa: E721
@@ -622,10 +622,10 @@ class TestOsOpsCommon:
         filename = __file__  # current file
 
         sz0 = os.path.getsize(filename)
-        assert type(sz0) == int  # noqa: E721
+        assert type(sz0) is int
 
         sz1 = os_ops.get_file_size(filename)
-        assert type(sz1) == int  # noqa: E721
+        assert type(sz1) is int
         assert sz1 == sz0
 
     def test_isfile_true(self, os_ops: OsOperations):
@@ -945,7 +945,7 @@ class TestOsOpsCommon:
 
         def __init__(self, os_ops_descr: OsOpsDescr, nums: int):
             assert isinstance(os_ops_descr, OsOpsDescr)
-            assert type(nums) == int  # noqa: E721
+            assert type(nums) is int
 
             self.os_ops_descr = os_ops_descr
             self.nums = nums
@@ -968,7 +968,7 @@ class TestOsOpsCommon:
 
         N_WORKERS = 4
         N_NUMBERS = data001.nums
-        assert type(N_NUMBERS) == int  # noqa: E721
+        assert type(N_NUMBERS) is int
 
         os_ops = data001.os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -983,7 +983,7 @@ class TestOsOpsCommon:
 
         def MAKE_PATH(lock_dir: str, num: int) -> str:
             assert type(lock_dir) == str  # noqa: E721
-            assert type(num) == int  # noqa: E721
+            assert type(num) is int
             return os.path.join(lock_dir, str(num) + ".lock")
 
         def LOCAL_WORKER(os_ops: OsOperations,
@@ -992,9 +992,9 @@ class TestOsOpsCommon:
                          cNumbers: int,
                          reservedNumbers: typing.Set[int]) -> None:
             assert isinstance(os_ops, OsOperations)
-            assert type(workerID) == int  # noqa: E721
+            assert type(workerID) is int
             assert type(lock_dir) == str  # noqa: E721
-            assert type(cNumbers) == int  # noqa: E721
+            assert type(cNumbers) is int
             assert type(reservedNumbers) == set  # noqa: E721
             assert cNumbers > 0
             assert len(reservedNumbers) == 0
@@ -1263,7 +1263,7 @@ class TestOsOpsCommon:
         assert proc is not None
         assert type(proc) == subprocess.Popen  # noqa: E721
         proc_pid = proc.pid
-        assert type(proc_pid) == int  # noqa: E721
+        assert type(proc_pid) is int
         logging.info("Test process pid is {}".format(proc_pid))
 
         logging.info("Get this test process ...")
@@ -1334,7 +1334,7 @@ class TestOsOpsCommon:
         assert proc is not None
         assert type(proc) == subprocess.Popen  # noqa: E721
         proc_pid = proc.pid
-        assert type(proc_pid) == int  # noqa: E721
+        assert type(proc_pid) is int
         logging.info("Test process pid is {}".format(proc_pid))
 
         logging.info("Wait for finish ...")
@@ -1345,7 +1345,7 @@ class TestOsOpsCommon:
         assert type(perr) == str  # noqa: E721
         assert pout == "a\n"
         assert perr == "b\n"
-        assert type(proc.returncode) == int  # noqa: E721
+        assert type(proc.returncode) is int
         assert proc.returncode == 0
 
         logging.info("Try to get this test process ...")
