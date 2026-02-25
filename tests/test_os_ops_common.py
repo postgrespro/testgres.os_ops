@@ -807,7 +807,7 @@ class TestOsOpsCommon:
         C_LIMIT = 128
 
         ports = set(range(1024, 65535))
-        assert type(ports) == set  # noqa: E721
+        assert type(ports) is set
 
         ok_count = 0
         no_count = 0
@@ -843,7 +843,7 @@ class TestOsOpsCommon:
         C_LIMIT = 10
 
         ports = set(range(1024, 65535))
-        assert type(ports) == set  # noqa: E721
+        assert type(ports) is set
 
         def LOCAL_server(s: socket.socket):
             assert s is not None
@@ -995,7 +995,7 @@ class TestOsOpsCommon:
             assert type(workerID) is int
             assert type(lock_dir) is str
             assert type(cNumbers) is int
-            assert type(reservedNumbers) == set  # noqa: E721
+            assert type(reservedNumbers) is set
             assert cNumbers > 0
             assert len(reservedNumbers) == 0
 
@@ -1122,7 +1122,7 @@ class TestOsOpsCommon:
             logging.info("Worker #{} is checked ...".format(i))
 
             workerNumbers = workerDatas[i].reservedNumbers
-            assert type(workerNumbers) == set  # noqa: E721
+            assert type(workerNumbers) is set
 
             for n in workerNumbers:
                 if n < 0 or n >= N_NUMBERS:
