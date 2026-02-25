@@ -37,7 +37,7 @@ class OsOperations:
         assert a is not None
         assert parts is not None
         assert type(a) is str
-        assert type(parts) == tuple  # noqa: E721
+        assert type(parts) is tuple
         raise NotImplementedError()
 
     # Environment setup

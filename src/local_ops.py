@@ -117,7 +117,7 @@ class LocalOperations(OsOperations):
             env = os.environ.copy()
             assert type(env) is dict
             for v in exec_env.items():
-                assert type(v) == tuple  # noqa: E721
+                assert type(v) is tuple
                 assert len(v) == 2
                 assert type(v[0]) is str
                 assert v[0] != ""
@@ -176,7 +176,7 @@ class LocalOperations(OsOperations):
             env = os.environ.copy()
             assert type(env) is dict
             for v in exec_env.items():
-                assert type(v) == tuple  # noqa: E721
+                assert type(v) is tuple
                 assert len(v) == 2
                 assert type(v[0]) is str
                 assert v[0] != ""
@@ -283,7 +283,7 @@ class LocalOperations(OsOperations):
         assert a is not None
         assert parts is not None
         assert type(a) is str
-        assert type(parts) == tuple  # noqa: E721
+        assert type(parts) is tuple
         return os.path.join(a, *parts)
 
     # Environment setup

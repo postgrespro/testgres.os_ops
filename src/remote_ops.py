@@ -184,7 +184,7 @@ class RemoteOperations(OsOperations):
         assert a is not None
         assert parts is not None
         assert type(a) is str
-        assert type(parts) == tuple  # noqa: E721
+        assert type(parts) is tuple
         return __class__._build_path(a, *parts)
 
     # Environment setup
@@ -816,7 +816,7 @@ class RemoteOperations(OsOperations):
             pass
         else:
             for envvar in exec_env.items():
-                assert type(envvar) == tuple  # noqa: E721
+                assert type(envvar) is tuple
                 assert len(envvar) == 2
                 assert type(envvar[0]) is str
                 env[envvar[0]] = envvar[1]
@@ -824,7 +824,7 @@ class RemoteOperations(OsOperations):
         # ---------------------------------- FINAL BUILD
         result: typing.List[str] = list()
         for envvar in env.items():
-            assert type(envvar) == tuple  # noqa: E721
+            assert type(envvar) is tuple
             assert len(envvar) == 2
             assert type(envvar[0]) is str
 
@@ -870,7 +870,7 @@ class RemoteOperations(OsOperations):
         assert a is not None
         assert parts is not None
         assert type(a) is str
-        assert type(parts) == tuple  # noqa: E721
+        assert type(parts) is tuple
         return posixpath.join(a, *parts)
 
 
