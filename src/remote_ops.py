@@ -334,7 +334,7 @@ class RemoteOperations(OsOperations):
         output = self.exec_command(cmd=command, encoding=get_default_encoding())
         assert type(output) is str
         result = output.splitlines()
-        assert type(result) == list  # noqa: E721
+        assert type(result) is list
         return result
 
     def path_exists(self, path):
@@ -567,7 +567,7 @@ class RemoteOperations(OsOperations):
             assert type(result) is str
             lines = result.splitlines()
 
-        assert type(lines) == list  # noqa: E721
+        assert type(lines) is list
         return lines
 
     def read_binary(self, filename, offset):
@@ -782,7 +782,7 @@ class RemoteOperations(OsOperations):
     def _build_cmdline(cmd, exec_env: typing.Dict = None) -> str:
         cmd_items = __class__._create_exec_env_list(exec_env)
 
-        assert type(cmd_items) == list  # noqa: E721
+        assert type(cmd_items) is list
 
         cmd_items.append(__class__._ensure_cmdline(cmd))
 

@@ -1085,7 +1085,7 @@ class TestOsOpsCommon:
 
         nWorkers = 0
 
-        assert type(workerDatas) == list  # noqa: E721
+        assert type(workerDatas) is list
 
         for i in range(len(workerDatas)):
             worker = workerDatas[i].future
