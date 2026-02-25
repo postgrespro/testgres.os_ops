@@ -207,8 +207,8 @@ class LocalOperations(OsOperations):
             process.kill()
             raise ExecUtilException("Command timed out after {} seconds.".format(timeout))
 
-        assert type(output) == bytes  # noqa: E721
-        assert type(error) == bytes  # noqa: E721
+        assert type(output) is bytes
+        assert type(error) is bytes
 
         if encoding:
             output = output.decode(encoding)
@@ -438,7 +438,7 @@ class LocalOperations(OsOperations):
         data = __class__._prepare_data_to_write(data, binary)
 
         if binary:
-            assert type(data) == bytes  # noqa: E721
+            assert type(data) is bytes
             return data.rstrip(b'\n') + b'\n'
 
         assert type(data) is str
@@ -495,7 +495,7 @@ class LocalOperations(OsOperations):
         assert type(filename) is str
         with open(filename, 'rb') as file:  # open in a binary mode
             content = file.read()
-            assert type(content) == bytes  # noqa: E721
+            assert type(content) is bytes
             return content
 
     def readlines(self, filename, num_lines=0, binary=False, encoding=None):
@@ -555,7 +555,7 @@ class LocalOperations(OsOperations):
         with open(filename, 'rb') as file:  # open in a binary mode
             file.seek(offset, os.SEEK_SET)
             r = file.read()
-            assert type(r) == bytes  # noqa: E721
+            assert type(r) is bytes
             return r
 
     def isfile(self, remote_file):

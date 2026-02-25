@@ -47,7 +47,7 @@ class RaiseError:
 
     @staticmethod
     def _TranslateDataIntoString__FromBinary(data):
-        assert type(data) == bytes  # noqa: E721
+        assert type(data) is bytes
 
         try:
             return data.decode(Helpers.GetDefaultEncoding())

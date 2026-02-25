@@ -95,7 +95,7 @@ class TestOsOpsCommon:
                 assert e.exit_code == 127
 
                 assert type(e.message) is str
-                assert type(e.error) == bytes  # noqa: E721
+                assert type(e.error) is bytes
 
                 assert e.message.startswith("Utility exited with non-zero code (127). Error:")
                 assert "nonexistent_command" in e.message
@@ -119,7 +119,7 @@ class TestOsOpsCommon:
 
         assert exit_status == 127
         assert result == b''
-        assert type(error) == bytes  # noqa: E721
+        assert type(error) is bytes
         assert b"nonexistent_command" in error
         assert b"not found" in error
 
@@ -136,12 +136,12 @@ class TestOsOpsCommon:
 
         response = os_ops.exec_command(cmd, exec_env=exec_env)
         assert response is not None
-        assert type(response) == bytes  # noqa: E721
+        assert type(response) is bytes
         assert response == b'Hello!\n'
 
         response = os_ops.exec_command(cmd)
         assert response is not None
-        assert type(response) == bytes  # noqa: E721
+        assert type(response) is bytes
         assert response == b'\n'
 
     def test_exec_command_with_exec_env__2(self, os_ops: OsOperations):
@@ -170,12 +170,12 @@ class TestOsOpsCommon:
 
         response = os_ops.exec_command(cmd, exec_env=exec_env)
         assert response is not None
-        assert type(response) == bytes  # noqa: E721
+        assert type(response) is bytes
         assert response == b'Hello!\n'
 
         response = os_ops.exec_command(cmd)
         assert response is not None
-        assert type(response) == bytes  # noqa: E721
+        assert type(response) is bytes
         assert response == b'\n'
 
         os_ops.remove_file(tmp_file)
@@ -191,12 +191,12 @@ class TestOsOpsCommon:
 
         response = os_ops.exec_command(cmd, cwd="/tmp")
         assert response is not None
-        assert type(response) == bytes  # noqa: E721
+        assert type(response) is bytes
         assert response == b'/tmp\n'
 
         response = os_ops.exec_command(cmd)
         assert response is not None
-        assert type(response) == bytes  # noqa: E721
+        assert type(response) is bytes
         assert response != b'/tmp\n'
 
     def test_exec_command__test_unset(self, os_ops: OsOperations):
@@ -210,7 +210,7 @@ class TestOsOpsCommon:
 
         response1 = os_ops.exec_command(cmd)
         assert response1 is not None
-        assert type(response1) == bytes  # noqa: E721
+        assert type(response1) is bytes
 
         if response1 == b'\n':
             logging.warning("Environment variable {} is not defined.".format(C_ENV_NAME))
@@ -219,12 +219,12 @@ class TestOsOpsCommon:
         exec_env = {C_ENV_NAME: None}
         response2 = os_ops.exec_command(cmd, exec_env=exec_env)
         assert response2 is not None
-        assert type(response2) == bytes  # noqa: E721
+        assert type(response2) is bytes
         assert response2 == b'\n'
 
         response3 = os_ops.exec_command(cmd)
         assert response3 is not None
-        assert type(response3) == bytes  # noqa: E721
+        assert type(response3) is bytes
         assert response3 == response1
 
     def test_exec_command__test_unset_dummy_var(self, os_ops: OsOperations):
@@ -239,7 +239,7 @@ class TestOsOpsCommon:
         exec_env = {C_ENV_NAME: None}
         response2 = os_ops.exec_command(cmd, exec_env=exec_env)
         assert response2 is not None
-        assert type(response2) == bytes  # noqa: E721
+        assert type(response2) is bytes
         assert response2 == b'\n'
 
     def test_is_executable_true(self, os_ops: OsOperations):
@@ -547,10 +547,10 @@ class TestOsOpsCommon:
         with open(filename, 'rb') as file:  # open in a binary mode
             response0 = file.read()
 
-        assert type(response0) == bytes  # noqa: E721
+        assert type(response0) is bytes
 
         response1 = os_ops.read(filename, binary=True)
-        assert type(response1) == bytes  # noqa: E721
+        assert type(response1) is bytes
         assert response1 == response0
 
     def test_read__binary_and_encoding(self, os_ops: OsOperations):
@@ -577,29 +577,29 @@ class TestOsOpsCommon:
         with open(filename, 'rb') as file:  # open in a binary mode
             response0 = file.read()
 
-        assert type(response0) == bytes  # noqa: E721
+        assert type(response0) is bytes
 
         response1 = os_ops.read_binary(filename, 0)
-        assert type(response1) == bytes  # noqa: E721
+        assert type(response1) is bytes
         assert response1 == response0
 
         response2 = os_ops.read_binary(filename, 1)
-        assert type(response2) == bytes  # noqa: E721
+        assert type(response2) is bytes
         assert len(response2) < len(response1)
         assert len(response2) + 1 == len(response1)
         assert response2 == response1[1:]
 
         response3 = os_ops.read_binary(filename, len(response1))
-        assert type(response3) == bytes  # noqa: E721
+        assert type(response3) is bytes
         assert len(response3) == 0
 
         response4 = os_ops.read_binary(filename, len(response2))
-        assert type(response4) == bytes  # noqa: E721
+        assert type(response4) is bytes
         assert len(response4) == 1
         assert response4[0] == response1[len(response1) - 1]
 
         response5 = os_ops.read_binary(filename, len(response1) + 1)
-        assert type(response5) == bytes  # noqa: E721
+        assert type(response5) is bytes
         assert len(response5) == 0
 
     def test_read_binary__spec__negative_offset(self, os_ops: OsOperations):
@@ -933,7 +933,7 @@ class TestOsOpsCommon:
         cmd = [sys.executable, "-c", "import tempfile;print(tempfile.gettempdir());"]
 
         expected_dir_b = os_ops.exec_command(cmd)
-        assert type(expected_dir_b) == bytes  # noqa: E721
+        assert type(expected_dir_b) is bytes
         expected_dir = expected_dir_b.decode()
         assert type(expected_dir) is str
         assert actual_dir + "\n" == expected_dir

@@ -150,8 +150,8 @@ class RemoteOperations(OsOperations):
             process.kill()
             raise ExecUtilException("Command timed out after {} seconds.".format(timeout))
 
-        assert type(output) == bytes  # noqa: E721
-        assert type(error) == bytes  # noqa: E721
+        assert type(output) is bytes
+        assert type(error) is bytes
 
         if encoding:
             output = output.decode(encoding)
@@ -474,7 +474,7 @@ class RemoteOperations(OsOperations):
         data = __class__._prepare_data_to_write(data, binary, encoding)
 
         if binary:
-            assert type(data) == bytes  # noqa: E721
+            assert type(data) is bytes
             return data.rstrip(b'\n') + b'\n'
 
         assert type(data) is str
@@ -522,7 +522,7 @@ class RemoteOperations(OsOperations):
         assert type(filename) is str
         assert type(encoding) is str
         content = self._read__binary(filename)
-        assert type(content) == bytes  # noqa: E721
+        assert type(content) is bytes
         buf0 = io.BytesIO(content)
         buf1 = io.TextIOWrapper(buf0, encoding=encoding)
         content_s = buf1.read()
@@ -533,7 +533,7 @@ class RemoteOperations(OsOperations):
         assert type(filename) is str
         cmd = ["cat", filename]
         content = self.exec_command(cmd)
-        assert type(content) == bytes  # noqa: E721
+        assert type(content) is bytes
         return content
 
     def readlines(self, filename, num_lines=0, binary=False, encoding=None):
@@ -561,7 +561,7 @@ class RemoteOperations(OsOperations):
         assert result is not None
 
         if binary:
-            assert type(result) == bytes  # noqa: E721
+            assert type(result) is bytes
             lines = result.splitlines()
         else:
             assert type(result) is str
@@ -579,7 +579,7 @@ class RemoteOperations(OsOperations):
 
         cmd = ["tail", "-c", "+{}".format(offset + 1), filename]
         r = self.exec_command(cmd)
-        assert type(r) == bytes  # noqa: E721
+        assert type(r) is bytes
         return r
 
     def isfile(self, remote_file):

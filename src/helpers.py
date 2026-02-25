@@ -51,5 +51,5 @@ class Helpers:
             return input.encode(encoding)
 
         # It is expected!
-        assert type(input) == bytes  # noqa: E721
+        assert type(input) is bytes
         return input
