@@ -36,7 +36,7 @@ class OsOperations:
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
         assert parts is not None
-        assert type(a) == str  # noqa: E721
+        assert type(a) is str
         assert type(parts) == tuple  # noqa: E721
         raise NotImplementedError()
 
@@ -69,14 +69,14 @@ class OsOperations:
         raise NotImplementedError()
 
     def makedir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         raise NotImplementedError()
 
     def rmdirs(self, path, ignore_errors=True):
         raise NotImplementedError()
 
     def rmdir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         raise NotImplementedError()
 
     def listdir(self, path):
@@ -112,7 +112,7 @@ class OsOperations:
         raise NotImplementedError()
 
     def read_binary(self, filename, offset):
-        assert type(filename) == str  # noqa: E721
+        assert type(filename) is str
         assert type(offset) is int
         assert offset >= 0
         raise NotImplementedError()
@@ -127,7 +127,7 @@ class OsOperations:
         raise NotImplementedError()
 
     def remove_file(self, filename):
-        assert type(filename) == str  # noqa: E721
+        assert type(filename) is str
         raise NotImplementedError()
 
     # Processes control

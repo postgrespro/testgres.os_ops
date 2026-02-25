@@ -26,7 +26,7 @@ class ExecUtilException(TestgresException):
         out: typing.Optional[T_OUT_DATA] = None,
         error: typing.Optional[T_ERR_DATA] = None,
     ):
-        assert message is None or type(message) == str  # noqa: E721
+        assert message is None or type(message) is str
         assert command is None or type(command) in [str, list]  # noqa: E721
         assert exit_code is None or type(exit_code) is int
         assert out is None or type(out) in [str, bytes]  # noqa: E721
@@ -61,12 +61,12 @@ class ExecUtilException(TestgresException):
             msg.append(u'---- Out:\n{}'.format(self.out))
 
         r = self.convert_and_join(msg)
-        assert type(r) == str  # noqa: E721
+        assert type(r) is str
         return r
 
     @property
     def description(self) -> typing.Optional[str]:
-        assert self._description is None or type(self._description) == str  # noqa: E721
+        assert self._description is None or type(self._description) is str
         return self._description
 
     @property

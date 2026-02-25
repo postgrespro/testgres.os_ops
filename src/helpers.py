@@ -31,7 +31,7 @@ class Helpers:
 
         if r:
             assert r is not None
-            assert type(r) == str  # noqa: E721
+            assert type(r) is str
             assert r != ""
             return r
 
@@ -47,7 +47,7 @@ class Helpers:
             if encoding is None:
                 return input.encode(__class__.GetDefaultEncoding())
 
-            assert type(encoding) == str  # noqa: E721
+            assert type(encoding) is str
             return input.encode(encoding)
 
         # It is expected!

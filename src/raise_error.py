@@ -8,7 +8,7 @@ class RaiseError:
         assert type(exit_code) is int
 
         msg_arg_s = __class__._TranslateDataIntoString(msg_arg)
-        assert type(msg_arg_s) == str  # noqa: E721
+        assert type(msg_arg_s) is str
 
         msg_arg_s = msg_arg_s.strip()
         if msg_arg_s == "":
@@ -25,7 +25,7 @@ class RaiseError:
     @staticmethod
     def CommandExecutionError(cmd, exit_code, message, error, out):
         assert type(exit_code) is int
-        assert type(message) == str  # noqa: E721
+        assert type(message) is str
         assert message != ""
 
         raise ExecUtilException(
