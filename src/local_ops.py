@@ -66,14 +66,14 @@ class LocalOperations(OsOperations):
         assert __class__.sm_single_instance_guard is not None
 
         if __class__.sm_single_instance is not None:
-            assert type(__class__.sm_single_instance) == __class__  # noqa: E721
+            assert type(__class__.sm_single_instance) is __class__
             return __class__.sm_single_instance
 
         with __class__.sm_single_instance_guard:
             if __class__.sm_single_instance is None:
                 __class__.sm_single_instance = __class__()
         assert __class__.sm_single_instance is not None
-        assert type(__class__.sm_single_instance) == __class__  # noqa: E721
+        assert type(__class__.sm_single_instance) is __class__
         return __class__.sm_single_instance
 
     def get_platform(self) -> str:
@@ -102,8 +102,8 @@ class LocalOperations(OsOperations):
             exec_env: typing.Optional[dict],
             cwd: typing.Optional[str],
     ):
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
-        assert cwd is None or type(cwd) == str  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
 
         # TODO: why don't we use the data from input?
 
@@ -115,17 +115,17 @@ class LocalOperations(OsOperations):
             pass
         else:
             env = os.environ.copy()
-            assert type(env) == dict  # noqa: E721
+            assert type(env) is dict
             for v in exec_env.items():
-                assert type(v) == tuple  # noqa: E721
+                assert type(v) is tuple
                 assert len(v) == 2
-                assert type(v[0]) == str  # noqa: E721
+                assert type(v[0]) is str
                 assert v[0] != ""
 
                 if v[1] is None:
                     env.pop(v[0], None)
                 else:
-                    assert type(v[1]) == str  # noqa: E721
+                    assert type(v[1]) is str
                     env[v[0]] = v[1]
 
             extParams["env"] = env
@@ -157,14 +157,14 @@ class LocalOperations(OsOperations):
             exec_env: typing.Optional[dict],
             cwd: typing.Optional[str],
     ):
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
-        assert cwd is None or type(cwd) == str  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
 
         input_prepared = None
         if not get_process:
             input_prepared = Helpers.PrepareProcessInput(input, encoding)  # throw
 
-        assert input_prepared is None or (type(input_prepared) == bytes)  # noqa: E721
+        assert input_prepared is None or type(input_prepared) is bytes
 
         extParams: typing.Dict[str, str] = dict()
 
@@ -174,17 +174,17 @@ class LocalOperations(OsOperations):
             pass
         else:
             env = os.environ.copy()
-            assert type(env) == dict  # noqa: E721
+            assert type(env) is dict
             for v in exec_env.items():
-                assert type(v) == tuple  # noqa: E721
+                assert type(v) is tuple
                 assert len(v) == 2
-                assert type(v[0]) == str  # noqa: E721
+                assert type(v[0]) is str
                 assert v[0] != ""
 
                 if v[1] is None:
                     env.pop(v[0], None)
                 else:
-                    assert type(v[1]) == str  # noqa: E721
+                    assert type(v[1]) is str
                     env[v[0]] = v[1]
 
             extParams["env"] = env
@@ -207,8 +207,8 @@ class LocalOperations(OsOperations):
             process.kill()
             raise ExecUtilException("Command timed out after {} seconds.".format(timeout))
 
-        assert type(output) == bytes  # noqa: E721
-        assert type(error) == bytes  # noqa: E721
+        assert type(output) is bytes
+        assert type(error) is bytes
 
         if encoding:
             output = output.decode(encoding)
@@ -222,8 +222,8 @@ class LocalOperations(OsOperations):
     ):
         """Execute a command and return the process and its output."""
 
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
-        assert cwd is None or type(cwd) == str  # noqa: E721
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
 
         if os.name == 'nt' and stdout is None:  # Windows
             method = __class__._run_command__nt
@@ -242,10 +242,10 @@ class LocalOperations(OsOperations):
         """
         Execute a command in a subprocess and handle the output based on the provided parameters.
         """
-        assert type(expect_error) == bool  # noqa: E721
-        assert type(ignore_errors) == bool  # noqa: E721
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
-        assert cwd is None or type(cwd) == str  # noqa: E721
+        assert type(expect_error) is bool
+        assert type(ignore_errors) is bool
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
 
         process, output, error = self._run_command(
             cmd, shell, input, stdin, stdout, stderr, get_process, timeout, encoding,
@@ -282,8 +282,8 @@ class LocalOperations(OsOperations):
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
         assert parts is not None
-        assert type(a) == str  # noqa: E721
-        assert type(parts) == tuple  # noqa: E721
+        assert type(a) is str
+        assert type(parts) is tuple
         return os.path.join(a, *parts)
 
     # Environment setup
@@ -318,7 +318,7 @@ class LocalOperations(OsOperations):
             pass
 
     def makedir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         os.mkdir(path)
 
     # [2025-02-03] Old name of parameter attempts is "retries".
@@ -331,10 +331,10 @@ class LocalOperations(OsOperations):
         :param retries: Number of attempts to remove the directory.
         :param delay: Delay between attempts in seconds.
         """
-        assert type(path) == str  # noqa: E721
-        assert type(ignore_errors) == bool  # noqa: E721
-        assert type(attempts) == int  # noqa: E721
-        assert type(delay) == int or type(delay) == float  # noqa: E721
+        assert type(path) is str
+        assert type(ignore_errors) is bool
+        assert type(attempts) is int
+        assert type(delay) is int or type(delay) is float
         assert attempts > 0
         assert delay >= 0
 
@@ -365,7 +365,7 @@ class LocalOperations(OsOperations):
             return True
 
     def rmdir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         os.rmdir(path)
 
     def listdir(self, path):
@@ -422,7 +422,7 @@ class LocalOperations(OsOperations):
         if binary:
             mode += "b"
 
-        assert type(mode) == str  # noqa: E721
+        assert type(mode) is str
         assert mode != ""
 
         with open(filename, mode) as file:
@@ -438,10 +438,10 @@ class LocalOperations(OsOperations):
         data = __class__._prepare_data_to_write(data, binary)
 
         if binary:
-            assert type(data) == bytes  # noqa: E721
+            assert type(data) is bytes
             return data.rstrip(b'\n') + b'\n'
 
-        assert type(data) == str  # noqa: E721
+        assert type(data) is str
         return data.rstrip('\n') + '\n'
 
     @staticmethod
@@ -467,9 +467,9 @@ class LocalOperations(OsOperations):
             os.utime(filename, None)
 
     def read(self, filename, encoding=None, binary=False):
-        assert type(filename) == str  # noqa: E721
-        assert encoding is None or type(encoding) == str  # noqa: E721
-        assert type(binary) == bool  # noqa: E721
+        assert type(filename) is str
+        assert encoding is None or type(encoding) is str
+        assert type(binary) is bool
 
         if binary:
             if encoding is not None:
@@ -484,18 +484,18 @@ class LocalOperations(OsOperations):
         return self._read__text_with_encoding(filename, encoding or get_default_encoding())
 
     def _read__text_with_encoding(self, filename, encoding):
-        assert type(filename) == str  # noqa: E721
-        assert type(encoding) == str  # noqa: E721
+        assert type(filename) is str
+        assert type(encoding) is str
         with open(filename, mode='r', encoding=encoding) as file:  # open in a text mode
             content = file.read()
-            assert type(content) == str  # noqa: E721
+            assert type(content) is str
             return content
 
     def _read__binary(self, filename):
-        assert type(filename) == str  # noqa: E721
+        assert type(filename) is str
         with open(filename, 'rb') as file:  # open in a binary mode
             content = file.read()
-            assert type(content) == bytes  # noqa: E721
+            assert type(content) is bytes
             return content
 
     def readlines(self, filename, num_lines=0, binary=False, encoding=None):
@@ -503,10 +503,10 @@ class LocalOperations(OsOperations):
         Read lines from a local file.
         If num_lines is greater than 0, only the last num_lines lines will be read.
         """
-        assert type(num_lines) == int  # noqa: E721
-        assert type(filename) == str  # noqa: E721
-        assert type(binary) == bool  # noqa: E721
-        assert encoding is None or type(encoding) == str  # noqa: E721
+        assert type(num_lines) is int
+        assert type(filename) is str
+        assert type(binary) is bool
+        assert encoding is None or type(encoding) is str
         assert num_lines >= 0
 
         if binary:
@@ -514,9 +514,9 @@ class LocalOperations(OsOperations):
             pass
         elif encoding is None:
             encoding = get_default_encoding()
-            assert type(encoding) == str  # noqa: E721
+            assert type(encoding) is str
         else:
-            assert type(encoding) == str  # noqa: E721
+            assert type(encoding) is str
             pass
 
         mode = 'rb' if binary else 'r'
@@ -546,8 +546,8 @@ class LocalOperations(OsOperations):
                     )  # Adjust buffer size
 
     def read_binary(self, filename, offset):
-        assert type(filename) == str  # noqa: E721
-        assert type(offset) == int  # noqa: E721
+        assert type(filename) is str
+        assert type(offset) is int
 
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
@@ -555,7 +555,7 @@ class LocalOperations(OsOperations):
         with open(filename, 'rb') as file:  # open in a binary mode
             file.seek(offset, os.SEEK_SET)
             r = file.read()
-            assert type(r) == bytes  # noqa: E721
+            assert type(r) is bytes
             return r
 
     def isfile(self, remote_file):
@@ -566,7 +566,7 @@ class LocalOperations(OsOperations):
 
     def get_file_size(self, filename):
         assert filename is not None
-        assert type(filename) == str  # noqa: E721
+        assert type(filename) is str
         return os.path.getsize(filename)
 
     def remove_file(self, filename):
@@ -575,8 +575,8 @@ class LocalOperations(OsOperations):
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
-        assert type(pid) == int  # noqa: E721
-        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
+        assert type(pid) is int
+        assert type(signal) is int or type(signal) is os_signal.Signals
         os.kill(pid, signal)
 
     def get_pid(self):
@@ -584,11 +584,11 @@ class LocalOperations(OsOperations):
         return os.getpid()
 
     def get_process_children(self, pid):
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         return psutil.Process(pid).children()
 
     def is_port_free(self, number: int) -> bool:
-        assert type(number) == int  # noqa: E721
+        assert type(number) is int
         assert number >= 0
         assert number <= 65535  # OK?
 
@@ -602,6 +602,6 @@ class LocalOperations(OsOperations):
     def get_tempdir(self) -> str:
         r = tempfile.gettempdir()
         assert r is not None
-        assert type(r) == str  # noqa: E721
+        assert type(r) is str
         assert os.path.exists(r)
         return r

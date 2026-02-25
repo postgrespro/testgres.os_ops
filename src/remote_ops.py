@@ -24,22 +24,22 @@ error_markers = [b'error', b'Permission denied', b'fatal', b'No such file or dir
 class PsUtilProcessProxy:
     def __init__(self, ssh, pid):
         assert isinstance(ssh, RemoteOperations)
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         self.ssh = ssh
         self.pid = pid
 
     def kill(self):
         assert isinstance(self.ssh, RemoteOperations)
-        assert type(self.pid) == int  # noqa: E721
+        assert type(self.pid) is int
         command = ["kill", str(self.pid)]
         self.ssh.exec_command(command, encoding=get_default_encoding())
 
     def cmdline(self):
         assert isinstance(self.ssh, RemoteOperations)
-        assert type(self.pid) == int  # noqa: E721
+        assert type(self.pid) is int
         command = ["ps", "-p", str(self.pid), "-o", "cmd", "--no-headers"]
         output = self.ssh.exec_command(command, encoding=get_default_encoding())
-        assert type(output) == str  # noqa: E721
+        assert type(output) is str
         cmdline = output.strip()
         # TODO: This code work wrong if command line contains quoted values. Yes?
         return cmdline.split()
@@ -112,21 +112,21 @@ class RemoteOperations(OsOperations):
         Args:
         - cmd (str): The command to be executed.
         """
-        assert type(expect_error) == bool  # noqa: E721
-        assert type(ignore_errors) == bool  # noqa: E721
-        assert exec_env is None or type(exec_env) == dict  # noqa: E721
-        assert cwd is None or type(cwd) == str  # noqa: E721
+        assert type(expect_error) is bool
+        assert type(ignore_errors) is bool
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
 
         input_prepared = None
         if not get_process:
             input_prepared = Helpers.PrepareProcessInput(input, encoding)  # throw
 
-        assert input_prepared is None or (type(input_prepared) == bytes)  # noqa: E721
+        assert input_prepared is None or type(input_prepared) is bytes
 
         cmds = []
 
         if cwd is not None:
-            assert type(cwd) == str  # noqa: E721
+            assert type(cwd) is str
             cmds.append(__class__._build_cmdline(["cd", cwd]))
 
         cmds.append(__class__._build_cmdline(cmd, exec_env))
@@ -134,7 +134,7 @@ class RemoteOperations(OsOperations):
         assert len(cmds) >= 1
 
         cmdline = ";".join(cmds)
-        assert type(cmdline) == str  # noqa: E721
+        assert type(cmdline) is str
         assert cmdline != ""
 
         ssh_cmd = ['ssh', self.ssh_dest] + self.ssh_args + [cmdline]
@@ -150,8 +150,8 @@ class RemoteOperations(OsOperations):
             process.kill()
             raise ExecUtilException("Command timed out after {} seconds.".format(timeout))
 
-        assert type(output) == bytes  # noqa: E721
-        assert type(error) == bytes  # noqa: E721
+        assert type(output) is bytes
+        assert type(error) is bytes
 
         if encoding:
             output = output.decode(encoding)
@@ -183,8 +183,8 @@ class RemoteOperations(OsOperations):
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
         assert parts is not None
-        assert type(a) == str  # noqa: E721
-        assert type(parts) == tuple  # noqa: E721
+        assert type(a) is str
+        assert type(parts) is tuple
         return __class__._build_path(a, *parts)
 
     # Environment setup
@@ -220,8 +220,8 @@ class RemoteOperations(OsOperations):
 
         exit_status, output, error = self.exec_command(cmd=command, encoding=get_default_encoding(), ignore_errors=True, verbose=True)
 
-        assert type(output) == str  # noqa: E721
-        assert type(error) == str  # noqa: E721
+        assert type(output) is str
+        assert type(error) is str
 
         if exit_status == 0:
             return True
@@ -275,7 +275,7 @@ class RemoteOperations(OsOperations):
         return result
 
     def makedir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         cmd = ["mkdir", path]
         self.exec_command(cmd)
 
@@ -286,8 +286,8 @@ class RemoteOperations(OsOperations):
         - path (str): The path to the directory to be removed.
         - ignore_errors (bool): If True, do not raise error if directory does not exist.
         """
-        assert type(path) == str  # noqa: E721
-        assert type(ignore_errors) == bool  # noqa: E721
+        assert type(path) is str
+        assert type(ignore_errors) is bool
 
         # ENOENT = 2 - No such file or directory
         # ENOTDIR = 20 - Not a directory
@@ -320,7 +320,7 @@ class RemoteOperations(OsOperations):
         return True
 
     def rmdir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         cmd = ["rmdir", path]
         self.exec_command(cmd)
 
@@ -332,9 +332,9 @@ class RemoteOperations(OsOperations):
         """
         command = ["ls", path]
         output = self.exec_command(cmd=command, encoding=get_default_encoding())
-        assert type(output) == str  # noqa: E721
+        assert type(output) is str
         result = output.splitlines()
-        assert type(result) == list  # noqa: E721
+        assert type(result) is list
         return result
 
     def path_exists(self, path):
@@ -342,8 +342,8 @@ class RemoteOperations(OsOperations):
 
         exit_status, output, error = self.exec_command(cmd=command, encoding=get_default_encoding(), ignore_errors=True, verbose=True)
 
-        assert type(output) == str  # noqa: E721
-        assert type(error) == str  # noqa: E721
+        assert type(output) is str
+        assert type(error) is str
 
         if exit_status == 0:
             return True
@@ -387,9 +387,9 @@ class RemoteOperations(OsOperations):
 
         exec_exitcode, exec_output, exec_error = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
 
-        assert type(exec_exitcode) == int  # noqa: E721
-        assert type(exec_output) == str  # noqa: E721
-        assert type(exec_error) == str  # noqa: E721
+        assert type(exec_exitcode) is int
+        assert type(exec_output) is str
+        assert type(exec_error) is str
 
         if exec_exitcode != 0:
             RaiseError.CommandExecutionError(
@@ -415,9 +415,9 @@ class RemoteOperations(OsOperations):
 
         exec_exitcode, exec_output, exec_error = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
 
-        assert type(exec_exitcode) == int  # noqa: E721
-        assert type(exec_output) == str  # noqa: E721
-        assert type(exec_error) == str  # noqa: E721
+        assert type(exec_exitcode) is int
+        assert type(exec_output) is str
+        assert type(exec_error) is str
 
         if exec_exitcode != 0:
             RaiseError.CommandExecutionError(
@@ -474,10 +474,10 @@ class RemoteOperations(OsOperations):
         data = __class__._prepare_data_to_write(data, binary, encoding)
 
         if binary:
-            assert type(data) == bytes  # noqa: E721
+            assert type(data) is bytes
             return data.rstrip(b'\n') + b'\n'
 
-        assert type(data) == str  # noqa: E721
+        assert type(data) is str
         return data.rstrip('\n') + '\n'
 
     @staticmethod
@@ -502,9 +502,9 @@ class RemoteOperations(OsOperations):
         self.exec_command("touch {}".format(filename))
 
     def read(self, filename, binary=False, encoding=None):
-        assert type(filename) == str  # noqa: E721
-        assert encoding is None or type(encoding) == str  # noqa: E721
-        assert type(binary) == bool  # noqa: E721
+        assert type(filename) is str
+        assert encoding is None or type(encoding) is str
+        assert type(binary) is bool
 
         if binary:
             if encoding is not None:
@@ -519,28 +519,28 @@ class RemoteOperations(OsOperations):
         return self._read__text_with_encoding(filename, encoding or get_default_encoding())
 
     def _read__text_with_encoding(self, filename, encoding):
-        assert type(filename) == str  # noqa: E721
-        assert type(encoding) == str  # noqa: E721
+        assert type(filename) is str
+        assert type(encoding) is str
         content = self._read__binary(filename)
-        assert type(content) == bytes  # noqa: E721
+        assert type(content) is bytes
         buf0 = io.BytesIO(content)
         buf1 = io.TextIOWrapper(buf0, encoding=encoding)
         content_s = buf1.read()
-        assert type(content_s) == str  # noqa: E721
+        assert type(content_s) is str
         return content_s
 
     def _read__binary(self, filename):
-        assert type(filename) == str  # noqa: E721
+        assert type(filename) is str
         cmd = ["cat", filename]
         content = self.exec_command(cmd)
-        assert type(content) == bytes  # noqa: E721
+        assert type(content) is bytes
         return content
 
     def readlines(self, filename, num_lines=0, binary=False, encoding=None):
-        assert type(num_lines) == int  # noqa: E721
-        assert type(filename) == str  # noqa: E721
-        assert type(binary) == bool  # noqa: E721
-        assert encoding is None or type(encoding) == str  # noqa: E721
+        assert type(num_lines) is int
+        assert type(filename) is str
+        assert type(binary) is bool
+        assert encoding is None or type(encoding) is str
 
         if num_lines > 0:
             cmd = ["tail", "-n", str(num_lines), filename]
@@ -552,34 +552,34 @@ class RemoteOperations(OsOperations):
             pass
         elif encoding is None:
             encoding = get_default_encoding()
-            assert type(encoding) == str  # noqa: E721
+            assert type(encoding) is str
         else:
-            assert type(encoding) == str  # noqa: E721
+            assert type(encoding) is str
             pass
 
         result = self.exec_command(cmd, encoding=encoding)
         assert result is not None
 
         if binary:
-            assert type(result) == bytes  # noqa: E721
+            assert type(result) is bytes
             lines = result.splitlines()
         else:
-            assert type(result) == str  # noqa: E721
+            assert type(result) is str
             lines = result.splitlines()
 
-        assert type(lines) == list  # noqa: E721
+        assert type(lines) is list
         return lines
 
     def read_binary(self, filename, offset):
-        assert type(filename) == str  # noqa: E721
-        assert type(offset) == int  # noqa: E721
+        assert type(filename) is str
+        assert type(offset) is int
 
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
 
         cmd = ["tail", "-c", "+{}".format(offset + 1), filename]
         r = self.exec_command(cmd)
-        assert type(r) == bytes  # noqa: E721
+        assert type(r) is bytes
         return r
 
     def isfile(self, remote_file):
@@ -596,11 +596,11 @@ class RemoteOperations(OsOperations):
         C_ERR_SRC = "RemoteOpertions::get_file_size"
 
         assert filename is not None
-        assert type(filename) == str  # noqa: E721
+        assert type(filename) is str
         cmd = ["du", "-b", filename]
 
         s = self.exec_command(cmd, encoding=get_default_encoding())
-        assert type(s) == str  # noqa: E721
+        assert type(s) is str
 
         if len(s) == 0:
             raise Exception(
@@ -663,8 +663,8 @@ class RemoteOperations(OsOperations):
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
-        assert type(pid) == int  # noqa: E721
-        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
+        assert type(pid) is int
+        assert type(signal) is int or type(signal) is os_signal.Signals
         assert int(signal) == signal
         cmd = "kill -{} {}".format(int(signal), pid)
         return self.exec_command(cmd, encoding=get_default_encoding())
@@ -674,7 +674,7 @@ class RemoteOperations(OsOperations):
         return int(self.exec_command("echo $$", encoding=get_default_encoding()))
 
     def get_process_children(self, pid):
-        assert type(pid) == int  # noqa: E721
+        assert type(pid) is int
         command = ["ssh"] + self.ssh_args + [self.ssh_dest, "pgrep", "-P", str(pid)]
 
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -686,7 +686,7 @@ class RemoteOperations(OsOperations):
         raise ExecUtilException(f"Error in getting process children. Error: {result.stderr}")
 
     def is_port_free(self, number: int) -> bool:
-        assert type(number) == int  # noqa: E721
+        assert type(number) is int
         assert number >= 0
         assert number <= 65535  # OK?
 
@@ -743,9 +743,9 @@ class RemoteOperations(OsOperations):
             ignore_errors=True
         )
 
-        assert type(exec_exitcode) == int  # noqa: E721
-        assert type(exec_output) == str  # noqa: E721
-        assert type(exec_error) == str  # noqa: E721
+        assert type(exec_exitcode) is int
+        assert type(exec_output) is str
+        assert type(exec_error) is str
 
         if exec_exitcode != 0:
             RaiseError.CommandExecutionError(
@@ -756,14 +756,14 @@ class RemoteOperations(OsOperations):
                 out=exec_output)
 
         temp_subdir = exec_output.strip()
-        assert type(temp_subdir) == str  # noqa: E721
+        assert type(temp_subdir) is str
         temp_dir = os.path.dirname(temp_subdir)
-        assert type(temp_dir) == str  # noqa: E721
+        assert type(temp_dir) is str
         return temp_dir
 
     @staticmethod
     def _is_port_free__process_0(error: str) -> bool:
-        assert type(error) == str  # noqa: E721
+        assert type(error) is str
         #
         # Example of error text:
         #  "Connection to localhost (127.0.0.1) 1024 port [tcp/*] succeeded!\n"
@@ -774,7 +774,7 @@ class RemoteOperations(OsOperations):
 
     @staticmethod
     def _is_port_free__process_1(error: str) -> bool:
-        assert type(error) == str  # noqa: E721
+        assert type(error) is str
         # May be here is needed to check error message?
         return True
 
@@ -782,24 +782,24 @@ class RemoteOperations(OsOperations):
     def _build_cmdline(cmd, exec_env: typing.Dict = None) -> str:
         cmd_items = __class__._create_exec_env_list(exec_env)
 
-        assert type(cmd_items) == list  # noqa: E721
+        assert type(cmd_items) is list
 
         cmd_items.append(__class__._ensure_cmdline(cmd))
 
         cmdline = ';'.join(cmd_items)
-        assert type(cmdline) == str  # noqa: E721
+        assert type(cmdline) is str
         return cmdline
 
     @staticmethod
     def _ensure_cmdline(cmd) -> typing.List[str]:
-        if type(cmd) == str:  # noqa: E721
+        if type(cmd) is str:
             cmd_s = cmd
-        elif type(cmd) == list:  # noqa: E721
+        elif type(cmd) is list:
             cmd_s = subprocess.list2cmdline(cmd)
         else:
             raise ValueError("Invalid 'cmd' argument type - {0}".format(type(cmd).__name__))
 
-        assert type(cmd_s) == str  # noqa: E721
+        assert type(cmd_s) is str
         return cmd_s
 
     @staticmethod
@@ -816,24 +816,24 @@ class RemoteOperations(OsOperations):
             pass
         else:
             for envvar in exec_env.items():
-                assert type(envvar) == tuple  # noqa: E721
+                assert type(envvar) is tuple
                 assert len(envvar) == 2
-                assert type(envvar[0]) == str  # noqa: E721
+                assert type(envvar[0]) is str
                 env[envvar[0]] = envvar[1]
 
         # ---------------------------------- FINAL BUILD
         result: typing.List[str] = list()
         for envvar in env.items():
-            assert type(envvar) == tuple  # noqa: E721
+            assert type(envvar) is tuple
             assert len(envvar) == 2
-            assert type(envvar[0]) == str  # noqa: E721
+            assert type(envvar[0]) is str
 
             if envvar[1] is None:
                 result.append("unset " + envvar[0])
             else:
-                assert type(envvar[1]) == str  # noqa: E721
+                assert type(envvar[1]) is str
                 qvalue = __class__._quote_envvar(envvar[1])
-                assert type(qvalue) == str  # noqa: E721
+                assert type(qvalue) is str
                 result.append("export " + envvar[0] + "=" + qvalue)
             continue
 
@@ -843,7 +843,7 @@ class RemoteOperations(OsOperations):
 
     @staticmethod
     def _does_put_envvar_into_exec_cmd(name: str) -> bool:
-        assert type(name) == str  # noqa: E721
+        assert type(name) is str
         name = name.upper()
         if name.startswith("LC_"):
             return True
@@ -853,7 +853,7 @@ class RemoteOperations(OsOperations):
 
     @staticmethod
     def _quote_envvar(value: str) -> str:
-        assert type(value) == str  # noqa: E721
+        assert type(value) is str
         result = "\""
         for ch in value:
             if ch == "\"":
@@ -869,8 +869,8 @@ class RemoteOperations(OsOperations):
     def _build_path(a: str, *parts: str) -> str:
         assert a is not None
         assert parts is not None
-        assert type(a) == str  # noqa: E721
-        assert type(parts) == tuple  # noqa: E721
+        assert type(a) is str
+        assert type(parts) is tuple
         return posixpath.join(a, *parts)
 
 

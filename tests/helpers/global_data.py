@@ -11,7 +11,7 @@ class OsOpsDescr:
     os_ops: OsOperations
 
     def __init__(self, sign: str, os_ops: OsOperations):
-        assert type(sign) == str  # noqa: E721
+        assert type(sign) is str
         assert isinstance(os_ops, OsOperations)
         self.sign = sign
         self.os_ops = os_ops

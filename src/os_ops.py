@@ -36,8 +36,8 @@ class OsOperations:
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
         assert parts is not None
-        assert type(a) == str  # noqa: E721
-        assert type(parts) == tuple  # noqa: E721
+        assert type(a) is str
+        assert type(parts) is tuple
         raise NotImplementedError()
 
     # Environment setup
@@ -69,14 +69,14 @@ class OsOperations:
         raise NotImplementedError()
 
     def makedir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         raise NotImplementedError()
 
     def rmdirs(self, path, ignore_errors=True):
         raise NotImplementedError()
 
     def rmdir(self, path: str):
-        assert type(path) == str  # noqa: E721
+        assert type(path) is str
         raise NotImplementedError()
 
     def listdir(self, path):
@@ -112,8 +112,8 @@ class OsOperations:
         raise NotImplementedError()
 
     def read_binary(self, filename, offset):
-        assert type(filename) == str  # noqa: E721
-        assert type(offset) == int  # noqa: E721
+        assert type(filename) is str
+        assert type(offset) is int
         assert offset >= 0
         raise NotImplementedError()
 
@@ -127,14 +127,14 @@ class OsOperations:
         raise NotImplementedError()
 
     def remove_file(self, filename):
-        assert type(filename) == str  # noqa: E721
+        assert type(filename) is str
         raise NotImplementedError()
 
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
         # Kill the process
-        assert type(pid) == int  # noqa: E721
-        assert type(signal) == int or type(signal) == os_signal.Signals  # noqa: E721 E501
+        assert type(pid) is int
+        assert type(signal) is int or type(signal) is os_signal.Signals
         raise NotImplementedError()
 
     def get_pid(self):
@@ -145,7 +145,7 @@ class OsOperations:
         raise NotImplementedError()
 
     def is_port_free(self, number: int):
-        assert type(number) == int  # noqa: E721
+        assert type(number) is int
         raise NotImplementedError()
 
     def get_tempdir(self) -> str:
