@@ -107,7 +107,7 @@ class LocalOperations(OsOperations):
 
         # TODO: why don't we use the data from input?
 
-        extParams: typing.Dict[str, str] = dict()
+        extParams: typing.Dict[str, typing.Any] = dict()
 
         if exec_env is None:
             pass
@@ -166,7 +166,7 @@ class LocalOperations(OsOperations):
 
         assert input_prepared is None or type(input_prepared) is bytes
 
-        extParams: typing.Dict[str, str] = dict()
+        extParams: typing.Dict[str, typing.Any] = dict()
 
         if exec_env is None:
             pass
