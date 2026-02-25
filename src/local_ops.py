@@ -198,7 +198,7 @@ class LocalOperations(OsOperations):
             cwd=cwd,
             **extParams
         )
-        assert not (process is None)
+        assert process is not None
         if get_process:
             return process, None, None
         try:

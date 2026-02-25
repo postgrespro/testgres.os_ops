@@ -1014,7 +1014,7 @@ class TestOsOpsCommon:
             LOG_INFO("HELLO! I am here!")
 
             for num in range(cNumbers):
-                assert not (num in reservedNumbers)
+                assert num not in reservedNumbers
 
                 file_path = MAKE_PATH(lock_dir, num)
 
@@ -1150,7 +1150,7 @@ class TestOsOpsCommon:
         logging.info("OK. Let's check reservedNumbers!")
 
         for n in range(N_NUMBERS):
-            if not (n in reservedNumbers.keys()):
+            if n not in reservedNumbers.keys():
                 nErrors += 1
                 logging.error("Number {} is not reserved!".format(n))
                 continue
