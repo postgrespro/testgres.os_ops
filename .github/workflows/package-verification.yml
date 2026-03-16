@@ -89,7 +89,7 @@ jobs:
     - name: Run
       run: docker run -t -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
     - name: Upload Logs
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: always() # IT IS IMPORTANT!
       with:
         name: testgres.os_ops--test_logs--${{ env.RUN_CFG__NOW }}-${{ matrix.platform }}-py${{ matrix.python }}-id${{ github.run_id }}
