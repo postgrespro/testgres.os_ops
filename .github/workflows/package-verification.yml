@@ -19,9 +19,9 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -79,7 +79,7 @@ jobs:
         echo "---------- [$GITHUB_ENV]"
         cat $GITHUB_ENV
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Prepare logs folder on the host
       run: mkdir -p "${{ env.RUN_CFG__LOGS_DIR }}"
     - name: Adjust logs folder permission
@@ -89,7 +89,7 @@ jobs:
     - name: Run
       run: docker run -t -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
     - name: Upload Logs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always() # IT IS IMPORTANT!
       with:
         name: testgres.os_ops--test_logs--${{ env.RUN_CFG__NOW }}-${{ matrix.platform }}-py${{ matrix.python }}-id${{ github.run_id }}
