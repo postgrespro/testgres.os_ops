@@ -690,12 +690,13 @@ class RemoteOperations(OsOperations):
         assert number >= 0
         assert number <= 65535  # OK?
 
-        # grep -q returns 0 if a listening socket on that port is found
         port_hex = format(number, '04X')
 
         #   sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt ...
         #  137: 0A01A8C0:EC08 1DA2A959:01BB 01 00000000:00000000 02:00000000 00000000 ...
         C_REGEXP = r"^\s*[0-9]+:\s*[0-9a-fA-F]{8}:" + re.escape(port_hex) + r"\s+[0-9a-fA-F]{8}:[0-9a-fA-F]{4}\s+"
+
+        # grep -q returns 0 if a listening socket on that port is found
 
         # Search /proc/net/tcp for any entry with this port
         # NOTE: grep requires quote string with regular expression
