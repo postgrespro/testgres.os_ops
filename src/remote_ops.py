@@ -762,23 +762,6 @@ class RemoteOperations(OsOperations):
         return temp_dir
 
     @staticmethod
-    def _is_port_free__process_0(error: str) -> bool:
-        assert type(error) is str
-        #
-        # Example of error text:
-        #  "Connection to localhost (127.0.0.1) 1024 port [tcp/*] succeeded!\n"
-        #
-        # May be here is needed to check error message?
-        #
-        return False
-
-    @staticmethod
-    def _is_port_free__process_1(error: str) -> bool:
-        assert type(error) is str
-        # May be here is needed to check error message?
-        return True
-
-    @staticmethod
     def _build_cmdline(cmd, exec_env: typing.Dict = None) -> str:
         cmd_items = __class__._create_exec_env_list(exec_env)
 
