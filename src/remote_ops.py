@@ -776,14 +776,11 @@ class RemoteOperations(OsOperations):
     @staticmethod
     def _ensure_cmdline(cmd) -> str:
         if type(cmd) is str:
-            cmd_s = cmd
-        elif type(cmd) is list:
-            cmd_s = subprocess.list2cmdline(cmd)
-        else:
-            raise ValueError("Invalid 'cmd' argument type - {0}".format(type(cmd).__name__))
+            return cmd
+        if type(cmd) is list:
+            return subprocess.list2cmdline(cmd)
 
-        assert type(cmd_s) is str
-        return cmd_s
+        raise ValueError("Invalid 'cmd' argument type - {0}".format(type(cmd).__name__))
 
     @staticmethod
     def _create_exec_env_list(exec_env: typing.Dict) -> typing.List[str]:
