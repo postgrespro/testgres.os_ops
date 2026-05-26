@@ -774,7 +774,7 @@ class RemoteOperations(OsOperations):
         return cmdline
 
     @staticmethod
-    def _ensure_cmdline(cmd) -> typing.List[str]:
+    def _ensure_cmdline(cmd) -> str:
         if type(cmd) is str:
             cmd_s = cmd
         elif type(cmd) is list:
