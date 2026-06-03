@@ -52,12 +52,12 @@ class RemoteOperations(OsOperations):
     sm_dummy_conn_params = ConnectionParams()
 
     conn_params: ConnectionParams
-    host: str
+    _host: str
     port: int
-    ssh_key: str
+    _ssh_key: typing.Optional[str]
     ssh_args: list
     remote: bool
-    username: str
+    _username: typing.Optional[str]
     ssh_dest: str
 
     def __init__(self, conn_params: ConnectionParams):
@@ -70,20 +70,35 @@ class RemoteOperations(OsOperations):
             return
 
         self.conn_params = conn_params
-        self.host = conn_params.host
+        self._host = conn_params.host
         self.port = conn_params.port
-        self.ssh_key = conn_params.ssh_key
+        self._ssh_key = conn_params.ssh_key
         self.ssh_args = []
-        if self.ssh_key:
-            self.ssh_args += ["-i", self.ssh_key]
+        if self._ssh_key:
+            self.ssh_args += ["-i", self._ssh_key]
         if self.port:
             self.ssh_args += ["-p", self.port]
         self.remote = True
-        self.username = conn_params.username or getpass.getuser()
-        self.ssh_dest = f"{self.username}@{self.host}" if conn_params.username else self.host
+        self._username = conn_params.username or getpass.getuser()
+        self.ssh_dest = f"{self._username}@{self._host}" if conn_params.username else self._host
 
     def __enter__(self):
         return self
+
+    @property
+    def host(self) -> str:
+        assert type(self._host) is str
+        return self._host
+
+    @property
+    def ssh_key(self) -> typing.Optional[str]:
+        assert self._ssh_key is None or type(self._ssh_key) is str
+        return self._ssh_key
+
+    @property
+    def username(self) -> typing.Optional[str]:
+        assert self._username is None or type(self._username) is str
+        return self._username
 
     def get_platform(self) -> str:
         return "linux"
@@ -91,12 +106,12 @@ class RemoteOperations(OsOperations):
     def create_clone(self) -> RemoteOperations:
         clone = __class__(__class__.sm_dummy_conn_params)
         clone.conn_params = copy.copy(self.conn_params)
-        clone.host = self.host
+        clone._host = self._host
         clone.port = self.port
-        clone.ssh_key = self.ssh_key
+        clone._ssh_key = self._ssh_key
         clone.ssh_args = copy.copy(self.ssh_args)
         clone.remote = self.remote
-        clone.username = self.username
+        clone._username = self._username
         clone.ssh_dest = self.ssh_dest
         return clone
 
