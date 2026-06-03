@@ -120,7 +120,22 @@ class OsOperations:
     def read(self, filename, encoding, binary):
         raise NotImplementedError()
 
-    def readlines(self, filename):
+    def readlines(
+        self,
+        filename: str,
+        num_lines: int = 0,
+        binary: bool = False,
+        encoding: typing.Optional[str] = None,
+    ) -> typing.Union[typing.List[str], typing.List[bytes]]:
+        """
+        Read lines from a local file.
+        If num_lines is greater than 0, only the last num_lines lines will be read.
+        """
+        assert type(num_lines) is int
+        assert type(filename) is str
+        assert type(binary) is bool
+        assert encoding is None or type(encoding) is str
+        assert num_lines >= 0
         raise NotImplementedError()
 
     def read_binary(self, filename, offset):
