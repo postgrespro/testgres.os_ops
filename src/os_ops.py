@@ -23,6 +23,18 @@ class OsOperations:
     def __init__(self):
         pass
 
+    @property
+    def host(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def ssh_key(self) -> typing.Optional[str]:
+        raise NotImplementedError()
+
+    @property
+    def username(self) -> typing.Optional[str]:
+        raise NotImplementedError()
+
     def get_platform(self) -> str:
         raise NotImplementedError()
 

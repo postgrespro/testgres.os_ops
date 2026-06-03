@@ -40,10 +40,10 @@ class LocalOperations(OsOperations):
 
     # TODO: make it read-only
     conn_params: ConnectionParams
-    host: str
-    ssh_key: typing.Optional[str]
+    _host: str
+    _ssh_key: typing.Optional[str]
     remote: bool
-    username: str
+    _username: typing.Optional[str]
 
     def __init__(self, conn_params=None):
         super().__init__()
@@ -55,10 +55,10 @@ class LocalOperations(OsOperations):
             conn_params = ConnectionParams()
 
         self.conn_params = conn_params
-        self.host = conn_params.host
-        self.ssh_key = None
+        self._host = conn_params.host
+        self._ssh_key = None
         self.remote = False
-        self.username = conn_params.username or getpass.getuser()
+        self._username = conn_params.username or getpass.getuser()
 
     @staticmethod
     def get_single_instance() -> OsOperations:
@@ -76,16 +76,31 @@ class LocalOperations(OsOperations):
         assert type(__class__.sm_single_instance) is __class__
         return __class__.sm_single_instance
 
+    @property
+    def host(self) -> str:
+        assert type(self._host) is str
+        return self._host
+
+    @property
+    def ssh_key(self) -> typing.Optional[str]:
+        assert self._ssh_key is None or type(self._ssh_key) is str
+        return self._ssh_key
+
+    @property
+    def username(self) -> typing.Optional[str]:
+        assert self._username is None or type(self._username) is str
+        return self._username
+
     def get_platform(self) -> str:
         return str(sys.platform)
 
     def create_clone(self) -> LocalOperations:
         clone = __class__(__class__.sm_dummy_conn_params)
         clone.conn_params = copy.copy(self.conn_params)
-        clone.host = self.host
-        clone.ssh_key = self.ssh_key
+        clone._host = self._host
+        clone._ssh_key = self._ssh_key
         clone.remote = self.remote
-        clone.username = self.username
+        clone._username = self._username
         return clone
 
     @staticmethod
