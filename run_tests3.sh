@@ -2,6 +2,10 @@
 
 set -eux
 
+for i in {2..11}; do
+    sudo ip addr add 127.0.0.$i/32 dev lo
+done
+
 # prepare python environment
 VENV_PATH="/tmp/testgres_venv"
 rm -rf $VENV_PATH

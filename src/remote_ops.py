@@ -11,6 +11,8 @@ import typing
 import copy
 import re
 import signal as os_signal
+import struct
+import ipaddress
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -755,6 +757,112 @@ class RemoteOperations(OsOperations):
             out=output
         )
 
+    def is_port_available(self, ip: str, number: int) -> bool:
+        assert type(ip) is str
+        assert ip != ""
+        assert type(number) is int
+        assert number >= 0
+        assert number <= 65535  # OK?
+
+        try:
+            addr = ipaddress.ip_address(ip)
+            if addr.version == 4:
+                return self._is_port_available_v4(
+                    addr,
+                    number,
+                )
+            if addr.version == 6:
+                return self._is_port_available_v6(
+                    addr,
+                    number,
+                )
+        except ValueError:
+            raise RuntimeError("Unknown format of IP: {!r}".format(ip))
+
+        raise RuntimeError("Unsupported IP version: {!r}".format(ip))
+
+    # --------------------------------------------------------------------
+    def _is_port_available_v4(self, addr: ipaddress.IPv4Address, number: int) -> bool:
+        assert type(addr) is ipaddress.IPv4Address
+        assert type(number) is int
+        assert number >= 0
+        assert number <= 65535  # OK?
+
+        ip_packed = addr.packed
+
+        # 1. The IP address really depends on the architecture (we only flip it)
+        ip_le = format(struct.unpack("I", ip_packed)[0], "08X")
+        ip_be = format(struct.unpack("!I", ip_packed)[0], "08X")
+
+        # 2. The port is ALWAYS output in Big Endian (just convert the number to HEX)
+        port_hex = format(number, "04X")
+
+        # 3. Build a command
+        # Byte 0: 0x7F
+        # Byte 1: 'E'
+        # Byte 2: 'L'
+        # Byte 3: 'F'
+        # Byte 4: Bit class (01 — 32-bit, 02 — 64-bit)
+        # Byte 5: Byte order (01 — Little Endian, 02 — Big Endian)
+        grep_cmd_s = (
+            'if od -An -t x1 -N 1 -j 5 /bin/bash | grep -q "01"; then '
+            '  if grep -q -E "^\\s*[0-9]+:\\s*' + ip_le + ':' + port_hex + '\\s+" /proc/net/tcp; then echo "BUSY"; else echo "FREE"; fi; '
+            'else '
+            '  if grep -q -E "^\\s*[0-9]+:\\s*' + ip_be + ':' + port_hex + '\\s+" /proc/net/tcp; then echo "BUSY"; else echo "FREE"; fi; '
+            'fi'
+        )
+
+        return self._run_grep(grep_cmd_s)
+
+    # --------------------------------------------------------------------
+    def _is_port_available_v6(self, addr: ipaddress.IPv6Address, number: int) -> bool:
+        assert type(addr) is ipaddress.IPv6Address
+        assert type(number) is int
+        assert number >= 0
+        assert number <= 65535  # OK?
+
+        ip_bytes = addr.packed
+        words = struct.unpack("!IIII", ip_bytes)
+
+        # 1. The IP address really depends on the architecture (we only flip it)
+        ip_le = "".join(format(struct.unpack("<I", struct.pack(">I", w))[0], "08X") for w in words)
+        ip_be = "".join(format(w, "08X") for w in words)
+
+        # 2. The port is ALWAYS output in Big Endian (just convert the number to HEX)
+        port_hex = format(number, "04X")
+
+        # 3. Bash script checks architecture: if 5th byte of /bin/bash is 1, then it is Little Endian
+        grep_cmd_s = (
+            'if od -An -t x1 -N 1 -j 5 /bin/bash | grep -q "01"; then '
+            '  if grep -q -E "^\\s*[0-9]+:\\s*' + ip_le + ':' + port_hex + '\\s+" /proc/net/tcp6; then echo "BUSY"; else echo "FREE"; fi; '
+            'else '
+            '  if grep -q -E "^\\s*[0-9]+:\\s*' + ip_be + ':' + port_hex + '\\s+" /proc/net/tcp6; then echo "BUSY"; else echo "FREE"; fi; '
+            'fi'
+        )
+
+        return self._run_grep(grep_cmd_s)
+
+    # --------------------------------------------------------------------
+    def _run_grep(self, grep_cmd_s: str) -> bool:
+        assert type(grep_cmd_s) is str
+
+        cmd = ["/bin/bash", "-c", grep_cmd_s]
+
+        output = self.exec_command(
+            cmd=cmd,
+            encoding=get_default_encoding(),
+        )
+
+        if output == "BUSY\n":
+            return False
+
+        if output == "FREE\n":
+            return True
+
+        errMsg = "grep returned unexpected output: {!r}".format(output)
+        raise RuntimeError(errMsg)
+
+    # --------------------------------------------------------------------
     def get_tempdir(self) -> str:
         command = ["mktemp", "-u", "-d"]
 
