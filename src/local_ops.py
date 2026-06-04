@@ -626,3 +626,7 @@ class LocalOperations(OsOperations):
         assert type(r) is str
         assert os.path.exists(r)
         return r
+
+    def get_dirname(self, path: str) -> str:
+        assert type(path) is str
+        return os.path.dirname(path)

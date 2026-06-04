@@ -177,3 +177,7 @@ class OsOperations:
 
     def get_tempdir(self) -> str:
         raise NotImplementedError()
+
+    def get_dirname(self, path: str) -> str:
+        assert type(path) is str
+        raise NotImplementedError()
