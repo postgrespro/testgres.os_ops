@@ -1415,3 +1415,29 @@ class TestOsOpsCommon:
 
         assert actual_dirname == expected_dirname
         return
+
+    def test_is_abs_path__yes(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        p = __file__
+        assert type(p) is str
+        assert p != ""
+        assert os.path.isabs(p)
+
+        actual_value = os_ops.is_abs_path(p)
+        assert type(actual_value) is bool
+
+        assert actual_value is True
+        return
+
+    def test_is_abs_path__no(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        p = "."
+        assert not os.path.isabs(p)
+
+        actual_value = os_ops.is_abs_path(p)
+        assert type(actual_value) is bool
+
+        assert actual_value is False
+        return
