@@ -1396,3 +1396,22 @@ class TestOsOpsCommon:
             RuntimeError("Unknown os_ops type: {}".format(type(os_ops).__name__))
 
         return
+
+    def test_get_dirname(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        p = __file__
+        assert type(p) is str
+        assert p != ""
+        assert os.path.exists(p)
+
+        expected_dirname = os.path.dirname(p)
+        assert type(expected_dirname) is str
+        assert expected_dirname != ""
+
+        actual_dirname = os_ops.get_dirname(p)
+        assert type(actual_dirname) is str
+        assert actual_dirname != ""
+
+        assert actual_dirname == expected_dirname
+        return
