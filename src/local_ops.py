@@ -630,3 +630,7 @@ class LocalOperations(OsOperations):
     def get_dirname(self, path: str) -> str:
         assert type(path) is str
         return os.path.dirname(path)
+
+    def is_abs_path(self, path: str) -> bool:
+        assert type(path) is str
+        return os.path.isabs(path)

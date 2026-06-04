@@ -787,6 +787,10 @@ class RemoteOperations(OsOperations):
         assert type(path) is str
         return posixpath.dirname(path)
 
+    def is_abs_path(self, path: str) -> bool:
+        assert type(path) is str
+        return posixpath.isabs(path)
+
     @staticmethod
     def _build_cmdline(cmd, exec_env: typing.Dict = None) -> str:
         cmd_items = __class__._create_exec_env_list(exec_env)
