@@ -513,7 +513,13 @@ class LocalOperations(OsOperations):
             assert type(content) is bytes
             return content
 
-    def readlines(self, filename, num_lines=0, binary=False, encoding=None):
+    def readlines(
+        self,
+        filename: str,
+        num_lines: int = 0,
+        binary: bool = False,
+        encoding: typing.Optional[str] = None,
+    ) -> typing.Union[typing.List[str], typing.List[bytes]]:
         """
         Read lines from a local file.
         If num_lines is greater than 0, only the last num_lines lines will be read.
