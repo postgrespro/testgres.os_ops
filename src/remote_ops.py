@@ -446,7 +446,12 @@ class RemoteOperations(OsOperations):
         else:
             command = ["mktemp", "-d"]
 
-        exec_exitcode, exec_output, exec_error = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
+        exec_r = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
+
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exec_exitcode, exec_output, exec_error = exec_r
 
         assert type(exec_exitcode) is int
         assert type(exec_output) is str
