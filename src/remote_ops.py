@@ -317,11 +317,11 @@ class RemoteOperations(OsOperations):
         else:
             cmd = "mkdir -p {}".format(path)
         try:
-            exit_status, result, error = self.exec_command(cmd, verbose=True)
+            result = self.exec_command(cmd)
         except ExecUtilException as e:
             raise Exception("Couldn't create dir {} because of error {}".format(path, e.message))
-        if exit_status != 0:
-            raise Exception("Couldn't create dir {} because of error {}".format(path, error))
+
+        assert type(result) is bytes
         return result
 
     def makedir(self, path: str):
