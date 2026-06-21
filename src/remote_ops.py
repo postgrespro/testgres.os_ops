@@ -796,12 +796,17 @@ class RemoteOperations(OsOperations):
             grep_cmd_s,
         ]
 
-        exit_status, output, error = self.exec_command(
+        exec_r = self.exec_command(
             cmd=cmd,
             encoding=get_default_encoding(),
             ignore_errors=True,
-            verbose=True
+            verbose=True,
         )
+
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exit_status, output, error = exec_r
 
         # grep exit 0 -> port is busy
         if exit_status == 0:
