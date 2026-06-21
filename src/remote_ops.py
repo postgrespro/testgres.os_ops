@@ -390,8 +390,19 @@ class RemoteOperations(OsOperations):
     def path_exists(self, path):
         command = ["test", "-e", path]
 
-        exit_status, output, error = self.exec_command(cmd=command, encoding=get_default_encoding(), ignore_errors=True, verbose=True)
+        exec_r = self.exec_command(
+            cmd=command,
+            encoding=get_default_encoding(),
+            ignore_errors=True,
+            verbose=True,
+        )
 
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exit_status, output, error = exec_r
+
+        assert type(exit_status) is int
         assert type(output) is str
         assert type(error) is str
 
