@@ -3,6 +3,7 @@ from __future__ import annotations
 import locale
 import typing
 import signal as os_signal
+import subprocess
 
 
 class ConnectionParams:
@@ -42,7 +43,43 @@ class OsOperations:
         raise NotImplementedError()
 
     # Command execution
-    def exec_command(self, cmd, **kwargs):
+    T_CMD = typing.Union[str, typing.List[str]]
+    T_EXEC_COMMAND_RESULT = typing.Union[
+        subprocess.Popen,
+        str,
+        bytes,
+        typing.Tuple[int, str, typing.Optional[str]],
+        typing.Tuple[int, bytes, typing.Optional[bytes]],
+    ]
+
+    def exec_command(
+        self,
+        cmd: T_CMD,
+        wait_exit=False,
+        verbose=False,
+        expect_error=False,
+        encoding: typing.Optional[str] = None,
+        shell=False,
+        text=False,
+        input=None,
+        stdin=None,
+        stdout=None,
+        stderr=None,
+        get_process=False,
+        timeout=None,
+        ignore_errors=False,
+        exec_env: typing.Optional[dict] = None,
+        cwd: typing.Optional[str] = None
+    ) -> T_EXEC_COMMAND_RESULT:
+        assert type(cmd) is str or type(cmd) is list
+        assert type(verbose) is bool
+        assert type(expect_error) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(wait_exit) is bool
+        assert type(get_process) is bool
+        assert type(ignore_errors) is bool
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is dict
         raise NotImplementedError()
 
     def build_path(self, a: str, *parts: str) -> str:

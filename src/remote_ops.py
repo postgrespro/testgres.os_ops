@@ -116,12 +116,24 @@ class RemoteOperations(OsOperations):
         return clone
 
     def exec_command(
-        self, cmd, wait_exit=False, verbose=False, expect_error=False,
-        encoding=None, shell=True, text=False, input=None, stdin=None, stdout=None,
-        stderr=None, get_process=None, timeout=None, ignore_errors=False,
+        self,
+        cmd: OsOperations.T_CMD,
+        wait_exit=False,
+        verbose=False,
+        expect_error=False,
+        encoding: typing.Optional[str] = None,
+        shell=True,
+        text=False,
+        input=None,
+        stdin=None,
+        stdout=None,
+        stderr=None,
+        get_process=None,
+        timeout=None,
+        ignore_errors=False,
         exec_env: typing.Optional[dict] = None,
         cwd: typing.Optional[str] = None
-    ):
+    ) -> OsOperations.T_EXEC_COMMAND_RESULT:
         """
         Execute a command in the SSH session.
         Args:
@@ -156,6 +168,7 @@ class RemoteOperations(OsOperations):
 
         process = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert process is not None
+        assert isinstance(process, subprocess.Popen)
         if get_process:
             return process
 
@@ -169,31 +182,35 @@ class RemoteOperations(OsOperations):
         assert type(error) is bytes
 
         if encoding:
-            output = output.decode(encoding)
-            error = error.decode(encoding)
+            run_r = process.returncode, output.decode(encoding), error.decode(encoding)
+        else:
+            run_r = process.returncode, output, error
+
+        assert type(run_r[0]) is int
+        assert type(run_r[1]) is type(run_r[2])
 
         if expect_error:
-            if process.returncode == 0:
+            if run_r[0] == 0:
                 raise InvalidOperationException("We expected an execution error.")
         elif ignore_errors:
             pass
-        elif process.returncode == 0:
+        elif run_r[0] == 0:
             pass
         else:
             assert not expect_error
             assert not ignore_errors
-            assert process.returncode != 0
+            assert run_r[0] != 0
             RaiseError.UtilityExitedWithNonZeroCode(
                 cmd=cmd,
-                exit_code=process.returncode,
+                exit_code=run_r[0],
                 msg_arg=error,
-                error=error,
-                out=output)
+                error=run_r[2],
+                out=run_r[1])
 
         if verbose:
-            return process.returncode, output, error
+            return run_r
 
-        return output
+        return run_r[1]
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
@@ -210,11 +227,15 @@ class RemoteOperations(OsOperations):
         - var_name (str): The name of the environment variable.
         """
         cmd = "echo ${}".format(var_name)
-        return self.exec_command(cmd, encoding=get_default_encoding()).strip()
+        stdout = self.exec_command(cmd, encoding=get_default_encoding())
+        assert type(stdout) is str
+        return stdout.strip()
 
     def cwd(self):
         cmd = 'pwd'
-        return self.exec_command(cmd, encoding=get_default_encoding()).rstrip()
+        stdout = self.exec_command(cmd, encoding=get_default_encoding())
+        assert type(stdout) is str
+        return stdout.rstrip()
 
     def find_executable(self, executable):
         search_paths = self.environ("PATH")
@@ -233,8 +254,19 @@ class RemoteOperations(OsOperations):
         # Check if the file is executable
         command = ["test", "-x", file]
 
-        exit_status, output, error = self.exec_command(cmd=command, encoding=get_default_encoding(), ignore_errors=True, verbose=True)
+        exec_r = self.exec_command(
+            cmd=command,
+            encoding=get_default_encoding(),
+            ignore_errors=True,
+            verbose=True,
+        )
 
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exit_status, output, error = exec_r
+
+        assert type(exit_status) is int
         assert type(output) is str
         assert type(error) is str
 
@@ -246,7 +278,8 @@ class RemoteOperations(OsOperations):
 
         errMsg = "Test operation returns an unknown result code: {0}. File name is [{1}].".format(
             exit_status,
-            file)
+            file,
+        )
 
         RaiseError.CommandExecutionError(
             cmd=command,
@@ -267,7 +300,9 @@ class RemoteOperations(OsOperations):
 
     def get_name(self):
         cmd = 'python3 -c "import os; print(os.name)"'
-        return self.exec_command(cmd, encoding=get_default_encoding()).strip()
+        stdout = self.exec_command(cmd, encoding=get_default_encoding())
+        assert type(stdout) is str
+        return stdout.strip()
 
     # Work with dirs
     def makedirs(self, path, remove_existing=False):
@@ -282,11 +317,11 @@ class RemoteOperations(OsOperations):
         else:
             cmd = "mkdir -p {}".format(path)
         try:
-            exit_status, result, error = self.exec_command(cmd, verbose=True)
+            result = self.exec_command(cmd)
         except ExecUtilException as e:
             raise Exception("Couldn't create dir {} because of error {}".format(path, e.message))
-        if exit_status != 0:
-            raise Exception("Couldn't create dir {} because of error {}".format(path, error))
+
+        assert type(result) is bytes
         return result
 
     def makedir(self, path: str):
@@ -355,8 +390,19 @@ class RemoteOperations(OsOperations):
     def path_exists(self, path):
         command = ["test", "-e", path]
 
-        exit_status, output, error = self.exec_command(cmd=command, encoding=get_default_encoding(), ignore_errors=True, verbose=True)
+        exec_r = self.exec_command(
+            cmd=command,
+            encoding=get_default_encoding(),
+            ignore_errors=True,
+            verbose=True,
+        )
 
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exit_status, output, error = exec_r
+
+        assert type(exit_status) is int
         assert type(output) is str
         assert type(error) is str
 
@@ -400,7 +446,12 @@ class RemoteOperations(OsOperations):
         else:
             command = ["mktemp", "-d"]
 
-        exec_exitcode, exec_output, exec_error = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
+        exec_r = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
+
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exec_exitcode, exec_output, exec_error = exec_r
 
         assert type(exec_exitcode) is int
         assert type(exec_output) is str
@@ -428,7 +479,17 @@ class RemoteOperations(OsOperations):
         else:
             command = ["mktemp"]
 
-        exec_exitcode, exec_output, exec_error = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
+        exec_r = self.exec_command(
+            command,
+            verbose=True,
+            encoding=get_default_encoding(),
+            ignore_errors=True,
+        )
+
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exec_exitcode, exec_output, exec_error = exec_r
 
         assert type(exec_exitcode) is int
         assert type(exec_output) is str
@@ -604,14 +665,17 @@ class RemoteOperations(OsOperations):
         return r
 
     def isfile(self, remote_file):
-        stdout = self.exec_command("test -f {}; echo $?".format(remote_file))
+        cmd = "test -f {}; echo $?".format(remote_file)
+        stdout = self.exec_command(cmd)
+        assert type(stdout) is bytes
         result = int(stdout.strip())
         return result == 0
 
     def isdir(self, dirname):
         cmd = "if [ -d {} ]; then echo True; else echo False; fi".format(dirname)
-        response = self.exec_command(cmd)
-        return response.strip() == b"True"
+        stdout = self.exec_command(cmd)
+        assert type(stdout) is bytes
+        return stdout.strip() == b"True"
 
     def get_file_size(self, filename):
         C_ERR_SRC = "RemoteOpertions::get_file_size"
@@ -692,7 +756,9 @@ class RemoteOperations(OsOperations):
 
     def get_pid(self):
         # Get current process id
-        return int(self.exec_command("echo $$", encoding=get_default_encoding()))
+        x = self.exec_command("echo $$", encoding=get_default_encoding())
+        assert type(x) is str
+        return int(x)
 
     def get_process_children(self, pid):
         assert type(pid) is int
@@ -730,12 +796,17 @@ class RemoteOperations(OsOperations):
             grep_cmd_s,
         ]
 
-        exit_status, output, error = self.exec_command(
+        exec_r = self.exec_command(
             cmd=cmd,
             encoding=get_default_encoding(),
             ignore_errors=True,
-            verbose=True
+            verbose=True,
         )
+
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exit_status, output, error = exec_r
 
         # grep exit 0 -> port is busy
         if exit_status == 0:
@@ -758,12 +829,17 @@ class RemoteOperations(OsOperations):
     def get_tempdir(self) -> str:
         command = ["mktemp", "-u", "-d"]
 
-        exec_exitcode, exec_output, exec_error = self.exec_command(
+        exec_r = self.exec_command(
             command,
             verbose=True,
             encoding=get_default_encoding(),
-            ignore_errors=True
+            ignore_errors=True,
         )
+
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exec_exitcode, exec_output, exec_error = exec_r
 
         assert type(exec_exitcode) is int
         assert type(exec_output) is str
@@ -792,7 +868,10 @@ class RemoteOperations(OsOperations):
         return posixpath.isabs(path)
 
     @staticmethod
-    def _build_cmdline(cmd, exec_env: typing.Dict = None) -> str:
+    def _build_cmdline(
+        cmd,
+        exec_env: typing.Optional[typing.Dict] = None,
+    ) -> str:
         cmd_items = __class__._create_exec_env_list(exec_env)
 
         assert type(cmd_items) is list
@@ -813,7 +892,9 @@ class RemoteOperations(OsOperations):
         raise ValueError("Invalid 'cmd' argument type - {0}".format(type(cmd).__name__))
 
     @staticmethod
-    def _create_exec_env_list(exec_env: typing.Dict) -> typing.List[str]:
+    def _create_exec_env_list(
+        exec_env: typing.Optional[typing.Dict],
+    ) -> typing.List[str]:
         env: typing.Dict[str, str] = dict()
 
         # ---------------------------------- SYSTEM ENV
