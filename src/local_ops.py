@@ -35,7 +35,7 @@ CMD_TIMEOUT_SEC = 60
 
 class LocalOperations(OsOperations):
     sm_dummy_conn_params = ConnectionParams()
-    sm_single_instance: typing.Optional[OsOperations] = None
+    sm_single_instance: OsOperations = None
     sm_single_instance_guard = threading.Lock()
 
     # TODO: make it read-only
