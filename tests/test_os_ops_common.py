@@ -900,7 +900,7 @@ class TestOsOpsCommon:
         if ok_count == 0:
             raise RuntimeError("No one free port was found.")
 
-    def test_get_tmpdir(self, os_ops: OsOperations):
+    def test_get_tempdir(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
 
         dir = os_ops.get_tempdir()
@@ -924,7 +924,7 @@ class TestOsOpsCommon:
         assert not os_ops.path_exists(file_path)
         assert not os.path.exists(file_path)
 
-    def test_get_tmpdir__compare_with_py_info(self, os_ops: OsOperations):
+    def test_get_tempdir__compare_with_py_info(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
 
         actual_dir = os_ops.get_tempdir()
