@@ -577,7 +577,7 @@ class RemoteOperations(OsOperations):
         """
         self.exec_command("touch {}".format(filename))
 
-    def read(self, filename, binary=False, encoding=None):
+    def read(self, filename, encoding=None, binary=False):
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert type(binary) is bool
