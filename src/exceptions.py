@@ -39,6 +39,7 @@ class ExecUtilException(TestgresException):
         self._exit_code = exit_code
         self._out = out
         self._error = error
+        return
 
     @property
     def message(self) -> str:
@@ -127,7 +128,7 @@ class ExecUtilException(TestgresException):
 
 
 __all__ = [
-    type(TestgresException).__name__,
-    type(InvalidOperationException).__name__,
-    type(ExecUtilException).__name__,
+    "TestgresException",
+    "InvalidOperationException",
+    "ExecUtilException",
 ]
