@@ -24,6 +24,12 @@ class OsOperations:
     def __init__(self):
         pass
 
+    # A property to detect a "remote" host.
+    # I think, we have to remove it at all in the future.
+    @property
+    def remote(self) -> bool:
+        raise NotImplementedError()
+
     @property
     def host(self) -> str:
         raise NotImplementedError()

@@ -56,7 +56,6 @@ class RemoteOperations(OsOperations):
     _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
     ssh_args: list
-    remote: bool
     _username: typing.Optional[str]
     ssh_dest: str
 
@@ -78,12 +77,15 @@ class RemoteOperations(OsOperations):
             self.ssh_args += ["-i", self._ssh_key]
         if self.port:
             self.ssh_args += ["-p", self.port]
-        self.remote = True
         self._username = conn_params.username or getpass.getuser()
         self.ssh_dest = f"{self._username}@{self._host}" if conn_params.username else self._host
 
     def __enter__(self):
         return self
+
+    @property
+    def remote(self) -> bool:
+        return True
 
     @property
     def host(self) -> str:
@@ -115,7 +117,6 @@ class RemoteOperations(OsOperations):
         clone._port = self._port
         clone._ssh_key = self._ssh_key
         clone.ssh_args = copy.copy(self.ssh_args)
-        clone.remote = self.remote
         clone._username = self._username
         clone.ssh_dest = self.ssh_dest
         return clone

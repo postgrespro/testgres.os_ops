@@ -43,7 +43,6 @@ class LocalOperations(OsOperations):
     _host: str
     _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
-    remote: bool
     _username: typing.Optional[str]
 
     def __init__(self, conn_params=None):
@@ -59,7 +58,6 @@ class LocalOperations(OsOperations):
         self._host = conn_params.host
         self._port = conn_params.port
         self._ssh_key = None
-        self.remote = False
         self._username = conn_params.username or getpass.getuser()
 
     @staticmethod
@@ -77,6 +75,10 @@ class LocalOperations(OsOperations):
         assert __class__.sm_single_instance is not None
         assert type(__class__.sm_single_instance) is __class__
         return __class__.sm_single_instance
+
+    @property
+    def remote(self) -> bool:
+        return False
 
     @property
     def host(self) -> str:
@@ -106,7 +108,6 @@ class LocalOperations(OsOperations):
         clone.conn_params = copy.copy(self.conn_params)
         clone._host = self._host
         clone._ssh_key = self._ssh_key
-        clone.remote = self.remote
         clone._username = self._username
         return clone
 
