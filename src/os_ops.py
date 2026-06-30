@@ -215,7 +215,8 @@ class OsOperations:
         # Get current process id
         raise NotImplementedError()
 
-    def get_process_children(self, pid):
+    def get_process_children(self, pid: int):
+        assert type(pid) is int
         raise NotImplementedError()
 
     def is_port_free(self, number: int):
