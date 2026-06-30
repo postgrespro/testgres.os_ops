@@ -685,7 +685,7 @@ class LocalOperations(OsOperations):
         # Get current process id
         return os.getpid()
 
-    def get_process_children(self, pid):
+    def get_process_children(self, pid: int):
         assert type(pid) is int
         return psutil.Process(pid).children()
 

@@ -775,17 +775,64 @@ class RemoteOperations(OsOperations):
         assert type(x) is str
         return int(x)
 
-    def get_process_children(self, pid):
+    def get_process_children(self, pid: int):
         assert type(pid) is int
-        command = ["ssh"] + self._ssh_args + [self._ssh_dest, "pgrep", "-P", str(pid)]
 
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        exec_r = self.exec_command(
+            [
+                "sh", "-c",
+                "[ -d /proc/{0} ] || exit 100; pgrep -P {0}".format(pid),
+            ],
+            encoding=get_default_encoding(),
+            verbose=True,
+            ignore_errors=True,
+        )
 
-        if result.returncode == 0:
-            children = result.stdout.strip().splitlines()
-            return [PsUtilProcessProxy(self, int(child_pid.strip())) for child_pid in children]
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+        assert type(exec_r[0]) is int
+        assert type(exec_r[1]) is str
+        assert type(exec_r[2]) is str
 
-        raise ExecUtilException(f"Error in getting process children. Error: {result.stderr}")
+        exit_code, stdout, stderr = exec_r
+
+        assert type(exit_code) is int
+        assert type(stdout) is str
+        assert type(stderr) is str
+
+        if exit_code == 100:
+            err_msg = "Failed to get process children. Reason: No such process with PID {}.".format(
+                pid
+            )
+
+            raise ExecUtilException(
+                message=err_msg,
+                exit_code=1,  # ERR: NOT FOUND
+            )
+
+        if exit_code == 0:
+            stdout_clean = stdout.strip()
+            if not stdout_clean:
+                return []
+            return [
+                PsUtilProcessProxy(self, int(child_pid.strip()))
+                for child_pid in stdout_clean.splitlines()
+            ]
+
+        if exit_code == 1:
+            if not stderr.strip():
+                # pgrep returns 1 when no children are found
+                return []
+
+        error_msg = stderr.strip() or "command exited with code {}".format(exit_code)  # noqa: E501
+
+        raise ExecUtilException(
+            "Failed to get process children for PID {}. Reason: {}".format(
+                pid,
+                error_msg,
+            ),
+            exit_code=exit_code,
+        )
 
     def is_port_free(self, number: int) -> bool:
         assert type(number) is int

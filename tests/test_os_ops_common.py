@@ -1688,3 +1688,164 @@ class TestOsOpsCommon:
 
         assert actual_value is False
         return
+
+    def test_get_process_children__no_children(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        sh_cmd = ["sh", "-c", "python3 -u -c 'import time;import os; print(os.getpid()); time.sleep(60)'"]
+
+        p1 = os_ops.exec_command(
+            sh_cmd,
+            get_process=True,
+            encoding="utf-8",
+        )
+
+        assert isinstance(p1, subprocess.Popen)
+        assert p1.stdout is not None
+
+        line = p1.stdout.readline()
+        assert line is not None
+        assert type(line) is str
+        line = line.rstrip()
+        assert line != ""
+        logging.info("pid is {}".format(line))
+
+        pid = int(line.rstrip())
+
+        childs = os_ops.get_process_children(pid)
+        assert childs is not None
+        assert type(childs) is list
+        assert len(childs) == 0
+        return
+
+    def test_get_process_children__with_child(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        script = (
+            "import time, os, subprocess; "
+            "s = str(os.getpid()); "
+            "p = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
+            "s += ':' + str(p.pid); "
+            "print(s, flush=True); "
+            "time.sleep(60)"
+        )
+        sh_cmd = ["python3", "-u", "-c", script]
+
+        p1 = os_ops.exec_command(
+            sh_cmd,
+            get_process=True,
+            encoding="utf-8",
+        )
+
+        assert isinstance(p1, subprocess.Popen)
+        assert p1.stdout is not None
+        p1.pid
+
+        line = p1.stdout.readline()
+        assert line is not None
+        line = line.rstrip()
+        assert line != ""
+
+        # "PARENT_PID:CHILD_PID"
+        parent_pid_str, expected_child_pid_str = line.split(":")
+        parent_pid = int(parent_pid_str)
+        expected_child_pid = int(expected_child_pid_str)
+
+        logging.info(f"Parent PID from stdout: {parent_pid}")
+        logging.info(f"Expected Child PID from stdout: {expected_child_pid}")
+
+        # A short pause to ensure registration in the OS
+        # time.sleep(0.5)
+
+        childs = os_ops.get_process_children(parent_pid)
+
+        assert childs is not None
+        assert isinstance(childs, list)
+        assert len(childs) == 1
+
+        actual_child_pid = childs[0].pid
+        logging.info(f"Actual Child PID from get_process_children: {actual_child_pid}")
+
+        assert actual_child_pid == expected_child_pid
+
+        p1.terminate()
+        p1.wait()
+        return
+
+    def test_get_process_children__with_three_children(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        script = (
+            "import time, os, subprocess; "
+            "s = str(os.getpid()); "
+            "p1 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
+            "p2 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
+            "p3 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
+            "s += ':' + str(p1.pid) + ':' + str(p2.pid) + ':' + str(p3.pid); "
+            "print(s, flush=True); "
+            "time.sleep(60)"
+        )
+        sh_cmd = ["python3", "-u", "-c", script]
+
+        p = os_ops.exec_command(
+            sh_cmd,
+            get_process=True,
+            encoding="utf-8",
+        )
+
+        assert isinstance(p, subprocess.Popen)
+        assert p.stdout is not None
+
+        line = p.stdout.readline()
+        assert line is not None
+        line = line.rstrip()
+        assert line != ""
+
+        parts = [int(x) for x in line.split(":")]
+        parent_pid = parts[0]
+        expected_child_pids = set(parts[1:])
+
+        logging.info(f"Parent PID: {parent_pid}")
+        logging.info(f"Expected Child PIDs: {expected_child_pids}")
+
+        # A short pause to ensure registration in the OS
+        # time.sleep(0.5)
+
+        childs = os_ops.get_process_children(parent_pid)
+
+        assert childs is not None
+        assert isinstance(childs, list)
+        assert len(childs) == 3
+
+        actual_child_pids = {child.pid for child in childs}
+        logging.info(f"Actual Child PIDs: {actual_child_pids}")
+
+        assert actual_child_pids == expected_child_pids
+
+        p.terminate()
+        p.wait()
+        return
+
+    def test_get_process_children__bad_pid(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        C_BAD_PID = 999999876  # OK? ))
+
+        with pytest.raises(expected_exception=Exception) as x:
+            os_ops.get_process_children(999999876)
+
+        if type(os_ops).__name__ == "LocalOperations":
+            assert type(x.value) is psutil.NoSuchProcess
+            assert x.value.pid == C_BAD_PID
+        elif type(os_ops).__name__ == "RemoteOperations":
+            assert type(x.value) is ExecUtilException
+            msg1 = "Failed to get process children. Reason: No such process with PID {}.".format(
+                C_BAD_PID,
+            )
+            assert msg1 in str(x)
+            assert x.value.exit_code == 1
+        else:
+            raise RuntimeError("[BUG CHECK] Unknown os_ops type [{}]".format(
+                type(os_ops).__name__,
+            ))
+        return
