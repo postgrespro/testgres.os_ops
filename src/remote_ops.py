@@ -57,7 +57,7 @@ class RemoteOperations(OsOperations):
     _host: str
     _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
-    _ssh_args: list
+    _ssh_args: typing.List[str]
     _username: typing.Optional[str]
     _ssh_dest: str
 
@@ -81,9 +81,6 @@ class RemoteOperations(OsOperations):
             self._ssh_args += ["-p", self.port]
         self._username = conn_params.username or getpass.getuser()
         self._ssh_dest = f"{self._username}@{self._host}" if conn_params.username else self._host
-
-    def __enter__(self):
-        return self
 
     @property
     def remote(self) -> bool:
