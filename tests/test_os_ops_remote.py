@@ -20,6 +20,7 @@ class TestOsOpsRemote:
         path = "/root/test_dir"
 
         assert os_ops.rmdirs(path, ignore_errors=False) is True
+        return
 
     def test_rmdirs__try_to_delete_file(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
@@ -40,6 +41,7 @@ class TestOsOpsRemote:
         assert x.value.error.strip() == "cannot remove '" + path + "': it is not a directory"
         assert type(x.value.exit_code) is int
         assert x.value.exit_code == 20
+        return
 
     def test_read__unknown_file(self, os_ops: OsOperations):
         """
@@ -53,6 +55,7 @@ class TestOsOpsRemote:
         assert "Utility exited with non-zero code (1)." in str(x.value)
         assert "No such file or directory" in str(x.value)
         assert "/dummy" in str(x.value)
+        return
 
     def test_read_binary__spec__unk_file(self, os_ops: OsOperations):
         """
@@ -66,6 +69,7 @@ class TestOsOpsRemote:
         assert "Utility exited with non-zero code (1)." in str(x.value)
         assert "No such file or directory" in str(x.value)
         assert "/dummy" in str(x.value)
+        return
 
     def test_get_file_size__unk_file(self, os_ops: OsOperations):
         """
@@ -79,3 +83,4 @@ class TestOsOpsRemote:
         assert "Utility exited with non-zero code (1)." in str(x.value)
         assert "No such file or directory" in str(x.value)
         assert "/dummy" in str(x.value)
+        return
