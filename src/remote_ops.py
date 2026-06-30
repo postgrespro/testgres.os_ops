@@ -55,7 +55,7 @@ class RemoteOperations(OsOperations):
     _host: str
     _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
-    _ssh_args: list
+    _ssh_args: typing.List[str]
     _username: typing.Optional[str]
     _ssh_dest: str
 
