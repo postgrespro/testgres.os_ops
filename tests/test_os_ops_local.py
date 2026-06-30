@@ -20,6 +20,7 @@ class TestOsOpsLocal:
 
         with pytest.raises(FileNotFoundError, match=re.escape("[Errno 2] No such file or directory: '/dummy'")):
             os_ops.read("/dummy")
+        return
 
     def test_read_binary__spec__unk_file(self, os_ops: OsOperations):
         """
@@ -30,6 +31,7 @@ class TestOsOpsLocal:
                 FileNotFoundError,
                 match=re.escape("[Errno 2] No such file or directory: '/dummy'")):
             os_ops.read_binary("/dummy", 0)
+        return
 
     def test_get_file_size__unk_file(self, os_ops: OsOperations):
         """
@@ -39,6 +41,7 @@ class TestOsOpsLocal:
 
         with pytest.raises(FileNotFoundError, match=re.escape("[Errno 2] No such file or directory: '/dummy'")):
             os_ops.get_file_size("/dummy")
+        return
 
     def test_cwd(self, os_ops: OsOperations):
         """
@@ -58,3 +61,4 @@ class TestOsOpsLocal:
 
         # Comp result
         assert v == expectedValue
+        return

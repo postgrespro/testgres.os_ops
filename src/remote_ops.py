@@ -381,6 +381,7 @@ class RemoteOperations(OsOperations):
         assert type(path) is str
         cmd = ["rmdir", path]
         self.exec_command(cmd)
+        return
 
     def listdir(self, path):
         """
@@ -552,6 +553,7 @@ class RemoteOperations(OsOperations):
             subprocess.run(mkdir_cmd, check=True)
 
             os.remove(tmp_file.name)
+        return
 
     @staticmethod
     def _prepare_line_to_write(data, binary, encoding):
@@ -584,6 +586,7 @@ class RemoteOperations(OsOperations):
         This method behaves as the 'touch' command in Unix. It's equivalent to calling 'touch filename' in the shell.
         """
         self.exec_command("touch {}".format(filename))
+        return
 
     def read(self, filename, encoding=None, binary=False):
         assert type(filename) is str

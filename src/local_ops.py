@@ -60,6 +60,7 @@ class LocalOperations(OsOperations):
         self._port = conn_params.port
         self._ssh_key = None
         self._username = conn_params.username or getpass.getuser()
+        return
 
     @staticmethod
     def get_single_instance() -> OsOperations:
@@ -387,6 +388,7 @@ class LocalOperations(OsOperations):
     def set_env(self, var_name, var_val):
         # Check if the directory is already in PATH
         os.environ[var_name] = var_val
+        return
 
     def get_name(self):
         return os.name
@@ -399,10 +401,12 @@ class LocalOperations(OsOperations):
             os.makedirs(path)
         except FileExistsError:
             pass
+        return
 
     def makedir(self, path: str):
         assert type(path) is str
         os.mkdir(path)
+        return
 
     # [2025-02-03] Old name of parameter attempts is "retries".
     def rmdirs(self, path, ignore_errors=True, attempts=3, delay=1):
@@ -450,6 +454,7 @@ class LocalOperations(OsOperations):
     def rmdir(self, path: str):
         assert type(path) is str
         os.rmdir(path)
+        return
 
     def listdir(self, path):
         return os.listdir(path)
@@ -515,6 +520,7 @@ class LocalOperations(OsOperations):
             else:
                 data2 = __class__._prepare_data_to_write(data, binary)
                 file.write(data2)
+        return
 
     @staticmethod
     def _prepare_line_to_write(data, binary):
@@ -548,6 +554,7 @@ class LocalOperations(OsOperations):
         # cross-python touch(). It is vulnerable to races, but who cares?
         with open(filename, "a"):
             os.utime(filename, None)
+        return
 
     def read(self, filename, encoding=None, binary=False):
         assert type(filename) is str
@@ -633,6 +640,7 @@ class LocalOperations(OsOperations):
                     buffers = int(
                         buffers * max(2, int(num_lines / max(cur_lines, 1)))
                     )  # Adjust buffer size
+        return
 
     def read_binary(self, filename, offset):
         assert type(filename) is str
@@ -667,6 +675,7 @@ class LocalOperations(OsOperations):
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals
         os.kill(pid, signal)
+        return
 
     def get_pid(self):
         # Get current process id
