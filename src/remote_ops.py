@@ -171,7 +171,14 @@ class RemoteOperations(OsOperations):
 
         ssh_cmd = ['ssh', self._ssh_dest] + self._ssh_args + [cmdline]
 
-        process = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            ssh_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=get_process and (encoding is not None),
+            encoding=encoding if get_process else None,
+        )
         assert process is not None
         assert isinstance(process, subprocess.Popen)
         if get_process:

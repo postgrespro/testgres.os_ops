@@ -171,6 +171,8 @@ class LocalOperations(OsOperations):
                 stdout=stdout,
                 stderr=stderr,
                 cwd=cwd,
+                text=get_process and (encoding is not None),
+                encoding=encoding if get_process else None,
                 **extParams,
             )
             assert isinstance(process, subprocess.Popen)
@@ -243,6 +245,8 @@ class LocalOperations(OsOperations):
             stdout=stdout or subprocess.PIPE,
             stderr=stderr or subprocess.PIPE,
             cwd=cwd,
+            text=get_process and (encoding is not None),
+            encoding=encoding if get_process else None,
             **extParams
         )
         assert process is not None
