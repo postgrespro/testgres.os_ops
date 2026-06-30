@@ -55,9 +55,9 @@ class RemoteOperations(OsOperations):
     _host: str
     _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
-    ssh_args: list
+    _ssh_args: list
     _username: typing.Optional[str]
-    ssh_dest: str
+    _ssh_dest: str
 
     def __init__(self, conn_params: ConnectionParams):
         if conn_params is None:
@@ -72,13 +72,13 @@ class RemoteOperations(OsOperations):
         self._host = conn_params.host
         self._port = conn_params.port
         self._ssh_key = conn_params.ssh_key
-        self.ssh_args = []
+        self._ssh_args = []
         if self._ssh_key:
-            self.ssh_args += ["-i", self._ssh_key]
+            self._ssh_args += ["-i", self._ssh_key]
         if self.port:
-            self.ssh_args += ["-p", self.port]
+            self._ssh_args += ["-p", self.port]
         self._username = conn_params.username or getpass.getuser()
-        self.ssh_dest = f"{self._username}@{self._host}" if conn_params.username else self._host
+        self._ssh_dest = f"{self._username}@{self._host}" if conn_params.username else self._host
 
     def __enter__(self):
         return self
@@ -116,9 +116,9 @@ class RemoteOperations(OsOperations):
         clone._host = self._host
         clone._port = self._port
         clone._ssh_key = self._ssh_key
-        clone.ssh_args = copy.copy(self.ssh_args)
+        clone._ssh_args = copy.copy(self._ssh_args)
         clone._username = self._username
-        clone.ssh_dest = self.ssh_dest
+        clone._ssh_dest = self._ssh_dest
         return clone
 
     def exec_command(
@@ -170,7 +170,7 @@ class RemoteOperations(OsOperations):
         assert type(cmdline) is str
         assert cmdline != ""
 
-        ssh_cmd = ['ssh', self.ssh_dest] + self.ssh_args + [cmdline]
+        ssh_cmd = ['ssh', self._ssh_dest] + self._ssh_args + [cmdline]
 
         process = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert process is not None
@@ -528,10 +528,10 @@ class RemoteOperations(OsOperations):
 
         with tempfile.NamedTemporaryFile(mode=mode, delete=False) as tmp_file:
             # For scp the port is specified by a "-P" option
-            scp_args = ['-P' if x == '-p' else x for x in self.ssh_args]
+            scp_args = ['-P' if x == '-p' else x for x in self._ssh_args]
 
             if not truncate:
-                scp_cmd = ['scp'] + scp_args + [f"{self.ssh_dest}:{filename}", tmp_file.name]
+                scp_cmd = ['scp'] + scp_args + [f"{self._ssh_dest}:{filename}", tmp_file.name]
                 subprocess.run(scp_cmd, check=False)  # The file might not exist yet
                 tmp_file.seek(0, os.SEEK_END)
 
@@ -543,11 +543,11 @@ class RemoteOperations(OsOperations):
                 tmp_file.write(data2)
 
             tmp_file.flush()
-            scp_cmd = ['scp'] + scp_args + [tmp_file.name, f"{self.ssh_dest}:{filename}"]
+            scp_cmd = ['scp'] + scp_args + [tmp_file.name, f"{self._ssh_dest}:{filename}"]
             subprocess.run(scp_cmd, check=True)
 
             remote_directory = os.path.dirname(filename)
-            mkdir_cmd = ['ssh'] + self.ssh_args + [self.ssh_dest, f"mkdir -p {remote_directory}"]
+            mkdir_cmd = ['ssh'] + self._ssh_args + [self._ssh_dest, f"mkdir -p {remote_directory}"]
             subprocess.run(mkdir_cmd, check=True)
 
             os.remove(tmp_file.name)
@@ -771,7 +771,7 @@ class RemoteOperations(OsOperations):
 
     def get_process_children(self, pid):
         assert type(pid) is int
-        command = ["ssh"] + self.ssh_args + [self.ssh_dest, "pgrep", "-P", str(pid)]
+        command = ["ssh"] + self._ssh_args + [self._ssh_dest, "pgrep", "-P", str(pid)]
 
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
