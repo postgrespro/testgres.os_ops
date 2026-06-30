@@ -42,6 +42,21 @@ class TestOsOpsCommon:
         assert isinstance(request.param, OsOperations)
         return request.param
 
+    def test_prop__remote(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.remote
+        assert v is not None or type(v) is bool
+
+        if type(os_ops).__name__ == "RemoteOperations":
+            assert v is True
+        elif type(os_ops).__name__ == "LocalOperations":
+            assert v is False
+        else:
+            raise RuntimeError("[BUG CHECK] Unknown os_ops type: {}.".format(
+                type(os_ops).__name__,
+            ))
+        return
+
     def test_prop__host(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
         v = os_ops.host
