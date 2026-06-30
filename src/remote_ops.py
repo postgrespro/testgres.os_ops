@@ -53,7 +53,7 @@ class RemoteOperations(OsOperations):
 
     conn_params: ConnectionParams
     _host: str
-    port: int
+    _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
     ssh_args: list
     remote: bool
@@ -71,7 +71,7 @@ class RemoteOperations(OsOperations):
 
         self.conn_params = conn_params
         self._host = conn_params.host
-        self.port = conn_params.port
+        self._port = conn_params.port
         self._ssh_key = conn_params.ssh_key
         self.ssh_args = []
         if self._ssh_key:
@@ -91,6 +91,11 @@ class RemoteOperations(OsOperations):
         return self._host
 
     @property
+    def port(self) -> typing.Optional[int]:
+        assert self._port is None or type(self._port) is int
+        return self._port
+
+    @property
     def ssh_key(self) -> typing.Optional[str]:
         assert self._ssh_key is None or type(self._ssh_key) is str
         return self._ssh_key
@@ -107,7 +112,7 @@ class RemoteOperations(OsOperations):
         clone = __class__(__class__.sm_dummy_conn_params)
         clone.conn_params = copy.copy(self.conn_params)
         clone._host = self._host
-        clone.port = self.port
+        clone._port = self._port
         clone._ssh_key = self._ssh_key
         clone.ssh_args = copy.copy(self.ssh_args)
         clone.remote = self.remote
