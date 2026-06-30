@@ -4,7 +4,6 @@ import getpass
 import os
 import posixpath
 import subprocess
-import tempfile
 import io
 import logging
 import typing
@@ -528,35 +527,61 @@ class RemoteOperations(OsOperations):
 
     # Work with files
     def write(self, filename, data, truncate=False, binary=False, read_and_write=False, encoding=None):
+        assert type(filename) is str
+        assert data is not None
+        assert type(data) in [str, bytes, list]
+
         if not encoding:
             encoding = get_default_encoding()
-        mode = "wb" if binary else "w"
 
-        with tempfile.NamedTemporaryFile(mode=mode, delete=False) as tmp_file:
-            # For scp the port is specified by a "-P" option
-            scp_args = ['-P' if x == '-p' else x for x in self._ssh_args]
-
-            if not truncate:
-                scp_cmd = ['scp'] + scp_args + [f"{self._ssh_dest}:{filename}", tmp_file.name]
-                subprocess.run(scp_cmd, check=False)  # The file might not exist yet
-                tmp_file.seek(0, os.SEEK_END)
-
-            if isinstance(data, list):
-                data2 = [__class__._prepare_line_to_write(s, binary, encoding) for s in data]
-                tmp_file.writelines(data2)
+        # 1. Prepare the data for sending
+        # Convert everything into a single string or bytes depending on the flags
+        if isinstance(data, list):
+            if binary:
+                final_data = b""
+                for s in data:
+                    r = __class__._prepare_line_to_write(s, binary, encoding)
+                    assert type(r) is bytes
+                    final_data += r
+                    continue
             else:
-                data2 = __class__._prepare_data_to_write(data, binary, encoding)
-                tmp_file.write(data2)
+                final_data = ""
+                for s in data:
+                    r = __class__._prepare_line_to_write(s, binary, encoding)
+                    assert type(r) is str
+                    final_data += r
+                    continue
+        else:
+            final_data = __class__._prepare_data_to_write(data, binary, encoding)
 
-            tmp_file.flush()
-            scp_cmd = ['scp'] + scp_args + [tmp_file.name, f"{self._ssh_dest}:{filename}"]
-            subprocess.run(scp_cmd, check=True)
+        # If the data is text, encode it into bytes for sending via stdin
+        if not binary and isinstance(final_data, str):
+            final_data = final_data.encode(encoding)
 
-            remote_directory = os.path.dirname(filename)
-            mkdir_cmd = ['ssh'] + self._ssh_args + [self._ssh_dest, f"mkdir -p {remote_directory}"]
-            subprocess.run(mkdir_cmd, check=True)
+        # 2. Choose an operator for bash: > (clear and write) or >> (append to the end)
+        redirect_op = ">" if truncate else ">>"
 
-            os.remove(tmp_file.name)
+        # Extract the path to the parent directory
+        remote_directory = os.path.dirname(filename)
+
+        remote_cmd = [
+            "mkdir",
+            "-p",
+            remote_directory,
+            "&&",
+            "cat",
+            redirect_op,
+            filename,
+        ]
+
+        # 4. Execute ONE network request
+        # Pass final_data to the stdin parameter of the exec_command method
+        self.exec_command(
+            remote_cmd,
+            input=final_data,  # <-- The magic of data transfer without temporary files
+            encoding=None,  # Working with raw bytes in a stream
+            ignore_errors=False,  # Let it crash honestly if there are no rights or the disk is full
+        )
         return
 
     @staticmethod
