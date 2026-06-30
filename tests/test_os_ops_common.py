@@ -42,10 +42,28 @@ class TestOsOpsCommon:
         assert isinstance(request.param, OsOperations)
         return request.param
 
+    def test_prop__host(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.host
+        assert v is not None or type(v) is str
+        return
+
     def test_prop__port(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
         v = os_ops.port
         assert v is None or type(v) is int
+        return
+
+    def test_prop__ssh_key(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.ssh_key
+        assert v is None or type(v) is str
+        return
+
+    def test_prop__username(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.username
+        assert v is None or type(v) is str
         return
 
     def test_get_platform(self, os_ops: OsOperations):
