@@ -41,6 +41,7 @@ class LocalOperations(OsOperations):
     # TODO: make it read-only
     conn_params: ConnectionParams
     _host: str
+    _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
     remote: bool
     _username: typing.Optional[str]
@@ -56,6 +57,7 @@ class LocalOperations(OsOperations):
 
         self.conn_params = conn_params
         self._host = conn_params.host
+        self._port = conn_params.port
         self._ssh_key = None
         self.remote = False
         self._username = conn_params.username or getpass.getuser()
@@ -80,6 +82,11 @@ class LocalOperations(OsOperations):
     def host(self) -> str:
         assert type(self._host) is str
         return self._host
+
+    @property
+    def port(self) -> typing.Optional[int]:
+        assert self._port is None or type(self._port) is int
+        return self._port
 
     @property
     def ssh_key(self) -> typing.Optional[str]:

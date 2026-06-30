@@ -42,6 +42,12 @@ class TestOsOpsCommon:
         assert isinstance(request.param, OsOperations)
         return request.param
 
+    def test_prop__port(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.port
+        assert v is None or type(v) is int
+        return
+
     def test_get_platform(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
         p = os_ops.get_platform()

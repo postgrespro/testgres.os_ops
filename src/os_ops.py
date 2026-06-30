@@ -29,6 +29,10 @@ class OsOperations:
         raise NotImplementedError()
 
     @property
+    def port(self) -> typing.Optional[int]:
+        raise NotImplementedError()
+
+    @property
     def ssh_key(self) -> typing.Optional[str]:
         raise NotImplementedError()
 
