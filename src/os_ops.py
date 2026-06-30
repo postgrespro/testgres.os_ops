@@ -3,6 +3,7 @@ from __future__ import annotations
 import locale
 import typing
 import signal as os_signal
+import subprocess
 
 
 class ConnectionParams:
@@ -23,8 +24,18 @@ class OsOperations:
     def __init__(self):
         pass
 
+    # A property to detect a "remote" host.
+    # I think, we have to remove it at all in the future.
+    @property
+    def remote(self) -> bool:
+        raise NotImplementedError()
+
     @property
     def host(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def port(self) -> typing.Optional[int]:
         raise NotImplementedError()
 
     @property
@@ -42,7 +53,43 @@ class OsOperations:
         raise NotImplementedError()
 
     # Command execution
-    def exec_command(self, cmd, **kwargs):
+    T_CMD = typing.Union[str, typing.List[str]]
+    T_EXEC_COMMAND_RESULT = typing.Union[
+        subprocess.Popen,
+        str,
+        bytes,
+        typing.Tuple[int, str, typing.Optional[str]],
+        typing.Tuple[int, bytes, typing.Optional[bytes]],
+    ]
+
+    def exec_command(
+        self,
+        cmd: T_CMD,
+        wait_exit=False,
+        verbose=False,
+        expect_error=False,
+        encoding: typing.Optional[str] = None,
+        shell=False,
+        text=False,
+        input=None,
+        stdin=None,
+        stdout=None,
+        stderr=None,
+        get_process=False,
+        timeout=None,
+        ignore_errors=False,
+        exec_env: typing.Optional[dict] = None,
+        cwd: typing.Optional[str] = None
+    ) -> T_EXEC_COMMAND_RESULT:
+        assert type(cmd) is str or type(cmd) is list
+        assert type(verbose) is bool
+        assert type(expect_error) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(wait_exit) is bool
+        assert type(get_process) is bool
+        assert type(ignore_errors) is bool
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is dict
         raise NotImplementedError()
 
     def build_path(self, a: str, *parts: str) -> str:
@@ -120,7 +167,22 @@ class OsOperations:
     def read(self, filename, encoding, binary):
         raise NotImplementedError()
 
-    def readlines(self, filename):
+    def readlines(
+        self,
+        filename: str,
+        num_lines: int = 0,
+        binary: bool = False,
+        encoding: typing.Optional[str] = None,
+    ) -> typing.Union[typing.List[str], typing.List[bytes]]:
+        """
+        Read lines from a local file.
+        If num_lines is greater than 0, only the last num_lines lines will be read.
+        """
+        assert type(num_lines) is int
+        assert type(filename) is str
+        assert type(binary) is bool
+        assert encoding is None or type(encoding) is str
+        assert num_lines >= 0
         raise NotImplementedError()
 
     def read_binary(self, filename, offset):
@@ -169,4 +231,12 @@ class OsOperations:
         raise NotImplementedError()
 
     def get_tempdir(self) -> str:
+        raise NotImplementedError()
+
+    def get_dirname(self, path: str) -> str:
+        assert type(path) is str
+        raise NotImplementedError()
+
+    def is_abs_path(self, path: str) -> bool:
+        assert type(path) is str
         raise NotImplementedError()

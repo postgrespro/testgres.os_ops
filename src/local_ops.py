@@ -36,14 +36,14 @@ CMD_TIMEOUT_SEC = 60
 
 class LocalOperations(OsOperations):
     sm_dummy_conn_params = ConnectionParams()
-    sm_single_instance: OsOperations = None
+    sm_single_instance: typing.Optional[OsOperations] = None
     sm_single_instance_guard = threading.Lock()
 
     # TODO: make it read-only
     conn_params: ConnectionParams
     _host: str
+    _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
-    remote: bool
     _username: typing.Optional[str]
 
     def __init__(self, conn_params=None):
@@ -57,8 +57,8 @@ class LocalOperations(OsOperations):
 
         self.conn_params = conn_params
         self._host = conn_params.host
+        self._port = conn_params.port
         self._ssh_key = None
-        self.remote = False
         self._username = conn_params.username or getpass.getuser()
 
     @staticmethod
@@ -78,9 +78,18 @@ class LocalOperations(OsOperations):
         return __class__.sm_single_instance
 
     @property
+    def remote(self) -> bool:
+        return False
+
+    @property
     def host(self) -> str:
         assert type(self._host) is str
         return self._host
+
+    @property
+    def port(self) -> typing.Optional[int]:
+        assert self._port is None or type(self._port) is int
+        return self._port
 
     @property
     def ssh_key(self) -> typing.Optional[str]:
@@ -100,24 +109,29 @@ class LocalOperations(OsOperations):
         clone.conn_params = copy.copy(self.conn_params)
         clone._host = self._host
         clone._ssh_key = self._ssh_key
-        clone.remote = self.remote
         clone._username = self._username
         return clone
 
-    @staticmethod
-    def _process_output(encoding, temp_file_path):
-        """Process the output of a command from a temporary file."""
-        with open(temp_file_path, 'rb') as temp_file:
-            output = temp_file.read()
-            if encoding:
-                output = output.decode(encoding)
-            return output, None  # In Windows stderr writing in stdout
+    _T_RUN_COMMAND__RESULT = typing.Union[
+        subprocess.Popen,
+        typing.Tuple[int, str, typing.Optional[str]],
+        typing.Tuple[int, bytes, typing.Optional[bytes]],
+    ]
 
     def _run_command__nt(
-            self, cmd, shell, input, stdin, stdout, stderr, get_process, timeout, encoding,
+            self,
+            cmd: OsOperations.T_CMD,
+            shell,
+            input,
+            stdin,
+            stdout,
+            stderr,
+            get_process,
+            timeout,
+            encoding,
             exec_env: typing.Optional[dict],
             cwd: typing.Optional[str],
-    ):
+    ) -> _T_RUN_COMMAND__RESULT:
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
@@ -158,21 +172,37 @@ class LocalOperations(OsOperations):
                 cwd=cwd,
                 **extParams,
             )
+            assert isinstance(process, subprocess.Popen)
             if get_process:
-                return process, None, None
+                return process
             temp_file_path = temp_file.name
 
         # Wait process finished
         process.wait()
 
-        output, error = self._process_output(encoding, temp_file_path)
-        return process, output, error
+        # Process the output of a command from a temporary file.
+        # In Windows stderr writing in stdout
+        with open(temp_file_path, 'rb') as temp_file:
+            output = temp_file.read()
+            if encoding:
+                return process.returncode, output.decode(encoding), None
+
+            return process.returncode, output, None
 
     def _run_command__generic(
-            self, cmd, shell, input, stdin, stdout, stderr, get_process, timeout, encoding,
+            self,
+            cmd: OsOperations.T_CMD,
+            shell,
+            input,
+            stdin,
+            stdout,
+            stderr,
+            get_process,
+            timeout,
+            encoding,
             exec_env: typing.Optional[dict],
             cwd: typing.Optional[str],
-    ):
+    ) -> _T_RUN_COMMAND__RESULT:
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
@@ -215,8 +245,9 @@ class LocalOperations(OsOperations):
             **extParams
         )
         assert process is not None
+        assert isinstance(process, subprocess.Popen)
         if get_process:
-            return process, None, None
+            return process
         try:
             output, error = process.communicate(input=input_prepared, timeout=timeout)
         except subprocess.TimeoutExpired:
@@ -229,13 +260,22 @@ class LocalOperations(OsOperations):
         if encoding:
             output = output.decode(encoding)
             error = error.decode(encoding)
-        return process, output, error
+        return process.returncode, output, error
 
     def _run_command(
-            self, cmd, shell, input, stdin, stdout, stderr, get_process, timeout, encoding,
+            self,
+            cmd: OsOperations.T_CMD,
+            shell,
+            input,
+            stdin,
+            stdout,
+            stderr,
+            get_process,
+            timeout,
+            encoding,
             exec_env: typing.Optional[dict],
             cwd: typing.Optional[str],
-    ):
+    ) -> _T_RUN_COMMAND__RESULT:
         """Execute a command and return the process and its output."""
 
         assert exec_env is None or type(exec_env) is dict
@@ -249,12 +289,24 @@ class LocalOperations(OsOperations):
         return method(self, cmd, shell, input, stdin, stdout, stderr, get_process, timeout, encoding, exec_env, cwd)
 
     def exec_command(
-        self, cmd, wait_exit=False, verbose=False, expect_error=False, encoding=None, shell=False,
-        text=False, input=None, stdin=None, stdout=None, stderr=None, get_process=False, timeout=None,
+        self,
+        cmd: OsOperations.T_CMD,
+        wait_exit=False,
+        verbose=False,
+        expect_error=False,
+        encoding: typing.Optional[str] = None,
+        shell=False,
+        text=False,
+        input=None,
+        stdin=None,
+        stdout=None,
+        stderr=None,
+        get_process=False,
+        timeout=None,
         ignore_errors=False,
         exec_env: typing.Optional[dict] = None,
         cwd: typing.Optional[str] = None
-    ):
+    ) -> OsOperations.T_EXEC_COMMAND_RESULT:
         """
         Execute a command in a subprocess and handle the output based on the provided parameters.
         """
@@ -263,37 +315,52 @@ class LocalOperations(OsOperations):
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
-        process, output, error = self._run_command(
-            cmd, shell, input, stdin, stdout, stderr, get_process, timeout, encoding,
-            exec_env,
-            cwd
+        run_r = self._run_command(
+            cmd=cmd,
+            shell=shell,
+            input=input,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            get_process=get_process,
+            timeout=timeout,
+            encoding=encoding,
+            exec_env=exec_env,
+            cwd=cwd,
         )
 
         if get_process:
-            return process
+            assert isinstance(run_r, subprocess.Popen)
+            return run_r
+
+        assert type(run_r) is tuple
+        assert len(run_r) == 3
+        assert type(run_r[0]) is int
+        assert type(run_r[1]) is not None
 
         if expect_error:
-            if process.returncode == 0:
+            if run_r[0] == 0:
                 raise InvalidOperationException("We expected an execution error.")
         elif ignore_errors:
             pass
-        elif process.returncode == 0:
+        elif run_r[0] == 0:
             pass
         else:
             assert not expect_error
             assert not ignore_errors
-            assert process.returncode != 0
+            assert run_r[0] != 0
+
             RaiseError.UtilityExitedWithNonZeroCode(
                 cmd=cmd,
-                exit_code=process.returncode,
-                msg_arg=error or output,
-                error=error,
-                out=output)
+                exit_code=run_r[0],
+                msg_arg=run_r[2] or run_r[1],
+                error=run_r[2],
+                out=run_r[1])
 
         if verbose:
-            return process.returncode, output, error
+            return run_r
 
-        return output
+        return run_r[1]
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
@@ -514,7 +581,13 @@ class LocalOperations(OsOperations):
             assert type(content) is bytes
             return content
 
-    def readlines(self, filename, num_lines=0, binary=False, encoding=None):
+    def readlines(
+        self,
+        filename: str,
+        num_lines: int = 0,
+        binary: bool = False,
+        encoding: typing.Optional[str] = None,
+    ) -> typing.Union[typing.List[str], typing.List[bytes]]:
         """
         Read lines from a local file.
         If num_lines is greater than 0, only the last num_lines lines will be read.
@@ -667,3 +740,11 @@ class LocalOperations(OsOperations):
         assert type(r) is str
         assert os.path.exists(r)
         return r
+
+    def get_dirname(self, path: str) -> str:
+        assert type(path) is str
+        return os.path.dirname(path)
+
+    def is_abs_path(self, path: str) -> bool:
+        assert type(path) is str
+        return os.path.isabs(path)

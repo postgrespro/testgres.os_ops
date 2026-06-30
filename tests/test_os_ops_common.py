@@ -70,6 +70,45 @@ class TestOsOpsCommon:
         assert isinstance(request.param, OsOperations)
         return request.param
 
+    def test_prop__remote(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.remote
+        assert v is not None or type(v) is bool
+
+        if type(os_ops).__name__ == "RemoteOperations":
+            assert v is True
+        elif type(os_ops).__name__ == "LocalOperations":
+            assert v is False
+        else:
+            raise RuntimeError("[BUG CHECK] Unknown os_ops type: {}.".format(
+                type(os_ops).__name__,
+            ))
+        return
+
+    def test_prop__host(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.host
+        assert v is not None or type(v) is str
+        return
+
+    def test_prop__port(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.port
+        assert v is None or type(v) is int
+        return
+
+    def test_prop__ssh_key(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.ssh_key
+        assert v is None or type(v) is str
+        return
+
+    def test_prop__username(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+        v = os_ops.username
+        assert v is None or type(v) is str
+        return
+
     def test_get_platform(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
         p = os_ops.get_platform()
@@ -102,7 +141,7 @@ class TestOsOpsCommon:
         cmd = ["sh", "-c", "python3 --version"]
 
         response = os_ops.exec_command(cmd)
-
+        assert type(response) is bytes
         assert b'Python 3.' in response
 
     def test_exec_command_failure(self, os_ops: OsOperations):
@@ -301,7 +340,9 @@ class TestOsOpsCommon:
         RunConditions.skip_if_windows()
 
         cmd = "pwd"
-        pwd = os_ops.exec_command(cmd, wait_exit=True, encoding='utf-8').strip()
+        stdout = os_ops.exec_command(cmd, encoding='utf-8')
+        assert type(stdout) is str
+        pwd = stdout.strip()
 
         path = "{}/test_dir".format(pwd)
 
@@ -1054,7 +1095,7 @@ class TestOsOpsCommon:
         return
 
     # --------------------------------------------------------------------
-    def test_get_tmpdir(self, os_ops: OsOperations):
+    def test_get_tempdir(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
 
         dir = os_ops.get_tempdir()
@@ -1078,7 +1119,7 @@ class TestOsOpsCommon:
         assert not os_ops.path_exists(file_path)
         assert not os.path.exists(file_path)
 
-    def test_get_tmpdir__compare_with_py_info(self, os_ops: OsOperations):
+    def test_get_tempdir__compare_with_py_info(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
 
         actual_dir = os_ops.get_tempdir()
@@ -1551,4 +1592,49 @@ class TestOsOpsCommon:
         else:
             RuntimeError("Unknown os_ops type: {}".format(type(os_ops).__name__))
 
+        return
+
+    def test_get_dirname(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        p = __file__
+        assert type(p) is str
+        assert p != ""
+        assert os.path.exists(p)
+
+        expected_dirname = os.path.dirname(p)
+        assert type(expected_dirname) is str
+        assert expected_dirname != ""
+
+        actual_dirname = os_ops.get_dirname(p)
+        assert type(actual_dirname) is str
+        assert actual_dirname != ""
+
+        assert actual_dirname == expected_dirname
+        return
+
+    def test_is_abs_path__yes(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        p = __file__
+        assert type(p) is str
+        assert p != ""
+        assert os.path.isabs(p)
+
+        actual_value = os_ops.is_abs_path(p)
+        assert type(actual_value) is bool
+
+        assert actual_value is True
+        return
+
+    def test_is_abs_path__no(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        p = "."
+        assert not os.path.isabs(p)
+
+        actual_value = os_ops.is_abs_path(p)
+        assert type(actual_value) is bool
+
+        assert actual_value is False
         return
