@@ -187,11 +187,17 @@ class TestOsOpsCommon:
 
         cmd = ["sh", "-c", "nonexistent_command"]
 
-        exit_status, result, error = os_ops.exec_command(cmd, verbose=True, expect_error=True)
+        exec_r = os_ops.exec_command(cmd, verbose=True, expect_error=True)
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exit_status, result, error = exec_r
+        assert type(exit_status) is int
+        assert type(result) is bytes
+        assert type(error) is bytes
 
         assert exit_status == 127
         assert result == b''
-        assert type(error) is bytes
         assert b"nonexistent_command" in error
         assert b"not found" in error
         return
