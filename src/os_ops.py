@@ -7,11 +7,18 @@ import subprocess
 
 
 class ConnectionParams:
-    def __init__(self, host='127.0.0.1', port=None, ssh_key=None, username=None):
+    def __init__(
+        self,
+        host: str = '127.0.0.1',
+        port: typing.Optional[int] = None,
+        ssh_key: typing.Optional[str] = None,
+        username: typing.Optional[str] = None,
+    ):
         self.host = host
         self.port = port
         self.ssh_key = ssh_key
         self.username = username
+        return
 
 
 def get_default_encoding():
