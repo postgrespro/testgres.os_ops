@@ -1,4 +1,5 @@
 import locale
+import typing
 
 
 class Helpers:
@@ -39,7 +40,12 @@ class Helpers:
         return 'UTF-8'
 
     @staticmethod
-    def PrepareProcessInput(input, encoding):
+    def PrepareProcessInput(
+        input: typing.Optional[typing.Union[str, bytes]],
+        encoding: typing.Optional[str],
+    ) -> typing.Optional[bytes]:
+        assert encoding is None or type(encoding) is str
+
         if not input:
             return None
 

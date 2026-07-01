@@ -526,10 +526,23 @@ class RemoteOperations(OsOperations):
         return self.exec_command("cp -r {} {}".format(src, dst))
 
     # Work with files
-    def write(self, filename, data, truncate=False, binary=False, read_and_write=False, encoding=None):
+    def write(
+        self,
+        filename: str,
+        data: OsOperations.T_WRITE_DATA,
+        truncate: bool = False,
+        binary: bool = False,
+        read_and_write: bool = False,
+        encoding: typing.Optional[str] = None
+    ):
         assert type(filename) is str
+        assert encoding is None or type(encoding) is str
         assert data is not None
         assert type(data) in [str, bytes, list]
+        assert type(truncate) is bool
+        assert type(binary) is bool
+        assert type(read_and_write) is bool
+        assert encoding is None or type(encoding) is str
 
         if not encoding:
             encoding = get_default_encoding()
@@ -537,26 +550,16 @@ class RemoteOperations(OsOperations):
         # 1. Prepare the data for sending
         # Convert everything into a single string or bytes depending on the flags
         if isinstance(data, list):
-            if binary:
-                final_data = b""
-                for s in data:
-                    r = __class__._prepare_line_to_write(s, binary, encoding)
-                    assert type(r) is bytes
-                    final_data += r
-                    continue
-            else:
-                final_data = ""
-                for s in data:
-                    r = __class__._prepare_line_to_write(s, binary, encoding)
-                    assert type(r) is str
-                    final_data += r
-                    continue
+            final_data = b""
+            for s in data:
+                r = __class__._single_chunk_to_bytes(s, encoding)
+                assert type(r) is bytes
+                final_data += r
+                continue
+            assert type(final_data) is bytes
         else:
-            final_data = __class__._prepare_data_to_write(data, binary, encoding)
-
-        # If the data is text, encode it into bytes for sending via stdin
-        if not binary and isinstance(final_data, str):
-            final_data = final_data.encode(encoding)
+            final_data = __class__._single_chunk_to_bytes(data, encoding)
+            assert type(final_data) is bytes
 
         # 2. Choose an operator for bash: > (clear and write) or >> (append to the end)
         redirect_op = ">" if truncate else ">>"
@@ -576,32 +579,30 @@ class RemoteOperations(OsOperations):
 
         # 4. Execute ONE network request
         # Pass final_data to the stdin parameter of the exec_command method
+        assert type(final_data) is bytes
         self.exec_command(
             remote_cmd,
-            input=final_data,  # <-- The magic of data transfer without temporary files
-            encoding=None,  # Working with raw bytes in a stream
-            ignore_errors=False,  # Let it crash honestly if there are no rights or the disk is full
+            input=final_data,
+            # It does not touch our binary final_data (see PrepareProcessInput)
+            # but allows to generate an error messages as text.
+            encoding=get_default_encoding(),
+            # Let it crash honestly if there are no rights or the disk is full
+            ignore_errors=False,
         )
         return
 
     @staticmethod
-    def _prepare_line_to_write(data, binary, encoding):
-        data = __class__._prepare_data_to_write(data, binary, encoding)
+    def _single_chunk_to_bytes(
+        data: typing.Union[str, bytes],
+        encoding: str,
+    ) -> bytes:
+        assert type(encoding) is str
 
-        if binary:
-            assert type(data) is bytes
-            return data.rstrip(b'\n') + b'\n'
-
-        assert type(data) is str
-        return data.rstrip('\n') + '\n'
-
-    @staticmethod
-    def _prepare_data_to_write(data, binary, encoding):
         if isinstance(data, bytes):
-            return data if binary else data.decode(encoding)
+            return data
 
         if isinstance(data, str):
-            return data if not binary else data.encode(encoding)
+            return data.encode(encoding)
 
         raise InvalidOperationException("Unknown type of data type [{0}].".format(type(data).__name__))
 
