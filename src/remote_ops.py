@@ -72,7 +72,12 @@ class RemoteOperations(OsOperations):
         self._ssh_key = conn_params.ssh_key
         self._username = conn_params.username or getpass.getuser()
 
-        self._ssh_cmd = ["ssh"]
+        self._ssh_cmd = []
+
+        if conn_params.password is not None:
+            self._ssh_cmd += ["sshpass", "-p", conn_params.password]
+
+        self._ssh_cmd += ["ssh"]
 
         if self._ssh_key is not None:
             assert type(self._ssh_key) is str
