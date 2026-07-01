@@ -568,7 +568,12 @@ class LocalOperations(OsOperations):
             os.utime(filename, None)
         return
 
-    def read(self, filename, encoding=None, binary=False):
+    def read(
+        self,
+        filename: str,
+        encoding: typing.Optional[str] = None,
+        binary: bool = False,
+    ):
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert type(binary) is bool
