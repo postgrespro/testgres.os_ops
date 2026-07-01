@@ -1,4 +1,6 @@
 # coding: utf-8
+from __future__ import annotations
+
 from tests.helpers.global_data import OsOpsDescr
 from tests.helpers.global_data import OsOpsDescrs
 from tests.helpers.global_data import OsOperations
@@ -19,6 +21,7 @@ import subprocess
 import psutil
 import time
 import signal as os_signal
+import dataclasses
 
 from src.exceptions import InvalidOperationException
 from src.exceptions import ExecUtilException
@@ -1704,4 +1707,116 @@ class TestOsOpsCommon:
             raise RuntimeError("[BUG CHECK] Unknown os_ops type [{}]".format(
                 type(os_ops).__name__,
             ))
+        return
+
+    @dataclasses.dataclass
+    class tagReadLinesData_TXT:
+        sign: str
+        source: str
+        result: typing.List[str]
+
+    sm_ReadLinesData_TXT: typing.List[tagReadLinesData_TXT] = [
+        tagReadLinesData_TXT(
+            sign="empty",
+            source="",
+            result=[],
+        ),
+        tagReadLinesData_TXT(
+            sign="eol",
+            source="\n",
+            result=["\n"],
+        ),
+        tagReadLinesData_TXT(
+            sign="null_char",
+            source="\x00",
+            result=["\x00"],
+        ),
+        tagReadLinesData_TXT(
+            sign="null_char_and_eol",
+            source="\x00\n",
+            result=["\x00\n"],
+        ),
+        tagReadLinesData_TXT(
+            sign="one_char",
+            source="-",
+            result=["-"],
+        ),
+        tagReadLinesData_TXT(
+            sign="one_char_and_eol",
+            source="-\n",
+            result=["-\n"],
+        ),
+        tagReadLinesData_TXT(
+            sign="one_char_and_eol",
+            source="-\n",
+            result=["-\n"],
+        ),
+        tagReadLinesData_TXT(
+            sign="two_empty_lines",
+            source="\n\n",
+            result=["\n", "\n"],
+        ),
+        tagReadLinesData_TXT(
+            sign="two_lines_without_final_eol",
+            source="\n123",
+            result=["\n", "123"],
+        ),
+        tagReadLinesData_TXT(
+            sign="A0001",
+            source="12\x0034\n\x00123\nabcdefg\x00\x00",
+            result=["12\x0034\n", "\x00123\n", "abcdefg\x00\x00"],
+        ),
+    ]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id=x.sign,
+            )
+            for x in sm_ReadLinesData_TXT
+        ]
+    )
+    def readlines_data_txt(self, request: pytest.FixtureRequest) -> tagReadLinesData_TXT:
+        assert isinstance(request, pytest.FixtureRequest)
+        return request.param
+
+    def test_readlines__TXT(
+        self,
+        os_ops: OsOperations,
+        readlines_data_txt: tagReadLinesData_TXT,
+    ):
+        assert isinstance(os_ops, OsOperations)
+        assert isinstance(readlines_data_txt, __class__.tagReadLinesData_TXT)
+
+        tmpfile = os_ops.mkstemp()
+
+        os_ops.write(tmpfile, readlines_data_txt.source, binary=False)
+
+        lines = os_ops.readlines(tmpfile)
+
+        assert type(lines) is list
+
+        assert lines == readlines_data_txt.result
+        return
+
+    def test_readlines__BIN(
+        self,
+        os_ops: OsOperations,
+        readlines_data_txt: tagReadLinesData_TXT,
+    ):
+        assert isinstance(os_ops, OsOperations)
+        assert isinstance(readlines_data_txt, __class__.tagReadLinesData_TXT)
+
+        tmpfile = os_ops.mkstemp()
+
+        os_ops.write(tmpfile, readlines_data_txt.source, binary=True)
+
+        lines = os_ops.readlines(tmpfile, binary=True)
+
+        assert type(lines) is list
+
+        result_bin = [s.encode() for s in readlines_data_txt.result]
+
+        assert lines == result_bin
         return
