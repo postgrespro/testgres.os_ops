@@ -158,7 +158,26 @@ class OsOperations:
         raise NotImplementedError()
 
     # Work with files
-    def write(self, filename, data, truncate=False, binary=False, read_and_write=False):
+    T_WRITE_DATA = typing.Union[str, bytes, typing.List[typing.Union[str, bytes]]]
+
+    def write(
+        self,
+        filename: str,
+        data: OsOperations.T_WRITE_DATA,
+        truncate: bool = False,
+        binary: bool = False,
+        read_and_write: bool = False,
+        encoding: typing.Optional[str] = None
+    ):
+        assert type(filename) is str
+        assert encoding is None or type(encoding) is str
+        assert data is not None
+        assert type(data) in [str, bytes, list]
+        assert type(truncate) is bool
+        assert type(binary) is bool
+        assert type(read_and_write) is bool
+        assert encoding is None or type(encoding) is str
+
         raise NotImplementedError()
 
     def touch(self, filename):

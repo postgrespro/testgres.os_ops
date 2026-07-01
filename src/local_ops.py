@@ -488,7 +488,15 @@ class LocalOperations(OsOperations):
         return shutil.copytree(src, dst)
 
     # Work with files
-    def write(self, filename, data, truncate=False, binary=False, read_and_write=False):
+    def write(
+        self,
+        filename: str,
+        data: OsOperations.T_WRITE_DATA,
+        truncate: bool = False,
+        binary: bool = False,
+        read_and_write: bool = False,
+        encoding: typing.Optional[str] = None
+    ):
         """
         Write data to a file locally
         Args:
@@ -498,16 +506,22 @@ class LocalOperations(OsOperations):
                       if False (default), data will be appended ('a' option).
             binary: If True, the data will be written in binary mode ('b' option);
                     if False (default), the data will be written in text mode.
-            read_and_write: If True, the file will be opened with read and write permissions ('+' option);
-                            if False (default), only write permission will be used.
+            read_and_write: It is ignored.
+            encoding: Code page of text data.
         """
-        if isinstance(data, bytes) or isinstance(data, list) and all(isinstance(item, bytes) for item in data):
-            binary = True
+        assert type(filename) is str
+        assert encoding is None or type(encoding) is str
+        assert data is not None
+        assert type(data) in [str, bytes, list]
+        assert type(truncate) is bool
+        assert type(binary) is bool
+        assert type(read_and_write) is bool
+        assert encoding is None or type(encoding) is str
+
+        if not encoding:
+            encoding = get_default_encoding()
 
         mode = "w" if truncate else "a"
-
-        if read_and_write:
-            mode += "+"
 
         # If it is a bytes str or list
         if binary:
@@ -516,33 +530,28 @@ class LocalOperations(OsOperations):
         assert type(mode) is str
         assert mode != ""
 
-        with open(filename, mode) as file:
+        with open(filename, mode, encoding=None if binary else encoding) as file:
             if isinstance(data, list):
-                data2 = [__class__._prepare_line_to_write(s, binary) for s in data]
-                file.writelines(data2)
+                for s in data:
+                    data2 = __class__._prepare_data_to_write(s, binary, encoding)
+                    file.write(data2)
+                    continue
             else:
-                data2 = __class__._prepare_data_to_write(data, binary)
+                data2 = __class__._prepare_data_to_write(data, binary, encoding)
                 file.write(data2)
         return
 
     @staticmethod
-    def _prepare_line_to_write(data, binary):
-        data = __class__._prepare_data_to_write(data, binary)
-
-        if binary:
-            assert type(data) is bytes
-            return data.rstrip(b'\n') + b'\n'
-
-        assert type(data) is str
-        return data.rstrip('\n') + '\n'
-
-    @staticmethod
-    def _prepare_data_to_write(data, binary):
+    def _prepare_data_to_write(
+        data: typing.Union[str, bytes],
+        binary: bool,
+        encoding: str,
+    ) -> typing.Union[str, bytes]:
         if isinstance(data, bytes):
-            return data if binary else data.decode()
+            return data if binary else data.decode(encoding)
 
         if isinstance(data, str):
-            return data if not binary else data.encode()
+            return data.encode(encoding) if binary else data
 
         raise InvalidOperationException("Unknown type of data type [{0}].".format(type(data).__name__))
 
