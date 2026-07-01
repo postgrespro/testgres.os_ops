@@ -56,9 +56,8 @@ class RemoteOperations(OsOperations):
     _host: str
     _port: typing.Optional[int]
     _ssh_key: typing.Optional[str]
-    _ssh_args: typing.List[str]
     _username: typing.Optional[str]
-    _ssh_dest: str
+    _ssh_cmd: typing.List[str]
 
     def __init__(self, conn_params: ConnectionParams):
         if conn_params is None:
@@ -73,13 +72,25 @@ class RemoteOperations(OsOperations):
         self._host = conn_params.host
         self._port = conn_params.port
         self._ssh_key = conn_params.ssh_key
-        self._ssh_args = []
-        if self._ssh_key:
-            self._ssh_args += ["-i", self._ssh_key]
-        if self.port:
-            self._ssh_args += ["-p", self.port]
         self._username = conn_params.username or getpass.getuser()
-        self._ssh_dest = f"{self._username}@{self._host}" if conn_params.username else self._host
+
+        self._ssh_cmd = ["ssh"]
+
+        if self._ssh_key is not None:
+            assert type(self._ssh_key) is str
+            self._ssh_cmd += ["-i", self._ssh_key]
+
+        if self._port is not None:
+            assert type(self._port) is int
+            self._ssh_cmd += ["-p", str(self._port)]
+
+        assert type(self._host) is str
+        if conn_params.username is not None:
+            assert type(conn_params.username) is str
+            self._ssh_cmd += [conn_params.username + "@" + self._host]
+        else:
+            self._ssh_cmd += [self._host]
+        return
 
     @property
     def remote(self) -> bool:
@@ -109,14 +120,15 @@ class RemoteOperations(OsOperations):
         return "linux"
 
     def create_clone(self) -> RemoteOperations:
+        assert type(self._ssh_cmd) is list
+
         clone = __class__(__class__.sm_dummy_conn_params)
         clone.conn_params = copy.copy(self.conn_params)
         clone._host = self._host
         clone._port = self._port
         clone._ssh_key = self._ssh_key
-        clone._ssh_args = copy.copy(self._ssh_args)
+        clone._ssh_cmd = copy.copy(self._ssh_cmd)
         clone._username = self._username
-        clone._ssh_dest = self._ssh_dest
         return clone
 
     def exec_command(
@@ -168,7 +180,13 @@ class RemoteOperations(OsOperations):
         assert type(cmdline) is str
         assert cmdline != ""
 
-        ssh_cmd = ['ssh', self._ssh_dest] + self._ssh_args + [cmdline]
+        # It works, too:
+        # ssh_cmd = ["sh", "-c", cmdline]
+        # ssh_cmd = ["bash", "-c", cmdline]
+
+        assert type(self._ssh_cmd) is list
+        assert len(self._ssh_cmd) > 0
+        ssh_cmd = self._ssh_cmd + [cmdline]
 
         process = subprocess.Popen(
             ssh_cmd,
