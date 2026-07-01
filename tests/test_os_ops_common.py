@@ -830,11 +830,17 @@ class TestOsOpsCommon:
         tagWriteData001("E001", "\0001234567890\000", False, False, False, "\000ABC\000", "\0001234567890\000\000ABC\000"),
         tagWriteData001("E002", b"\0001234567890\000", False, False, True, b"\000ABC\000", b"\0001234567890\000\000ABC\000"),
 
-        tagWriteData001("F001", "a\nb\n", False, False, False, ["c", "d"], "a\nb\nc\nd\n"),
-        tagWriteData001("F002", b"a\nb\n", False, False, True, [b"c", b"d"], b"a\nb\nc\nd\n"),
+        tagWriteData001("F001", "a\nb\n", False, False, False, ["c", "d"], "a\nb\ncd"),
+        tagWriteData001("F002", b"a\nb\n", False, False, True, [b"c", b"d"], b"a\nb\ncd"),
 
-        tagWriteData001("G001", "a\nb\n", False, False, False, ["c\n\n", "d\n"], "a\nb\nc\nd\n"),
-        tagWriteData001("G002", b"a\nb\n", False, False, True, [b"c\n\n", b"d\n"], b"a\nb\nc\nd\n"),
+        tagWriteData001("G001", "a\nb\n", False, False, False, ["c\n\n", "d\n"], "a\nb\nc\n\nd\n"),
+        tagWriteData001("G002", b"a\nb\n", False, False, True, [b"c\n\n", b"d\n"], b"a\nb\nc\n\nd\n"),
+
+        tagWriteData001("H001", "a\nb\n\000", False, False, False, ["c\n\n", "d\n"], "a\nb\n\000c\n\nd\n"),
+        tagWriteData001("H002", b"a\nb\n\000", False, False, True, [b"c\n\n", b"d\n"], b"a\nb\n\000c\n\nd\n"),
+
+        tagWriteData001("J001", "a\nb\n\000", False, False, False, ["c\n\n\x00", "d\n"], "a\nb\n\000c\n\n\x00d\n"),
+        tagWriteData001("J002", b"a\nb\n\000", False, False, True, [b"c\n\n\x00", b"d\n"], b"a\nb\n\000c\n\n\x00d\n"),
     ]
 
     @pytest.fixture(
