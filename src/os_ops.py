@@ -13,11 +13,19 @@ class ConnectionParams:
         port: typing.Optional[int] = None,
         ssh_key: typing.Optional[str] = None,
         username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
     ):
+        assert type(host) is str
+        assert port is None or type(port) is int
+        assert ssh_key is None or type(ssh_key) is str
+        assert username is None or type(username) is str
+        assert password is None or type(password) is str
+
         self.host = host
         self.port = port
         self.ssh_key = ssh_key
         self.username = username
+        self.password = password
         return
 
 

@@ -74,7 +74,12 @@ class RemoteOperations(OsOperations):
         self._ssh_key = conn_params.ssh_key
         self._username = conn_params.username or getpass.getuser()
 
-        self._ssh_cmd = ["ssh"]
+        self._ssh_cmd = []
+
+        if conn_params.password is not None:
+            self._ssh_cmd += ["sshpass", "-p", conn_params.password]
+
+        self._ssh_cmd += ["ssh"]
 
         if self._ssh_key is not None:
             assert type(self._ssh_key) is str
@@ -167,6 +172,13 @@ class RemoteOperations(OsOperations):
         assert input_prepared is None or type(input_prepared) is bytes
 
         cmds = []
+
+        #
+        # [2026-07-01]
+        #  This command prevents closing a child processes when main command finishes.
+        #  For example, it saves postgres, that is started by pg_ctl utility.
+        #
+        cmds.append("trap '' HUP")
 
         if cwd is not None:
             assert type(cwd) is str
