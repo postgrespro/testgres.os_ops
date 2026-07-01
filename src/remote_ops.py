@@ -171,6 +171,13 @@ class RemoteOperations(OsOperations):
 
         cmds = []
 
+        #
+        # [2026-07-01]
+        #  This command prevents closing a child processes when main command finishes.
+        #  For example, it saves postgres, that is started by pg_ctl utility.
+        #
+        cmds.append("trap '' HUP")
+
         if cwd is not None:
             assert type(cwd) is str
             cmds.append(__class__._build_cmdline(["cd", cwd]))
