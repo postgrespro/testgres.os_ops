@@ -708,10 +708,10 @@ class RemoteOperations(OsOperations):
 
         if binary:
             assert type(result) is bytes
-            lines = result.splitlines()
+            lines = result.splitlines(keepends=True)
         else:
             assert type(result) is str
-            lines = result.splitlines()
+            lines = result.splitlines(keepends=True)
 
         assert type(lines) is list
         return lines
