@@ -12,6 +12,7 @@ class TestConnectionParams:
         assert cp.port is None
         assert cp.ssh_key is None
         assert cp.username is None
+        assert cp.password is None
         return
 
     def test_init(self):
@@ -19,11 +20,13 @@ class TestConnectionParams:
             host="localhost",
             port=123,
             ssh_key="id_rsa",
-            username="test"
+            username="test",
+            password="mysecret",
         )
 
         assert cp.host == "localhost"
         assert cp.port == 123
         assert cp.ssh_key == "id_rsa"
         assert cp.username == "test"
+        assert cp.password == "mysecret"
         return
