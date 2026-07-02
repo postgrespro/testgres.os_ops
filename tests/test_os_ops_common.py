@@ -677,17 +677,23 @@ class TestOsOpsCommon:
 
         # folder with subfolder
         path = os_ops.mkdtemp()
-        assert os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
 
-        dir1 = os.path.join(path, "dir1")
-        assert not os.path.exists(dir1)
+        dir1 = os_ops.build_path(path, "dir1")
+        LocalCheck.check_path_does_not_exists(os_ops, dir1)
+        assert not os_ops.path_exists(dir1)
 
-        os_ops.makedirs(dir1)
-        assert os.path.exists(dir1)
+        os_ops.makedir(dir1)
+        LocalCheck.check_path_exists(os_ops, dir1)
+        assert os_ops.path_exists(dir1)
+        assert os_ops.isdir(dir1)
 
         assert os_ops.rmdirs(path, ignore_errors=False) is True
-        assert not os.path.exists(path)
-        assert not os.path.exists(dir1)
+        LocalCheck.check_path_does_not_exists(os_ops, path)
+        LocalCheck.check_path_does_not_exists(os_ops, dir1)
+        assert not os_ops.path_exists(path)
+        assert not os_ops.path_exists(dir1)
         return
 
     def test_rmdirs__02_with_file(
