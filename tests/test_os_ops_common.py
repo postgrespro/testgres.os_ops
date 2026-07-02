@@ -1027,14 +1027,22 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = __file__  # current file
+        filename = os_ops.mkstemp("testgres-os_ops-test_get_file_size-")
+        sz = os_ops.get_file_size(filename)
+        assert type(sz) is int
+        assert sz == 0
 
-        sz0 = os.path.getsize(filename)
-        assert type(sz0) is int
+        os_ops.write(filename, b"\x02\x01\x00", binary=True)
+        sz = os_ops.get_file_size(filename)
+        assert type(sz) is int
+        assert sz == 3
 
-        sz1 = os_ops.get_file_size(filename)
-        assert type(sz1) is int
-        assert sz1 == sz0
+        os_ops.write(filename, b"\x04", binary=True, truncate=False)
+        sz = os_ops.get_file_size(filename)
+        assert type(sz) is int
+        assert sz == 4
+
+        os_ops.remove_file(filename)
         return
 
     def test_isfile_true(
