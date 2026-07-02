@@ -1481,24 +1481,29 @@ class TestOsOpsCommon:
 
         dir = os_ops.get_tempdir()
         assert type(dir) is str
-        assert os_ops.path_exists(dir)
-        assert os.path.exists(dir)
+        LocalCheck.check_path_exists(os_ops, dir)
+        assert os_ops.path_exists(dir) is True
+        assert os_ops.isdir(dir) is True
 
-        file_path = os.path.join(dir, "testgres--" + uuid.uuid4().hex + ".tmp")
+        file_path = os_ops.build_path(
+            dir,
+            "testgres--" + uuid.uuid4().hex + ".tmp",
+        )
 
         os_ops.write(file_path, "1234", binary=False)
 
-        assert os_ops.path_exists(file_path)
-        assert os.path.exists(file_path)
+        LocalCheck.check_path_exists(os_ops, file_path)
+        LocalCheck.check_isfile(os_ops, file_path)
+        assert os_ops.path_exists(file_path) is True
+        assert os_ops.isfile(file_path) is True
+        assert os_ops.get_file_size(file_path) == 4
 
         d = os_ops.read(file_path, binary=False)
-
         assert d == "1234"
 
         os_ops.remove_file(file_path)
-
-        assert not os_ops.path_exists(file_path)
-        assert not os.path.exists(file_path)
+        LocalCheck.check_path_does_not_exists(os_ops, file_path)
+        assert os_ops.path_exists(file_path) is False
         return
 
     def test_get_tempdir__compare_with_py_info(
