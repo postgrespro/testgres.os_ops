@@ -1571,12 +1571,14 @@ class TestOsOpsCommon:
 
         logging.info("A lock file [{}] is creating ...".format(lock_dir))
 
-        assert os.path.exists(lock_dir)
+        LocalCheck.check_path_exists(os_ops, lock_dir)
+        assert os_ops.path_exists(lock_dir) is True
 
-        def MAKE_PATH(lock_dir: str, num: int) -> str:
+        def MAKE_PATH(os_ops: OsOperations, lock_dir: str, num: int) -> str:
+            assert isinstance(os_ops, OsOperations)
             assert type(lock_dir) is str
             assert type(num) is int
-            return os.path.join(lock_dir, str(num) + ".lock")
+            return os_ops.build_path(lock_dir, str(num) + ".lock")
 
         def LOCAL_WORKER(os_ops: OsOperations,
                          workerID: int,
@@ -1591,7 +1593,7 @@ class TestOsOpsCommon:
             assert cNumbers > 0
             assert len(reservedNumbers) == 0
 
-            assert os.path.exists(lock_dir)
+            assert os_ops.path_exists(lock_dir)
 
             def LOG_INFO(template: str, *args) -> None:
                 assert type(template) is str
@@ -1608,7 +1610,7 @@ class TestOsOpsCommon:
             for num in range(cNumbers):
                 assert num not in reservedNumbers
 
-                file_path = MAKE_PATH(lock_dir, num)
+                file_path = MAKE_PATH(os_ops, lock_dir, num)
 
                 try:
                     os_ops.makedir(file_path)
@@ -1731,7 +1733,7 @@ class TestOsOpsCommon:
                 else:
                     reservedNumbers[n] = i
 
-                file_path = MAKE_PATH(lock_dir, n)
+                file_path = MAKE_PATH(os_ops, lock_dir, n)
                 if not os_ops.path_exists(file_path):
                     nErrors += 1
                     logging.error("File {} is not found!".format(file_path))
@@ -1747,7 +1749,7 @@ class TestOsOpsCommon:
                 logging.error("Number {} is not reserved!".format(n))
                 continue
 
-            file_path = MAKE_PATH(lock_dir, n)
+            file_path = MAKE_PATH(os_ops, lock_dir, n)
             if not os_ops.path_exists(file_path):
                 nErrors += 1
                 logging.error("File {} is not found!".format(file_path))
@@ -1764,7 +1766,7 @@ class TestOsOpsCommon:
             ))
 
             for n in range(N_NUMBERS):
-                file_path = MAKE_PATH(lock_dir, n)
+                file_path = MAKE_PATH(os_ops, lock_dir, n)
                 try:
                     os_ops.rmdir(file_path)
                 except Exception as e:
