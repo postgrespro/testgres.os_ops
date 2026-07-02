@@ -2035,14 +2035,17 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        p = __file__
+        p = os_ops.get_tempdir()
         assert type(p) is str
         assert p != ""
-        assert os.path.isabs(p)
+        LocalCheck.check_path_exists(os_ops, p)
+        LocalCheck.check_isdir(os_ops, p)
+        LocalCheck.check_path_is_abs(os_ops, p)
+        assert os_ops.path_exists(p) is True
+        assert os_ops.isdir(p) is True
 
         actual_value = os_ops.is_abs_path(p)
         assert type(actual_value) is bool
-
         assert actual_value is True
         return
 
