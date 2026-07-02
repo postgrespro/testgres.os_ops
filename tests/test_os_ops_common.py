@@ -2013,19 +2013,15 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        p = __file__
+        expected_dirname = "abc"
+
+        p = os_ops.build_path(expected_dirname, "file1.txt")
         assert type(p) is str
         assert p != ""
-        assert os.path.exists(p)
-
-        expected_dirname = os.path.dirname(p)
-        assert type(expected_dirname) is str
-        assert expected_dirname != ""
 
         actual_dirname = os_ops.get_dirname(p)
         assert type(actual_dirname) is str
         assert actual_dirname != ""
-
         assert actual_dirname == expected_dirname
         return
 
