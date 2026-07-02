@@ -1128,12 +1128,14 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        name = os.path.dirname(__file__)
+        tmpdir = os_ops.get_tempdir()
+        LocalCheck.check_path_exists(os_ops, tmpdir)
+        LocalCheck.check_isdir(os_ops, tmpdir)
+        LocalCheck.check_not_isfile(os_ops, tmpdir)
+        assert os_ops.path_exists(tmpdir)
+        assert os_ops.isdir(tmpdir)
 
-        assert os_ops.isdir(name)
-
-        response = os_ops.isfile(name)
-
+        response = os_ops.isfile(tmpdir)
         assert response is False
         return
 
