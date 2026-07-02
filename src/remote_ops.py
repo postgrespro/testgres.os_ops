@@ -47,6 +47,8 @@ class PsUtilProcessProxy:
 
 
 class RemoteOperations(OsOperations):
+    _C_EOL = "\n"
+
     #
     # Target system is Linux only.
     #
@@ -1100,6 +1102,24 @@ class RemoteOperations(OsOperations):
         assert type(path) is str
         return __class__._get_basename(path)
 
+    def get_abs_path(self, path: str) -> str:
+        assert type(path) is str
+
+        cleaned_path = __class__._normpath(path)
+        assert type(cleaned_path) is str
+
+        #
+        # "-m" is used to ignore not exist parts of path
+        #
+        r = self.exec_command(
+            ["realpath", "-m", cleaned_path],
+            encoding=get_default_encoding(),
+        )
+        assert type(r) is str
+        r = __class__._strip_last_eol(r)
+        assert type(r) is str
+        return r
+
     @staticmethod
     def _build_cmdline(
         cmd,
@@ -1211,6 +1231,25 @@ class RemoteOperations(OsOperations):
     def _get_basename(path: str) -> str:
         assert type(path) is str
         return posixpath.basename(path)
+
+    @staticmethod
+    def _normpath(path: str) -> str:
+        assert type(path) is str
+        return posixpath.normpath(path)
+
+    @staticmethod
+    def _strip_last_eol(text: str) -> str:
+        assert type(text) is str
+        assert type(__class__._C_EOL) is str
+        assert __class__._C_EOL == "\n"
+
+        if not text.endswith(__class__._C_EOL):
+            return text
+
+        r = text[:-(len(__class__._C_EOL))]
+        assert type(r) is str
+        assert r + __class__._C_EOL == text
+        return r
 
 
 def normalize_error(error):
