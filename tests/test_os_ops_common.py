@@ -605,10 +605,13 @@ class TestOsOpsCommon:
         C_TEMPLATE = "abcdef"
         path = os_ops.mkdtemp(C_TEMPLATE)
         logging.info("Path is [{0}].".format(path))
-        assert os.path.exists(path)
-        assert C_TEMPLATE in os.path.basename(path)
-        os.rmdir(path)
-        assert not os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
+        assert os_ops.isdir(path)
+        assert C_TEMPLATE in os_ops.get_path_basename(path)
+        os_ops.rmdir(path)
+        LocalCheck.check_path_does_not_exists(os_ops, path)
+        assert not os_ops.path_exists(path)
         return
 
     def test_rmdirs(
