@@ -584,9 +584,12 @@ class TestOsOpsCommon:
 
         path = os_ops.mkdtemp()
         logging.info("Path is [{0}].".format(path))
-        assert os.path.exists(path)
-        os.rmdir(path)
-        assert not os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
+        assert os_ops.isdir(path)
+        os_ops.rmdir(path)
+        LocalCheck.check_path_does_not_exists(os_ops, path)
+        assert not os_ops.path_exists(path)
         return
 
     def test_mkdtemp__custom(
