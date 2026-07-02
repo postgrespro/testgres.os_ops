@@ -5,6 +5,7 @@ from tests.helpers.global_data import OsOpsDescr
 from tests.helpers.global_data import OsOpsDescrs
 from tests.helpers.global_data import OsOperations
 from tests.helpers.run_conditions import RunConditions
+from tests.helpers import fx_structure
 
 import os
 import sys
@@ -1548,6 +1549,91 @@ class TestOsOpsCommon:
         assert actual_value is False
         return
 
+    # --------------------------------------------------------------------
+    sm_GetBaseNameDatas: typing.List[fx_structure.GetBaseNameData] = [
+        fx_structure.GetBaseNameData(
+            sign="empty",
+            value="",
+            result="",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="relative_curdir",
+            value=".",
+            result=".",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="relative_parentdir",
+            value="..",
+            result="..",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="a",
+            value="a",
+            result="a",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="a.txt",
+            value="a.txt",
+            result="a.txt",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="root__a.txt",
+            value="/a.txt",
+            result="a.txt",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="curdir__a.txt",
+            value="./a.txt",
+            result="a.txt",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="parentdir__a.txt",
+            value="../a.txt",
+            result="a.txt",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="path001",
+            value="a/b/c/my-file-name.txt",
+            result="my-file-name.txt",
+        ),
+        fx_structure.GetBaseNameData(
+            sign="path002",
+            value="a/b/c/my-file-name",
+            result="my-file-name",
+        ),
+    ]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id=x.sign,
+            )
+            for x in sm_GetBaseNameDatas
+        ]
+    )
+    def fx_get_basename_data(
+        self,
+        request: pytest.FixtureRequest,
+    ) -> fx_structure.GetBaseNameData:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param).__name__ == "GetBaseNameData"
+        return request.param
+
+    def test_get_basename(
+        self,
+        os_ops: OsOperations,
+        fx_get_basename_data: fx_structure.GetBaseNameData,
+    ):
+        assert isinstance(os_ops, OsOperations)
+        assert type(fx_get_basename_data) is fx_structure.GetBaseNameData
+
+        actual_value = os_ops.get_basename(fx_get_basename_data.value)
+        assert type(actual_value) is str
+        assert actual_value == fx_get_basename_data.result
+        return
+
+    # --------------------------------------------------------------------
     def test_get_process_children__no_children(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
 

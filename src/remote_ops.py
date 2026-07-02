@@ -988,6 +988,10 @@ class RemoteOperations(OsOperations):
         assert type(path) is str
         return posixpath.isabs(path)
 
+    def get_basename(self, path: str) -> str:
+        assert type(path) is str
+        return posixpath.basename(path)
+
     @staticmethod
     def _build_cmdline(
         cmd,
