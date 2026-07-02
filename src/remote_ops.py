@@ -1021,9 +1021,9 @@ class RemoteOperations(OsOperations):
         assert type(path) is str
         return __class__._is_abs_path(path)
 
-    def get_basename(self, path: str) -> str:
+    def get_path_basename(self, path: str) -> str:
         assert type(path) is str
-        return __class__._get_basename(path)
+        return __class__._get_path_basename(path)
 
     def get_abs_path(self, path: str) -> str:
         assert type(path) is str
@@ -1151,7 +1151,7 @@ class RemoteOperations(OsOperations):
         return posixpath.isabs(path)
 
     @staticmethod
-    def _get_basename(path: str) -> str:
+    def _get_path_basename(path: str) -> str:
         assert type(path) is str
         return posixpath.basename(path)
 

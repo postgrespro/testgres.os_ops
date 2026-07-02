@@ -740,7 +740,7 @@ class LocalOperations(OsOperations):
         assert type(path) is str
         return os.path.isabs(path)
 
-    def get_basename(self, path: str) -> str:
+    def get_path_basename(self, path: str) -> str:
         assert type(path) is str
         return os.path.basename(path)
 

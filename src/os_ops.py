@@ -296,7 +296,7 @@ class OsOperations:
         assert type(path) is str
         raise NotImplementedError()
 
-    def get_basename(self, path: str) -> str:
+    def get_path_basename(self, path: str) -> str:
         assert type(path) is str
         raise NotImplementedError()
 
