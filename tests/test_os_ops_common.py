@@ -37,16 +37,26 @@ class TestOsOpsCommon:
     ]
 
     @pytest.fixture(
-        params=[descr.os_ops for descr in sm_os_ops_descrs],
-        ids=[descr.sign for descr in sm_os_ops_descrs]
+        params=[
+            pytest.param(
+                descr,
+                id=descr.sign,
+            )
+            for descr in sm_os_ops_descrs
+        ],
     )
-    def os_ops(self, request: pytest.FixtureRequest) -> OsOperations:
+    def os_ops_descr(self, request: pytest.FixtureRequest) -> OsOpsDescr:
         assert isinstance(request, pytest.FixtureRequest)
-        assert isinstance(request.param, OsOperations)
+        assert isinstance(request.param, OsOpsDescr)
         return request.param
 
-    def test_prop__remote(self, os_ops: OsOperations):
+    def test_prop__remote(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         v = os_ops.remote
         assert v is not None or type(v) is bool
 
@@ -60,61 +70,100 @@ class TestOsOpsCommon:
             ))
         return
 
-    def test_prop__host(self, os_ops: OsOperations):
+    def test_prop__host(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         v = os_ops.host
         assert v is not None or type(v) is str
         return
 
-    def test_prop__port(self, os_ops: OsOperations):
+    def test_prop__port(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         v = os_ops.port
         assert v is None or type(v) is int
         return
 
-    def test_prop__ssh_key(self, os_ops: OsOperations):
+    def test_prop__ssh_key(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         v = os_ops.ssh_key
         assert v is None or type(v) is str
         return
 
-    def test_prop__username(self, os_ops: OsOperations):
+    def test_prop__username(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         v = os_ops.username
         assert v is None or type(v) is str
         return
 
-    def test_get_platform(self, os_ops: OsOperations):
+    def test_get_platform(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         p = os_ops.get_platform()
         assert p is not None
         assert type(p) is str
         assert p == sys.platform
         return
 
-    def test_get_platform__is_known(self, os_ops: OsOperations):
+    def test_get_platform__is_known(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         p = os_ops.get_platform()
         assert p is not None
         assert type(p) is str
         assert p in {"win32", "linux"}
         return
 
-    def test_create_clone(self, os_ops: OsOperations):
+    def test_create_clone(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
+
         clone = os_ops.create_clone()
         assert clone is not None
         assert clone is not os_ops
         assert type(clone) is type(os_ops)
         return
 
-    def test_exec_command_success(self, os_ops: OsOperations):
+    def test_exec_command_success(self, os_ops_descr: OsOpsDescr):
         """
         Test exec_command for successful command execution.
         """
-        assert isinstance(os_ops, OsOperations)
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         cmd = ["sh", "-c", "python3 --version"]
 
@@ -123,10 +172,14 @@ class TestOsOpsCommon:
         assert b'Python 3.' in response
         return
 
-    def test_exec_command_failure(self, os_ops: OsOperations):
+    def test_exec_command_failure(self, os_ops_descr: OsOpsDescr):
         """
         Test exec_command for command execution failure.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -152,13 +205,17 @@ class TestOsOpsCommon:
             raise Exception("We wait an exception!")
         return
 
-    def test_exec_command_failure__expect_error(self, os_ops: OsOperations):
+    def test_exec_command_failure__expect_error(self, os_ops_descr: OsOpsDescr):
         """
         Test exec_command for command execution failure.
         """
-        assert isinstance(os_ops, OsOperations)
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         cmd = ["sh", "-c", "nonexistent_command"]
 
@@ -177,10 +234,14 @@ class TestOsOpsCommon:
         assert b"not found" in error
         return
 
-    def test_exec_command_with_exec_env(self, os_ops: OsOperations):
-        assert isinstance(os_ops, OsOperations)
+    def test_exec_command_with_exec_env(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         C_ENV_NAME = "TESTGRES_TEST__EXEC_ENV_20250414"
 
@@ -199,10 +260,14 @@ class TestOsOpsCommon:
         assert response == b'\n'
         return
 
-    def test_exec_command_with_exec_env__2(self, os_ops: OsOperations):
-        assert isinstance(os_ops, OsOperations)
+    def test_exec_command_with_exec_env__2(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         C_ENV_NAME = "TESTGRES_TEST__EXEC_ENV_20250414"
 
@@ -237,10 +302,14 @@ class TestOsOpsCommon:
         assert not os_ops.path_exists(tmp_file)
         return
 
-    def test_exec_command_with_cwd(self, os_ops: OsOperations):
-        assert isinstance(os_ops, OsOperations)
+    def test_exec_command_with_cwd(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         cmd = ["pwd"]
 
@@ -255,10 +324,14 @@ class TestOsOpsCommon:
         assert response != b'/tmp\n'
         return
 
-    def test_exec_command__test_unset(self, os_ops: OsOperations):
-        assert isinstance(os_ops, OsOperations)
+    def test_exec_command__test_unset(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         C_ENV_NAME = "LANG"
 
@@ -284,10 +357,17 @@ class TestOsOpsCommon:
         assert response3 == response1
         return
 
-    def test_exec_command__test_unset_dummy_var(self, os_ops: OsOperations):
-        assert isinstance(os_ops, OsOperations)
+    def test_exec_command__test_unset_dummy_var(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         C_ENV_NAME = "TESTGRES_TEST__DUMMY_VAR_20250414"
 
@@ -300,10 +380,17 @@ class TestOsOpsCommon:
         assert response2 == b'\n'
         return
 
-    def test_is_executable_true(self, os_ops: OsOperations):
+    def test_is_executable_true(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test is_executable for an existing executable.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -313,10 +400,17 @@ class TestOsOpsCommon:
         assert response is True
         return
 
-    def test_is_executable_false(self, os_ops: OsOperations):
+    def test_is_executable_false(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test is_executable for a non-executable.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         response = os_ops.is_executable(__file__)
@@ -324,10 +418,17 @@ class TestOsOpsCommon:
         assert response is False
         return
 
-    def test_makedirs_and_rmdirs_success(self, os_ops: OsOperations):
+    def test_makedirs_and_rmdirs_success(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test makedirs and rmdirs for successful directory creation and removal.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -350,11 +451,18 @@ class TestOsOpsCommon:
         assert not os_ops.path_exists(path)
         return
 
-    def test_makedirs_failure(self, os_ops: OsOperations):
+    def test_makedirs_failure(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test makedirs for failure.
         """
         # Try to create a directory in a read-only location
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -366,10 +474,17 @@ class TestOsOpsCommon:
             os_ops.makedirs(path)
         return
 
-    def test_listdir(self, os_ops: OsOperations):
+    def test_listdir(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test listdir for listing directory contents.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -382,10 +497,17 @@ class TestOsOpsCommon:
             assert type(f) is str
         return
 
-    def test_path_exists_true__directory(self, os_ops: OsOperations):
+    def test_path_exists_true__directory(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test path_exists for an existing directory.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -393,10 +515,17 @@ class TestOsOpsCommon:
         assert os_ops.path_exists("/etc") is True
         return
 
-    def test_path_exists_true__file(self, os_ops: OsOperations):
+    def test_path_exists_true__file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test path_exists for an existing file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -404,10 +533,17 @@ class TestOsOpsCommon:
         assert os_ops.path_exists(__file__) is True
         return
 
-    def test_path_exists_false__directory(self, os_ops: OsOperations):
+    def test_path_exists_false__directory(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test path_exists for a non-existing directory.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -415,10 +551,17 @@ class TestOsOpsCommon:
         assert os_ops.path_exists("/nonexistent_path") is False
         return
 
-    def test_path_exists_false__file(self, os_ops: OsOperations):
+    def test_path_exists_false__file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test path_exists for a non-existing file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -426,7 +569,14 @@ class TestOsOpsCommon:
         assert os_ops.path_exists("/etc/nonexistent_path.txt") is False
         return
 
-    def test_mkdtemp__default(self, os_ops: OsOperations):
+    def test_mkdtemp__default(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         path = os_ops.mkdtemp()
@@ -436,7 +586,14 @@ class TestOsOpsCommon:
         assert not os.path.exists(path)
         return
 
-    def test_mkdtemp__custom(self, os_ops: OsOperations):
+    def test_mkdtemp__custom(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         C_TEMPLATE = "abcdef"
@@ -448,7 +605,14 @@ class TestOsOpsCommon:
         assert not os.path.exists(path)
         return
 
-    def test_rmdirs(self, os_ops: OsOperations):
+    def test_rmdirs(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         path = os_ops.mkdtemp()
@@ -458,7 +622,14 @@ class TestOsOpsCommon:
         assert not os.path.exists(path)
         return
 
-    def test_rmdirs__01_with_subfolder(self, os_ops: OsOperations):
+    def test_rmdirs__01_with_subfolder(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         # folder with subfolder
@@ -476,7 +647,14 @@ class TestOsOpsCommon:
         assert not os.path.exists(dir1)
         return
 
-    def test_rmdirs__02_with_file(self, os_ops: OsOperations):
+    def test_rmdirs__02_with_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         # folder with file
@@ -494,7 +672,14 @@ class TestOsOpsCommon:
         assert not os.path.exists(file1)
         return
 
-    def test_rmdirs__03_with_subfolder_and_file(self, os_ops: OsOperations):
+    def test_rmdirs__03_with_subfolder_and_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         # folder with subfolder and file
@@ -519,10 +704,17 @@ class TestOsOpsCommon:
         assert not os.path.exists(file1)
         return
 
-    def test_write_text_file(self, os_ops: OsOperations):
+    def test_write_text_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test write for writing data to a text file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -540,10 +732,17 @@ class TestOsOpsCommon:
         os_ops.remove_file(filename)
         return
 
-    def test_write_binary_file(self, os_ops: OsOperations):
+    def test_write_binary_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test write for writing data to a binary file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -558,10 +757,17 @@ class TestOsOpsCommon:
         assert response == data
         return
 
-    def test_read_text_file(self, os_ops: OsOperations):
+    def test_read_text_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test read for reading data from a text file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -573,10 +779,17 @@ class TestOsOpsCommon:
         assert isinstance(response, str)
         return
 
-    def test_read_binary_file(self, os_ops: OsOperations):
+    def test_read_binary_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test read for reading data from a binary file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
@@ -588,10 +801,17 @@ class TestOsOpsCommon:
         assert isinstance(response, bytes)
         return
 
-    def test_read__text(self, os_ops: OsOperations):
+    def test_read__text(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test OsOperations::read for text data.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         filename = __file__  # current file
@@ -618,10 +838,19 @@ class TestOsOpsCommon:
         assert response4 == response0
         return
 
-    def test_read__binary(self, os_ops: OsOperations):
+    def test_read__binary(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test OsOperations::read for binary data.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
         filename = __file__  # current file
 
         with open(filename, 'rb') as file:  # open in a binary mode
@@ -634,10 +863,17 @@ class TestOsOpsCommon:
         assert response1 == response0
         return
 
-    def test_read__binary_and_encoding(self, os_ops: OsOperations):
+    def test_read__binary_and_encoding(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test OsOperations::read for binary data and encoding.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         filename = __file__  # current file
@@ -648,10 +884,17 @@ class TestOsOpsCommon:
             os_ops.read(filename, encoding="", binary=True)
         return
 
-    def test_read_binary__spec(self, os_ops: OsOperations):
+    def test_read_binary__spec(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test OsOperations::read_binary.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         filename = __file__  # currnt file
@@ -685,10 +928,17 @@ class TestOsOpsCommon:
         assert len(response5) == 0
         return
 
-    def test_read_binary__spec__negative_offset(self, os_ops: OsOperations):
+    def test_read_binary__spec__negative_offset(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test OsOperations::read_binary with negative offset.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         with pytest.raises(
@@ -697,10 +947,17 @@ class TestOsOpsCommon:
             os_ops.read_binary(__file__, -1)
         return
 
-    def test_get_file_size(self, os_ops: OsOperations):
+    def test_get_file_size(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test OsOperations::get_file_size.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         filename = __file__  # current file
@@ -713,10 +970,17 @@ class TestOsOpsCommon:
         assert sz1 == sz0
         return
 
-    def test_isfile_true(self, os_ops: OsOperations):
+    def test_isfile_true(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test isfile for an existing file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         filename = __file__
@@ -726,10 +990,17 @@ class TestOsOpsCommon:
         assert response is True
         return
 
-    def test_isfile_false__not_exist(self, os_ops: OsOperations):
+    def test_isfile_false__not_exist(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test isfile for a non-existing file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         filename = os.path.join(os.path.dirname(__file__), "nonexistent_file.txt")
@@ -739,10 +1010,17 @@ class TestOsOpsCommon:
         assert response is False
         return
 
-    def test_isfile_false__directory(self, os_ops: OsOperations):
+    def test_isfile_false__directory(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test isfile for a firectory.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         name = os.path.dirname(__file__)
@@ -754,10 +1032,17 @@ class TestOsOpsCommon:
         assert response is False
         return
 
-    def test_isdir_true(self, os_ops: OsOperations):
+    def test_isdir_true(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test isdir for an existing directory.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         name = os.path.dirname(__file__)
@@ -767,10 +1052,17 @@ class TestOsOpsCommon:
         assert response is True
         return
 
-    def test_isdir_false__not_exist(self, os_ops: OsOperations):
+    def test_isdir_false__not_exist(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test isdir for a non-existing directory.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         name = os.path.join(os.path.dirname(__file__), "it_is_nonexistent_directory")
@@ -780,10 +1072,17 @@ class TestOsOpsCommon:
         assert response is False
         return
 
-    def test_isdir_false__file(self, os_ops: OsOperations):
+    def test_isdir_false__file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test isdir for a file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         name = __file__
@@ -795,10 +1094,17 @@ class TestOsOpsCommon:
         assert response is False
         return
 
-    def test_cwd(self, os_ops: OsOperations):
+    def test_cwd(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test cwd.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         v = os_ops.cwd()
@@ -856,13 +1162,21 @@ class TestOsOpsCommon:
         params=sm_write_data001,
         ids=[x.sign for x in sm_write_data001],
     )
-    def write_data001(self, request):
+    def write_data001(self, request: pytest.FixtureRequest):
         assert isinstance(request, pytest.FixtureRequest)
         assert type(request.param) is __class__.tagWriteData001
         return request.param
 
-    def test_write(self, write_data001: tagWriteData001, os_ops: OsOperations):
+    def test_write(
+        self,
+        write_data001: tagWriteData001,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
         assert type(write_data001) is __class__.tagWriteData001
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         mode = "w+b" if write_data001.call_param__binary else "w+"
@@ -885,10 +1199,17 @@ class TestOsOpsCommon:
             assert s == write_data001.result
         return
 
-    def test_touch(self, os_ops: OsOperations):
+    def test_touch(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test touch for creating a new file or updating access and modification times of an existing file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         filename = os_ops.mkstemp()
@@ -902,7 +1223,14 @@ class TestOsOpsCommon:
         os_ops.remove_file(filename)
         return
 
-    def test_is_port_free__true(self, os_ops: OsOperations):
+    def test_is_port_free__true(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         C_LIMIT = 128
@@ -939,7 +1267,14 @@ class TestOsOpsCommon:
             raise RuntimeError("No one free port was found.")
         return
 
-    def test_is_port_free__false(self, os_ops: OsOperations):
+    def test_is_port_free__false(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         C_LIMIT = 10
@@ -1001,7 +1336,14 @@ class TestOsOpsCommon:
             raise RuntimeError("No one free port was found.")
         return
 
-    def test_get_tempdir(self, os_ops: OsOperations):
+    def test_get_tempdir(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         dir = os_ops.get_tempdir()
@@ -1026,7 +1368,14 @@ class TestOsOpsCommon:
         assert not os.path.exists(file_path)
         return
 
-    def test_get_tempdir__compare_with_py_info(self, os_ops: OsOperations):
+    def test_get_tempdir__compare_with_py_info(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         actual_dir = os_ops.get_tempdir()
@@ -1048,7 +1397,7 @@ class TestOsOpsCommon:
         nums: int
 
         def __init__(self, os_ops_descr: OsOpsDescr, nums: int):
-            assert isinstance(os_ops_descr, OsOpsDescr)
+            assert type(os_ops_descr) is OsOpsDescr
             assert type(nums) is int
 
             self.os_ops_descr = os_ops_descr
@@ -1329,7 +1678,10 @@ class TestOsOpsCommon:
         params=sm_kill_signal_ids,
         ids=["signal: {}".format(x[0]) for x in sm_kill_signal_ids],
     )
-    def kill_signal_id(self, request: pytest.FixtureRequest) -> T_KILL_SIGNAL_DESCR:
+    def kill_signal_id(
+        self,
+        request: pytest.FixtureRequest,
+    ) -> T_KILL_SIGNAL_DESCR:
         assert isinstance(request, pytest.FixtureRequest)
         assert type(request.param) is tuple
         return request.param
@@ -1345,14 +1697,18 @@ class TestOsOpsCommon:
 
     def test_kill(
         self,
-        os_ops: OsOperations,
+        os_ops_descr: OsOpsDescr,
         kill_signal_id: T_KILL_SIGNAL_DESCR,
     ):
         """
         Test listdir for listing directory contents.
         """
-        assert isinstance(os_ops, OsOperations)
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
         assert type(kill_signal_id) is tuple
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         cmd = [
             sys.executable,
@@ -1414,14 +1770,18 @@ class TestOsOpsCommon:
 
     def test_kill__unk_pid(
         self,
-        os_ops: OsOperations,
+        os_ops_descr: OsOpsDescr,
         kill_signal_id: T_KILL_SIGNAL_DESCR,
     ):
         """
         Test listdir for listing directory contents.
         """
-        assert isinstance(os_ops, OsOperations)
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
         assert type(kill_signal_id) is tuple
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         cmd = [
             sys.executable,
@@ -1503,7 +1863,14 @@ class TestOsOpsCommon:
 
         return
 
-    def test_get_dirname(self, os_ops: OsOperations):
+    def test_get_dirname(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         p = __file__
@@ -1522,7 +1889,14 @@ class TestOsOpsCommon:
         assert actual_dirname == expected_dirname
         return
 
-    def test_is_abs_path__yes(self, os_ops: OsOperations):
+    def test_is_abs_path__yes(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         p = __file__
@@ -1536,7 +1910,11 @@ class TestOsOpsCommon:
         assert actual_value is True
         return
 
-    def test_is_abs_path__no(self, os_ops: OsOperations):
+    def test_is_abs_path__no(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         p = "."
@@ -1549,7 +1927,14 @@ class TestOsOpsCommon:
         return
 
     # --------------------------------------------------------------------
-    def test_get_abs_path(self, os_ops: OsOperations):
+    def test_get_abs_path(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         def LOCAL__check(value, expected) -> bool:
@@ -1752,11 +2137,15 @@ class TestOsOpsCommon:
 
     def test_get_basename(
         self,
-        os_ops: OsOperations,
+        os_ops_descr: OsOpsDescr,
         fx_get_basename_data: tagGetBaseNameData,
     ):
-        assert isinstance(os_ops, OsOperations)
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
         assert type(fx_get_basename_data) is __class__.tagGetBaseNameData
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         actual_value = os_ops.get_basename(fx_get_basename_data.value)
         assert type(actual_value) is str
@@ -1764,7 +2153,14 @@ class TestOsOpsCommon:
         return
 
     # --------------------------------------------------------------------
-    def test_get_process_children__no_children(self, os_ops: OsOperations):
+    def test_get_process_children__no_children(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         sh_cmd = ["sh", "-c", "python3 -u -c 'import time;import os; print(os.getpid()); time.sleep(60)'"]
@@ -1793,7 +2189,14 @@ class TestOsOpsCommon:
         assert len(childs) == 0
         return
 
-    def test_get_process_children__with_child(self, os_ops: OsOperations):
+    def test_get_process_children__with_child(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         script = (
@@ -1847,7 +2250,14 @@ class TestOsOpsCommon:
         p1.wait()
         return
 
-    def test_get_process_children__with_three_children(self, os_ops: OsOperations):
+    def test_get_process_children__with_three_children(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         script = (
@@ -1901,7 +2311,14 @@ class TestOsOpsCommon:
         p.wait()
         return
 
-    def test_get_process_children__bad_pid(self, os_ops: OsOperations):
+    def test_get_process_children__bad_pid(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         C_BAD_PID = 999999876  # OK? ))
@@ -1999,11 +2416,15 @@ class TestOsOpsCommon:
 
     def test_readlines__TXT(
         self,
-        os_ops: OsOperations,
+        os_ops_descr: OsOpsDescr,
         readlines_data_txt: tagReadLinesData_TXT,
     ):
-        assert isinstance(os_ops, OsOperations)
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
         assert isinstance(readlines_data_txt, __class__.tagReadLinesData_TXT)
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         tmpfile = os_ops.mkstemp()
 
@@ -2018,11 +2439,15 @@ class TestOsOpsCommon:
 
     def test_readlines__BIN(
         self,
-        os_ops: OsOperations,
+        os_ops_descr: OsOpsDescr,
         readlines_data_txt: tagReadLinesData_TXT,
     ):
-        assert isinstance(os_ops, OsOperations)
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
         assert isinstance(readlines_data_txt, __class__.tagReadLinesData_TXT)
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
 
         tmpfile = os_ops.mkstemp()
 
