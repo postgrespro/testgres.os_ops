@@ -6,6 +6,7 @@ from tests.helpers.global_data import OsOpsDescrs
 from tests.helpers.global_data import OsOperations
 from tests.helpers.run_conditions import RunConditions
 from tests.helpers.local_check import LocalCheck
+from tests.helpers.local_check import OsOpsHelpers
 
 import os
 import sys
@@ -624,11 +625,44 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        path = os_ops.mkdtemp()
-        assert os.path.exists(path)
+        tmpdir = os_ops.get_tempdir()
+
+        path = os_ops.build_path(
+            tmpdir,
+            "testgres-os_ops-test_rmdirs-" + uuid.uuid4().bytes.hex(),
+        )
+
+        local_detecter_is_created = False
+        if OsOpsHelpers.is_localhost(os_ops):
+            pass
+        elif sys.platform != os_ops.get_platform():
+            pass
+        elif not os.path.exists(tmpdir):
+            pass
+        else:
+            # We will check a real work with another host
+            assert not os.path.exists(path)
+            os.mkdir(path)
+            assert os.path.exists(path)
+            local_detecter_is_created = True
+            logging.info("Local detecter is created [{}]".format(path))
+
+        cmd = ["mkdir", path]
+        os_ops.exec_command(cmd)
+
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
+        assert os_ops.isdir(path)
 
         assert os_ops.rmdirs(path, ignore_errors=False) is True
-        assert not os.path.exists(path)
+        LocalCheck.check_path_does_not_exists(os_ops, path)
+        assert not os_ops.path_exists(path)
+
+        if local_detecter_is_created:
+            assert os.path.exists(path)
+            os.rmdir(path)
+            logging.info("Local detecter is deleted [{}]".format(path))
+
         return
 
     def test_rmdirs__01_with_subfolder(
