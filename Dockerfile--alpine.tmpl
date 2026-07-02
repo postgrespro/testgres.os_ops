@@ -3,7 +3,9 @@ ARG PYTHON_VERSION=3.12
 # --------------------------------------------- base1
 FROM python:${PYTHON_VERSION}-alpine AS base1
 
-# --------------------------------------------- base1
+RUN apk add --no-cache coreutils
+
+# --------------------------------------------- base2
 FROM base1 AS base2
 
 RUN apk add python3-dev build-base musl-dev linux-headers

@@ -1549,6 +1549,131 @@ class TestOsOpsCommon:
         return
 
     # --------------------------------------------------------------------
+    def test_get_abs_path(self, os_ops: OsOperations):
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.get_abs_path(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        cwd = os_ops.cwd()
+        LOCAL__check("", cwd)
+
+        logging.info("------------- test cwd")
+        LOCAL__check(".", cwd)
+
+        path = os_ops.build_path(cwd, ".")
+        LOCAL__check(path, cwd)
+
+        cwd = os_ops.cwd()
+        expected_r = os_ops.build_path(cwd, "abc")
+        LOCAL__check("abc", expected_r)
+
+        cwd = os_ops.cwd()
+        expected_r = os_ops.build_path(cwd, "abc")
+        LOCAL__check("./abc", expected_r)
+
+        cwd = os_ops.cwd()
+        expected_r = os_ops.build_path(os_ops.get_dirname(cwd), "abc")
+        LOCAL__check("../abc", expected_r)
+
+        cwd = os_ops.cwd()
+        expected_r = os_ops.build_path(cwd, "abc1.txt")
+        LOCAL__check("abc1.txt", expected_r)
+
+        logging.info("------------- test cwd parent")
+        cwd = os_ops.cwd()
+        expected_r = os_ops.get_dirname(cwd)
+        LOCAL__check("..", expected_r)
+
+        logging.info("------------- test file")
+        file = os_ops.mkstemp()
+        LOCAL__check(file, file)
+        os_ops.remove_file(file)
+
+        logging.info("------------- test dir")
+        dir = os_ops.mkdtemp()
+        LOCAL__check(dir, dir)
+
+        dirname = os_ops.get_basename(dir)
+        path = os_ops.build_path(dir, "..", dirname)
+        LOCAL__check(path, dir)
+
+        dirname = os_ops.get_basename(dir)
+        path = os_ops.build_path(dir, "..", dirname, "abc.txt")
+        expected_r = os_ops.build_path(dir, "abc.txt")
+        LOCAL__check(path, expected_r)
+
+        os_ops.rmdir(dir)
+
+        logging.info("------------- unknown path")
+        expected_r = os_ops.build_path(cwd, "abc/file.txt")
+        LOCAL__check("./abc/file.txt", expected_r)
+
+        logging.info("------------- home dir")
+        LOCAL__check("/~", "/~")
+
+        logging.info("------------- test root over-traversal")
+        # Из любого места системы (даже глубокого) 15 переходов вверх выведут в корень
+        many_dots = os_ops.build_path(*([".."] * 15))
+        LOCAL__check(many_dots, "/")
+
+        # Корень + еще раз вверх + папка
+        path = os_ops.build_path("/", "..", "abc")
+        LOCAL__check(path, "/abc")
+
+        logging.info("------------- test multiple slashes")
+
+        # TODO: Double slash at the beginning. In POSIX it sometimes
+        # has a special meaning, let's check it out.
+        # os.path.abs returns "//abc"
+        # r = os_ops.get_abs_path("//abc")
+        # LOCAL__check("//abc", "/abc")
+
+        # Slashes in the middle of a relative path
+        expected_r = os_ops.build_path(cwd, "abc", "def")
+        LOCAL__check("abc///def", expected_r)
+
+        # Relative path ending with a slash
+        expected_r = os_ops.build_path(cwd, "abc")
+        LOCAL__check("abc/", expected_r)
+
+        logging.info("------------- test raw tilde")
+        exec_r = os_ops.exec_command(["sh", "-c", "cd ~;pwd"], encoding="utf-8")
+        assert type(exec_r) is str
+        expected_r = exec_r.rstrip()
+        LOCAL__check("~", expected_r)
+
+        # Tilda with a ROOT user
+        LOCAL__check("~root/abc", "/root/abc")
+
+        logging.info("------------- test spaces and special chars")
+        # Folder with quotes, and spaces.
+        weird_name = "my folder VAR 'single' \"double\""
+        expected_r = os_ops.build_path(cwd, weird_name)
+        LOCAL__check(weird_name, expected_r)
+
+        # TODO: Folder with dollar signs, quotes, and spaces.
+        # weird_name = "my folder $VAR 'single' \"double\""
+        # expected_r = os_ops.build_path(cwd, weird_name)
+        # LOCAL__check(weird_name, expected_r)
+
+        logging.info("OK. GO HOME!")
+        return
+
+    # --------------------------------------------------------------------
     @dataclasses.dataclass
     class tagGetBaseNameData:
         sign: str
