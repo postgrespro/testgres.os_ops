@@ -124,3 +124,43 @@ class LocalCheck:
             path,
         )
         raise RuntimeError(err_msg)
+
+    # --------------------------------------------------------------------
+    @staticmethod
+    def check_path_is_abs(
+        os_ops: OsOperations,
+        path: str,
+    ) -> None:
+        assert isinstance(os_ops, OsOperations)
+        assert type(path) is str
+
+        if not OsOpsHelpers.is_localhost(os_ops):
+            return
+
+        if os.path.isabs(path):
+            return
+
+        err_msg = "[LocalCheck] Local path [{}] is not abs.".format(
+            path,
+        )
+        raise RuntimeError(err_msg)
+
+    # --------------------------------------------------------------------
+    @staticmethod
+    def check_path_is_not_abs(
+        os_ops: OsOperations,
+        path: str,
+    ) -> None:
+        assert isinstance(os_ops, OsOperations)
+        assert type(path) is str
+
+        if not OsOpsHelpers.is_localhost(os_ops):
+            return
+
+        if not os.path.isabs(path):
+            return
+
+        err_msg = "[LocalCheck] Local path [{}] is abs.".format(
+            path,
+        )
+        raise RuntimeError(err_msg)
