@@ -547,7 +547,7 @@ class RemoteOperations(OsOperations):
         return temp_file
 
     def copytree(self, src, dst):
-        if not os.path.isabs(dst):
+        if __class__._is_abs_path(dst):
             dst = __class__._build_path('~', dst)
         if self.isdir(dst):
             raise FileExistsError("Directory {} already exists.".format(dst))
@@ -593,7 +593,7 @@ class RemoteOperations(OsOperations):
         redirect_op = ">" if truncate else ">>"
 
         # Extract the path to the parent directory
-        remote_directory = os.path.dirname(filename)
+        remote_directory = __class__._get_dirname(filename)
 
         remote_cmd = [
             "mkdir",
@@ -976,21 +976,21 @@ class RemoteOperations(OsOperations):
 
         temp_subdir = exec_output.strip()
         assert type(temp_subdir) is str
-        temp_dir = os.path.dirname(temp_subdir)
+        temp_dir = __class__._get_dirname(temp_subdir)
         assert type(temp_dir) is str
         return temp_dir
 
     def get_dirname(self, path: str) -> str:
         assert type(path) is str
-        return posixpath.dirname(path)
+        return __class__._get_dirname(path)
 
     def is_abs_path(self, path: str) -> bool:
         assert type(path) is str
-        return posixpath.isabs(path)
+        return __class__._is_abs_path(path)
 
     def get_basename(self, path: str) -> str:
         assert type(path) is str
-        return posixpath.basename(path)
+        return __class__._get_basename(path)
 
     @staticmethod
     def _build_cmdline(
@@ -1088,6 +1088,21 @@ class RemoteOperations(OsOperations):
         assert type(a) is str
         assert type(parts) is tuple
         return posixpath.join(a, *parts)
+
+    @staticmethod
+    def _get_dirname(path: str) -> str:
+        assert type(path) is str
+        return posixpath.dirname(path)
+
+    @staticmethod
+    def _is_abs_path(path: str) -> bool:
+        assert type(path) is str
+        return posixpath.isabs(path)
+
+    @staticmethod
+    def _get_basename(path: str) -> str:
+        assert type(path) is str
+        return posixpath.basename(path)
 
 
 def normalize_error(error):
