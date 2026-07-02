@@ -1551,7 +1551,7 @@ exit(0)
         assert type(actual_dir) is str
 
         # --------
-        cmd = [sys.executable, "-c", "import tempfile;print(tempfile.gettempdir());"]
+        cmd = ["python3", "-c", "import tempfile;print(tempfile.gettempdir());"]
 
         expected_dir_b = os_ops.exec_command(cmd)
         assert type(expected_dir_b) is bytes
