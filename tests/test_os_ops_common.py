@@ -1999,11 +1999,11 @@ class TestOsOpsCommon:
         dir = os_ops.mkdtemp()
         LOCAL__check(dir, dir)
 
-        dirname = os_ops.get_basename(dir)
+        dirname = os_ops.get_path_basename(dir)
         path = os_ops.build_path(dir, "..", dirname)
         LOCAL__check(path, dir)
 
-        dirname = os_ops.get_basename(dir)
+        dirname = os_ops.get_path_basename(dir)
         path = os_ops.build_path(dir, "..", dirname, "abc.txt")
         expected_r = os_ops.build_path(dir, "abc.txt")
         LOCAL__check(path, expected_r)
@@ -2067,58 +2067,58 @@ class TestOsOpsCommon:
 
     # --------------------------------------------------------------------
     @dataclasses.dataclass
-    class tagGetBaseNameData:
+    class tagGetPathBaseNameData:
         sign: str
         value: str
         result: str
 
-    sm_GetBaseNameDatas: typing.List[tagGetBaseNameData] = [
-        tagGetBaseNameData(
+    sm_GetPathBaseNameDatas: typing.List[tagGetPathBaseNameData] = [
+        tagGetPathBaseNameData(
             sign="empty",
             value="",
             result="",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="relative_curdir",
             value=".",
             result=".",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="relative_parentdir",
             value="..",
             result="..",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="a",
             value="a",
             result="a",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="a.txt",
             value="a.txt",
             result="a.txt",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="root__a.txt",
             value="/a.txt",
             result="a.txt",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="curdir__a.txt",
             value="./a.txt",
             result="a.txt",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="parentdir__a.txt",
             value="../a.txt",
             result="a.txt",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="path001",
             value="a/b/c/my-file-name.txt",
             result="my-file-name.txt",
         ),
-        tagGetBaseNameData(
+        tagGetPathBaseNameData(
             sign="path002",
             value="a/b/c/my-file-name",
             result="my-file-name",
@@ -2131,32 +2131,32 @@ class TestOsOpsCommon:
                 x,
                 id=x.sign,
             )
-            for x in sm_GetBaseNameDatas
+            for x in sm_GetPathBaseNameDatas
         ]
     )
-    def fx_get_basename_data(
+    def fx_get_path_basename_data(
         self,
         request: pytest.FixtureRequest,
-    ) -> tagGetBaseNameData:
+    ) -> tagGetPathBaseNameData:
         assert isinstance(request, pytest.FixtureRequest)
-        assert type(request.param).__name__ == "tagGetBaseNameData"
+        assert type(request.param).__name__ == "tagGetPathBaseNameData"
         return request.param
 
-    def test_get_basename(
+    def test_get_path_basename(
         self,
         os_ops_descr: OsOpsDescr,
-        fx_get_basename_data: tagGetBaseNameData,
+        fx_get_path_basename_data: tagGetPathBaseNameData,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
-        assert type(fx_get_basename_data) is __class__.tagGetBaseNameData
+        assert type(fx_get_path_basename_data) is __class__.tagGetPathBaseNameData
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        actual_value = os_ops.get_basename(fx_get_basename_data.value)
+        actual_value = os_ops.get_path_basename(fx_get_path_basename_data.value)
         assert type(actual_value) is str
-        assert actual_value == fx_get_basename_data.result
+        assert actual_value == fx_get_path_basename_data.result
         return
 
     # --------------------------------------------------------------------
