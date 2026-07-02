@@ -13,7 +13,6 @@ import sys
 
 import pytest
 import re
-import tempfile
 import logging
 import socket
 import threading
@@ -1304,24 +1303,33 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        mode = "w+b" if write_data001.call_param__binary else "w+"
+        tmp_file = os_ops.mkstemp("testgres-os_ops-test_write")
 
-        with tempfile.NamedTemporaryFile(mode=mode, delete=True) as tmp_file:
-            tmp_file.write(write_data001.source)
-            tmp_file.flush()
+        os_ops.write(
+            tmp_file,
+            write_data001.source,
+            binary=write_data001.call_param__binary,
+        )
+        s = os_ops.read(
+            tmp_file,
+            binary=write_data001.call_param__binary,
+        )
+        assert s == write_data001.source
 
-            os_ops.write(
-                tmp_file.name,
-                write_data001.call_param__data,
-                read_and_write=write_data001.call_param__rw,
-                truncate=write_data001.call_param__truncate,
-                binary=write_data001.call_param__binary)
+        os_ops.write(
+            tmp_file,
+            write_data001.call_param__data,
+            read_and_write=write_data001.call_param__rw,
+            truncate=write_data001.call_param__truncate,
+            binary=write_data001.call_param__binary,
+        )
+        s = os_ops.read(
+            tmp_file,
+            binary=write_data001.call_param__binary,
+        )
+        assert s == write_data001.result
 
-            tmp_file.seek(0)
-
-            s = tmp_file.read()
-
-            assert s == write_data001.result
+        os_ops.remove_file(tmp_file)
         return
 
     def test_touch(
