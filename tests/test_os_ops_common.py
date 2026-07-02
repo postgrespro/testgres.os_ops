@@ -5,7 +5,6 @@ from tests.helpers.global_data import OsOpsDescr
 from tests.helpers.global_data import OsOpsDescrs
 from tests.helpers.global_data import OsOperations
 from tests.helpers.run_conditions import RunConditions
-from tests.helpers import fx_structure
 
 import os
 import sys
@@ -1550,53 +1549,59 @@ class TestOsOpsCommon:
         return
 
     # --------------------------------------------------------------------
-    sm_GetBaseNameDatas: typing.List[fx_structure.GetBaseNameData] = [
-        fx_structure.GetBaseNameData(
+    @dataclasses.dataclass
+    class tagGetBaseNameData:
+        sign: str
+        value: str
+        result: str
+
+    sm_GetBaseNameDatas: typing.List[tagGetBaseNameData] = [
+        tagGetBaseNameData(
             sign="empty",
             value="",
             result="",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="relative_curdir",
             value=".",
             result=".",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="relative_parentdir",
             value="..",
             result="..",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="a",
             value="a",
             result="a",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="a.txt",
             value="a.txt",
             result="a.txt",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="root__a.txt",
             value="/a.txt",
             result="a.txt",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="curdir__a.txt",
             value="./a.txt",
             result="a.txt",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="parentdir__a.txt",
             value="../a.txt",
             result="a.txt",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="path001",
             value="a/b/c/my-file-name.txt",
             result="my-file-name.txt",
         ),
-        fx_structure.GetBaseNameData(
+        tagGetBaseNameData(
             sign="path002",
             value="a/b/c/my-file-name",
             result="my-file-name",
@@ -1615,18 +1620,18 @@ class TestOsOpsCommon:
     def fx_get_basename_data(
         self,
         request: pytest.FixtureRequest,
-    ) -> fx_structure.GetBaseNameData:
+    ) -> tagGetBaseNameData:
         assert isinstance(request, pytest.FixtureRequest)
-        assert type(request.param).__name__ == "GetBaseNameData"
+        assert type(request.param).__name__ == "tagGetBaseNameData"
         return request.param
 
     def test_get_basename(
         self,
         os_ops: OsOperations,
-        fx_get_basename_data: fx_structure.GetBaseNameData,
+        fx_get_basename_data: tagGetBaseNameData,
     ):
         assert isinstance(os_ops, OsOperations)
-        assert type(fx_get_basename_data) is fx_structure.GetBaseNameData
+        assert type(fx_get_basename_data) is __class__.tagGetBaseNameData
 
         actual_value = os_ops.get_basename(fx_get_basename_data.value)
         assert type(actual_value) is str
