@@ -1703,6 +1703,97 @@ class TestOsOpsCommon:
         assert actual_value is False
         return
 
+    # --------------------------------------------------------------------
+    @dataclasses.dataclass
+    class tagGetBaseNameData:
+        sign: str
+        value: str
+        result: str
+
+    sm_GetBaseNameDatas: typing.List[tagGetBaseNameData] = [
+        tagGetBaseNameData(
+            sign="empty",
+            value="",
+            result="",
+        ),
+        tagGetBaseNameData(
+            sign="relative_curdir",
+            value=".",
+            result=".",
+        ),
+        tagGetBaseNameData(
+            sign="relative_parentdir",
+            value="..",
+            result="..",
+        ),
+        tagGetBaseNameData(
+            sign="a",
+            value="a",
+            result="a",
+        ),
+        tagGetBaseNameData(
+            sign="a.txt",
+            value="a.txt",
+            result="a.txt",
+        ),
+        tagGetBaseNameData(
+            sign="root__a.txt",
+            value="/a.txt",
+            result="a.txt",
+        ),
+        tagGetBaseNameData(
+            sign="curdir__a.txt",
+            value="./a.txt",
+            result="a.txt",
+        ),
+        tagGetBaseNameData(
+            sign="parentdir__a.txt",
+            value="../a.txt",
+            result="a.txt",
+        ),
+        tagGetBaseNameData(
+            sign="path001",
+            value="a/b/c/my-file-name.txt",
+            result="my-file-name.txt",
+        ),
+        tagGetBaseNameData(
+            sign="path002",
+            value="a/b/c/my-file-name",
+            result="my-file-name",
+        ),
+    ]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id=x.sign,
+            )
+            for x in sm_GetBaseNameDatas
+        ]
+    )
+    def fx_get_basename_data(
+        self,
+        request: pytest.FixtureRequest,
+    ) -> tagGetBaseNameData:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param).__name__ == "tagGetBaseNameData"
+        return request.param
+
+    def test_get_basename(
+        self,
+        os_ops: OsOperations,
+        fx_get_basename_data: tagGetBaseNameData,
+    ):
+        assert isinstance(os_ops, OsOperations)
+        assert type(fx_get_basename_data) is __class__.tagGetBaseNameData
+
+        actual_value = os_ops.get_basename(fx_get_basename_data.value)
+        assert type(actual_value) is str
+        assert actual_value == fx_get_basename_data.result
+        return
+
+    # --------------------------------------------------------------------
     def test_get_process_children__no_children(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
 
