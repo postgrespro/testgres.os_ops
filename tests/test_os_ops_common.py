@@ -2058,10 +2058,10 @@ class TestOsOpsCommon:
 
         p = "."
         assert not os.path.isabs(p)
+        LocalCheck.check_path_is_not_abs(os_ops, p)
 
         actual_value = os_ops.is_abs_path(p)
         assert type(actual_value) is bool
-
         assert actual_value is False
         return
 
