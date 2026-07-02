@@ -279,3 +279,7 @@ class OsOperations:
     def get_basename(self, path: str) -> str:
         assert type(path) is str
         raise NotImplementedError()
+
+    def get_abs_path(self, path: str) -> str:
+        assert type(path) is str
+        raise NotImplementedError()

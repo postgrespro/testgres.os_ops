@@ -732,3 +732,17 @@ class LocalOperations(OsOperations):
     def get_basename(self, path: str) -> str:
         assert type(path) is str
         return os.path.basename(path)
+
+    def get_abs_path(self, path: str) -> str:
+        assert type(path) is str
+
+        normalized = os.path.normpath(path)
+        assert type(normalized) is str
+
+        # We expand the tilde locally so that the behavior matches the server
+        expanded = os.path.expanduser(normalized)
+        assert type(expanded) is str
+
+        r = os.path.abspath(expanded)
+        assert type(r) is str
+        return r
