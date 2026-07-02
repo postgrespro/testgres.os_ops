@@ -5,6 +5,7 @@ from tests.helpers.global_data import OsOpsDescr
 from tests.helpers.global_data import OsOpsDescrs
 from tests.helpers.global_data import OsOperations
 from tests.helpers.run_conditions import RunConditions
+from tests.helpers.local_check import LocalCheck
 
 import os
 import sys
@@ -433,21 +434,16 @@ class TestOsOpsCommon:
 
         RunConditions.skip_if_windows()
 
-        cmd = "pwd"
-        stdout = os_ops.exec_command(cmd, encoding='utf-8')
-        assert type(stdout) is str
-        pwd = stdout.strip()
-
-        path = "{}/test_dir".format(pwd)
+        path = "/tmp/testgres-os_ops-test_dir-{}".format(uuid.uuid4().bytes.hex())
 
         # Test makedirs
         os_ops.makedirs(path)
-        assert os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
         assert os_ops.path_exists(path)
 
         # Test rmdirs
         os_ops.rmdirs(path)
-        assert not os.path.exists(path)
+        LocalCheck.check_path_does_not_exists(os_ops, path)
         assert not os_ops.path_exists(path)
         return
 
