@@ -1204,13 +1204,19 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        name = __file__
-
-        assert os_ops.isfile(name)
+        name = os_ops.mkstemp()
+        LocalCheck.check_path_exists(os_ops, name)
+        LocalCheck.check_isfile(os_ops, name)
+        LocalCheck.check_not_isdir(os_ops, name)
+        assert os_ops.path_exists(name) is True
+        assert os_ops.isfile(name) is True
 
         response = os_ops.isdir(name)
-
         assert response is False
+
+        os_ops.remove_file(name)
+        LocalCheck.check_path_does_not_exists(os_ops, name)
+        assert os_ops.path_exists(name) is False
         return
 
     def test_cwd(
