@@ -10,6 +10,7 @@ import typing
 import copy
 import re
 import signal as os_signal
+import time
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -373,15 +374,27 @@ class RemoteOperations(OsOperations):
         cmd = ["mkdir", path]
         self.exec_command(cmd)
 
-    def rmdirs(self, path, ignore_errors=True):
+    def rmdirs(
+        self,
+        path: str,
+        ignore_errors: bool = True,
+        attempts: int = 3,
+        delay: OsOperations.T_DELAY = 1,
+    ) -> bool:
         """
-        Remove a directory in the remote server.
+        Removes a directory and its contents, retrying on failure.
         Args:
         - path (str): The path to the directory to be removed.
         - ignore_errors (bool): If True, do not raise error if directory does not exist.
+        - attempts: Number of attempts to remove the directory.
+        - delay: Delay between attempts in seconds.
         """
         assert type(path) is str
         assert type(ignore_errors) is bool
+        assert type(attempts) is int
+        assert type(delay) is int or type(delay) is float
+        assert attempts > 0
+        assert delay >= 0
 
         # ENOENT = 2 - No such file or directory
         # ENOTDIR = 20 - Not a directory
@@ -397,21 +410,36 @@ class RemoteOperations(OsOperations):
 
         cmd2 = ["sh", "-c", subprocess.list2cmdline(cmd1)]
 
-        try:
-            self.exec_command(cmd2, encoding=Helpers.GetDefaultEncoding())
-        except ExecUtilException as e:
-            if e.exit_code == 2:  # No such file or directory
-                return True
+        a = 0
+        while True:
+            assert a < attempts
+            a += 1
+            try:
+                self.exec_command(
+                    cmd2,
+                    encoding=Helpers.GetDefaultEncoding(),
+                )
+            except ExecUtilException as e:
+                if e.exit_code == 2:  # No such file or directory
+                    return True
 
-            if not ignore_errors:
-                raise
+                if a < attempts:
+                    errMsg = "Failed to remove directory {0} on attempt {1} ({2}): {3}".format(
+                        path, a, type(e).__name__, e
+                    )
+                    logging.warning(errMsg)
+                    time.sleep(delay)
+                    continue
 
-            errMsg = "Failed to remove directory {0} ({1}): {2}".format(
-                path, type(e).__name__, e
-            )
-            logging.warning(errMsg)
-            return False
-        return True
+                assert a == attempts
+
+                if not ignore_errors:
+                    raise
+
+                return False
+
+            # OK!
+            return True
 
     def rmdir(self, path: str):
         assert type(path) is str
