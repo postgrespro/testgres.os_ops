@@ -397,13 +397,18 @@ class LocalOperations(OsOperations):
         return os.name
 
     # Work with dirs
-    def makedirs(self, path, remove_existing=False):
+    def makedirs(
+        self,
+        path: str,
+        remove_existing: bool = False,
+    ) -> None:
+        assert type(path) is str
+        assert type(remove_existing) is bool
+
         if remove_existing:
             shutil.rmtree(path, ignore_errors=True)
-        try:
-            os.makedirs(path)
-        except FileExistsError:
-            pass
+
+        os.makedirs(path, exist_ok=True)
         return
 
     def makedir(self, path: str):

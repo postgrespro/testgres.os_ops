@@ -467,11 +467,18 @@ class TestOsOpsCommon:
 
         RunConditions.skip_if_windows()
 
-        path = "/root/test_dir"
+        path = "/root/test_dir-{}".format(uuid.uuid4().bytes.hex())
 
         # Test makedirs
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as x:
             os_ops.makedirs(path)
+
+        if type(os_ops).__name__ == "LocalOperations":
+            assert type(x.value) is PermissionError
+        elif type(os_ops).__name__ == "RemoteOperations":
+            assert type(x.value) is ExecUtilException
+        else:
+            __class__.helper__bug_check__unknown_os_ops_type(os_ops)
         return
 
     def test_listdir(
@@ -2461,3 +2468,14 @@ class TestOsOpsCommon:
 
         assert lines == result_bin
         return
+
+    @staticmethod
+    def helper__bug_check__unknown_os_ops_type(
+        os_ops: OsOperations,
+    ) -> typing.NoReturn:
+        assert isinstance(os_ops, OsOperations)
+
+        err_msg = "[BUG CHECK] Unknown os_ops type [{}].".format(
+            type(os_ops).__name__,
+        )
+        raise RuntimeError(err_msg)
