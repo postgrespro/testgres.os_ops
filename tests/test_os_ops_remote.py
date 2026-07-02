@@ -3,10 +3,10 @@
 from tests.helpers.global_data import OsOpsDescr
 from tests.helpers.global_data import OsOpsDescrs
 from tests.helpers.global_data import OsOperations
+from tests.helpers.local_check import LocalCheck
 
 from src.exceptions import ExecUtilException
 
-import os
 import pytest
 
 
@@ -43,12 +43,14 @@ class TestOsOpsRemote:
 
         path = os_ops.mkstemp()
         assert type(path) is str
-        assert os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
 
         with pytest.raises(ExecUtilException) as x:
             os_ops.rmdirs(path, ignore_errors=False)
 
-        assert os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
         assert type(x.value) is ExecUtilException
         assert type(x.value.description) is str
         assert x.value.description == "Utility exited with non-zero code (20). Error: `cannot remove '" + path + "': it is not a directory`"
