@@ -152,7 +152,21 @@ class OsOperations:
         assert type(path) is str
         raise NotImplementedError()
 
-    def rmdirs(self, path, ignore_errors=True):
+    T_DELAY = typing.Union[int, float]
+
+    def rmdirs(
+        self,
+        path: str,
+        ignore_errors: bool = True,
+        attempts: int = 3,
+        delay: T_DELAY = 1,
+    ) -> bool:
+        assert type(path) is str
+        assert type(ignore_errors) is bool
+        assert type(attempts) is int
+        assert type(delay) is int or type(delay) is float
+        assert attempts > 0
+        assert delay >= 0
         raise NotImplementedError()
 
     def rmdir(self, path: str):
