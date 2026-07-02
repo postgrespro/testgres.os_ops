@@ -1078,11 +1078,41 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = os.path.join(os.path.dirname(__file__), "nonexistent_file.txt")
+        tmpdir = os_ops.get_tempdir()
+
+        filename = os_ops.build_path(
+            tmpdir,
+            "nonexistent_file-{}.txt".format(uuid.uuid4().bytes.hex()),
+        )
+
+        LocalCheck.check_path_does_not_exists(os_ops, filename)
+        assert not os_ops.path_exists(filename)
+
+        local_detecter_is_created = False
+        if OsOpsHelpers.is_localhost(os_ops):
+            pass
+        elif sys.platform != os_ops.get_platform():
+            pass
+        elif not os.path.exists(tmpdir):
+            pass
+        else:
+            # We will check a real work with another host
+            assert not os.path.exists(filename)
+            with open(filename, "a"):
+                os.utime(filename, None)
+            assert os.path.exists(filename)
+            assert os.path.isfile(filename)
+            local_detecter_is_created = True
+            logging.info("Local detecter is created [{}]".format(filename))
 
         response = os_ops.isfile(filename)
-
         assert response is False
+
+        if local_detecter_is_created:
+            assert os.path.exists(filename)
+            os.remove(filename)
+            assert not os.path.exists(filename)
+            logging.info("Local detecter is deleted [{}]".format(filename))
         return
 
     def test_isfile_false__directory(
