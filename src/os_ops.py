@@ -139,7 +139,13 @@ class OsOperations:
         raise NotImplementedError()
 
     # Work with dirs
-    def makedirs(self, path, remove_existing=False):
+    def makedirs(
+        self,
+        path: str,
+        remove_existing: bool = False,
+    ) -> None:
+        assert type(path) is str
+        assert type(remove_existing) is bool
         raise NotImplementedError()
 
     def makedir(self, path: str):

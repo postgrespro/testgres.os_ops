@@ -346,7 +346,11 @@ class RemoteOperations(OsOperations):
         return stdout.strip()
 
     # Work with dirs
-    def makedirs(self, path, remove_existing=False):
+    def makedirs(
+        self,
+        path: str,
+        remove_existing: bool = False,
+    ) -> None:
         """
         Create a directory in the remote server.
         Args:
@@ -354,16 +358,15 @@ class RemoteOperations(OsOperations):
         - remove_existing (bool): If True, the existing directory at the path will be removed.
         """
         if remove_existing:
-            cmd = "rm -rf {} && mkdir -p {}".format(path, path)
+            cmd = ["rm", "-rf", path, "&&", "mkdir", "-p", path]
         else:
-            cmd = "mkdir -p {}".format(path)
-        try:
-            result = self.exec_command(cmd)
-        except ExecUtilException as e:
-            raise Exception("Couldn't create dir {} because of error {}".format(path, e.message))
+            cmd = ["mkdir", "-p", path]
 
-        assert type(result) is bytes
-        return result
+        self.exec_command(
+            cmd,
+            encoding=get_default_encoding(),
+        )
+        return
 
     def makedir(self, path: str):
         assert type(path) is str
