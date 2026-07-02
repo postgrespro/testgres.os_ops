@@ -265,6 +265,14 @@ class OsOperations:
         assert type(number) is int
         raise NotImplementedError()
 
+    def is_port_available(self, ip: str, number: int) -> bool:
+        assert type(ip) is str
+        assert ip != ""
+        assert type(number) is int
+        assert number >= 0
+        assert number <= 65535  # OK?
+        raise NotImplementedError()
+
     def get_tempdir(self) -> str:
         raise NotImplementedError()
 

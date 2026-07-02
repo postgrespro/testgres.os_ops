@@ -30,6 +30,33 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import Future as ThreadFuture
 
 
+@dataclasses.dataclass
+class tagIP:
+    family: socket.AddressFamily
+    value: str
+    sign: str
+
+
+def _enum_local_ips() -> typing.List[tagIP]:
+    res = subprocess.check_output(["ip", "-4", "addr", "show", "dev", "lo"]).decode()
+    ips = [
+        tagIP(
+            family=socket.AddressFamily.AF_INET,
+            value=v,
+            sign="ip4={}".format(v),
+        )
+        for v in re.findall(r"inet\s+([0-9.]+)", res)]
+
+    ips.append(
+        tagIP(
+            family=socket.AddressFamily.AF_INET6,
+            value="::1",
+            sign="ip6=standard_localhost",
+        ))
+
+    return ips
+
+
 class TestOsOpsCommon:
     sm_os_ops_descrs: typing.List[OsOpsDescr] = [
         OsOpsDescrs.sm_local_os_ops_descr,
@@ -1001,6 +1028,134 @@ class TestOsOpsCommon:
             raise RuntimeError("No one free port was found.")
         return
 
+    # --------------------------------------------------------------------
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                ip,
+                id=ip.sign,
+            ) for ip in _enum_local_ips()
+        ]
+    )
+    def local_ip(self, request: pytest.FixtureRequest) -> tagIP:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param) is tagIP
+        return request.param
+
+    # --------------------------------------------------------------------
+    def test_is_port_available__true(
+        self,
+        os_ops: OsOperations,
+        local_ip: tagIP,
+    ):
+        assert isinstance(os_ops, OsOperations)
+        assert type(local_ip) is tagIP
+
+        C_LIMIT = 128
+
+        ports = set(range(1024, 65535))
+        assert type(ports) is set
+
+        ok_count = 0
+        no_count = 0
+
+        for port in ports:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.bind(("", port))
+                except OSError:
+                    continue
+
+            r = os_ops.is_port_available(local_ip.value, port)
+
+            if r:
+                ok_count += 1
+                logging.info("OK. Port {} is available.".format(port))
+            else:
+                no_count += 1
+                logging.warning("NO. Port {} is not available.".format(port))
+
+            if ok_count == C_LIMIT:
+                return
+
+            if no_count == C_LIMIT:
+                raise RuntimeError("To many false positive test attempts.")
+            continue
+
+        if ok_count == 0:
+            raise RuntimeError("No one available port was found.")
+        return
+
+    # --------------------------------------------------------------------
+    def test_is_port_available__false(
+        self,
+        os_ops: OsOperations,
+        local_ip: tagIP,
+    ):
+        assert isinstance(os_ops, OsOperations)
+        assert type(local_ip) is tagIP
+
+        C_LIMIT = 10
+
+        ports = set(range(1024, 65535))
+        assert type(ports) is set
+
+        def LOCAL_server(s: socket.socket):
+            assert s is not None
+            assert type(s) is socket.socket
+
+            try:
+                while True:
+                    r = s.accept()
+
+                    if r is None:
+                        break
+            except Exception as e:
+                assert e is not None
+                pass
+
+        ok_count = 0
+        no_count = 0
+
+        for port in ports:
+            with socket.socket(local_ip.family, socket.SOCK_STREAM) as s:
+                try:
+                    s.bind((local_ip.value, port))
+                except OSError:
+                    continue
+
+                th = threading.Thread(target=LOCAL_server, args=[s])
+
+                s.listen(10)
+
+                assert type(th) is threading.Thread
+                th.start()
+
+                try:
+                    r = os_ops.is_port_available(local_ip.value, port)
+                finally:
+                    s.shutdown(2)
+                    th.join()
+
+                if not r:
+                    ok_count += 1
+                    logging.info("OK. Port {} is not available.".format(port))
+                else:
+                    no_count += 1
+                    logging.warning("NO. Port {} does not accept connection.".format(port))
+
+                if ok_count == C_LIMIT:
+                    return
+
+                if no_count == C_LIMIT:
+                    raise RuntimeError("To many false positive test attempts.")
+                continue
+
+        if ok_count == 0:
+            raise RuntimeError("No one available port was found.")
+        return
+
+    # --------------------------------------------------------------------
     def test_get_tempdir(self, os_ops: OsOperations):
         assert isinstance(os_ops, OsOperations)
 

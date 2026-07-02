@@ -16,6 +16,7 @@ import typing
 import threading
 import copy
 import signal as os_signal
+import ipaddress
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -710,6 +711,52 @@ class LocalOperations(OsOperations):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
                 s.bind(("", number))
+                return True
+            except OSError:
+                return False
+
+    def is_port_available(self, ip: str, number: int) -> bool:
+        assert type(ip) is str
+        assert ip != ""
+        assert type(number) is int
+        assert number >= 0
+        assert number <= 65535  # OK?
+
+        try:
+            addr = ipaddress.ip_address(ip)
+            if addr.version == 4:
+                return __class__._is_port_available_vX(
+                    ip,
+                    number,
+                    socket.AF_INET,
+                )
+            if addr.version == 6:
+                return self._is_port_available_vX(
+                    ip,
+                    number,
+                    socket.AF_INET6,
+                )
+        except ValueError:
+            raise RuntimeError("Unknown format of IP: {!r}".format(ip))
+
+        raise RuntimeError("Unsupported IP version: {!r}".format(ip))
+
+    @staticmethod
+    def _is_port_available_vX(
+        ip: str,
+        number: int,
+        address_family: socket.AddressFamily,
+    ) -> bool:
+        assert type(ip) is str
+        assert ip != ""
+        assert type(number) is int
+        assert number >= 0
+        assert number <= 65535  # OK?
+
+        with socket.socket(address_family, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((ip, number))
                 return True
             except OSError:
                 return False

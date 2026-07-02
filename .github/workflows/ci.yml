@@ -117,7 +117,7 @@ jobs:
     - name: Build local image ${{ matrix.alpine }}
       run: docker build --build-arg PYTHON_VERSION="${{ matrix.python }}" -t "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" -f Dockerfile--${{ matrix.platform }}.tmpl .
     - name: Run
-      run: docker run -t -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
+      run: docker run -t --cap-add=NET_ADMIN -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
     - name: Upload Logs
       uses: actions/upload-artifact@v7
       if: always() # IT IS IMPORTANT!
