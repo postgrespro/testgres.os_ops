@@ -50,6 +50,7 @@ ENTRYPOINT ["sh", "-c", " \
     set -eux; \
     echo 'SYSTEM START: PREPARING SSH'; \
     /usr/sbin/sshd; \
+    ls -la /home/test/.ssh/; \
     \"$@\"; \
 "]
 
@@ -74,6 +75,7 @@ if [ -n \"${TEST_PARAM_REMOTE2_SSH_KEY:-}\" ]; then \
     export TEST_PARAM_REMOTE2_SSH_KEY=\"${TEST_PARAM_REMOTE2_SSH_KEY}_ci\"; \
     chown test:test \"${TEST_PARAM_REMOTE2_SSH_KEY}\"; \
     chmod 600 \"${TEST_PARAM_REMOTE2_SSH_KEY}\"; \
+    ls -la /home/test/.ssh/; \
 fi; \
 ls -la ./; \
 su test -c \"bash ./run_tests3.sh\"; \
