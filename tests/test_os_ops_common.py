@@ -926,16 +926,26 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = __file__  # current file
-
-        with open(filename, 'rb') as file:  # open in a binary mode
+        with open(__file__, 'rb') as file:
             response0 = file.read()
 
         assert type(response0) is bytes
 
+        filename = os_ops.mkstemp(
+            "testgres-os_ops-test_read__binary",
+        )
+
+        os_ops.write(
+            filename,
+            response0,
+            binary=True,
+        )
+
         response1 = os_ops.read(filename, binary=True)
         assert type(response1) is bytes
         assert response1 == response0
+
+        os_ops.remove_file(filename)
         return
 
     def test_read__binary_and_encoding(
