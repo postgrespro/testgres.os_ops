@@ -22,7 +22,21 @@ jobs:
       matrix:
         include:
           - platform: "alpine"
+            python: "3.7"
+          - platform: "alpine"
+            python: "3.8"
+          - platform: "alpine"
+            python: "3.9"
+          - platform: "alpine"
+            python: "3.10"
+          - platform: "alpine"
+            python: "3.11"
+          - platform: "alpine"
             python: "3.12"
+          - platform: "alpine"
+            python: "3.13"
+          - platform: "alpine"
+            python: "3.14"
 
     env:
       BASE_SIGN: "${{ matrix.platform }}-py${{ matrix.python }}"
