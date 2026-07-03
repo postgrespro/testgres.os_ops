@@ -112,7 +112,7 @@ jobs:
         docker run -d --name remote2 \
           -v ${{ github.workspace }}/remote2_ssh/authorized_keys:/home/test/.ssh/authorized_keys:ro \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
-          sleep infinity
+          - sleep infinity
 
     - name: Run Main Test Container
       run: |
