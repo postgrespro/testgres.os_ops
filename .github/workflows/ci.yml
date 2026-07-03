@@ -37,6 +37,8 @@ jobs:
             python: "3.13"
           - platform: "alpine"
             python: "3.14"
+          - platform: "ubuntu_24_04"
+            python: "3"
 
     env:
       BASE_SIGN: "${{ matrix.platform }}-py${{ matrix.python }}"
