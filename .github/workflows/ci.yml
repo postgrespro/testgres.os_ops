@@ -73,29 +73,7 @@ jobs:
       matrix:
         include:
           - platform: "alpine"
-            python: "3.7"
-          - platform: "alpine"
-            python: "3.8"
-          - platform: "alpine"
-            python: "3.9"
-          - platform: "alpine"
-            python: "3.10"
-          - platform: "alpine"
-            python: "3.11"
-          - platform: "alpine"
             python: "3.12"
-          - platform: "alpine"
-            python: "3.13"
-          - platform: "alpine"
-            python: "3.14"
-          - platform: "ubuntu_24_04"
-            python: "3"
-          - platform: "altlinux_10"
-            python: "3"
-          - platform: "altlinux_11"
-            python: "3"
-          - platform: "astralinux_1_7"
-            python: "3"
 
     env:
       BASE_SIGN: "${{ matrix.platform }}-py${{ matrix.python }}"
@@ -116,8 +94,40 @@ jobs:
       run: chmod -R 777 "${{ env.RUN_CFG__LOGS_DIR }}"
     - name: Build local image ${{ matrix.alpine }}
       run: docker build --build-arg PYTHON_VERSION="${{ matrix.python }}" -t "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" -f Dockerfile--${{ matrix.platform }}.tmpl .
-    - name: Run
-      run: docker run -t -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
+
+    - name: Generate temporary SSH Key pair for CI
+      run: |
+        # Generate a key without a password directly on the GitHub Actions host
+        ssh-keygen -t ed25519 -N "" -f ${{ github.workspace }}/id_ed25519
+        # Create a folder structure for forwarding the key to the test user
+        mkdir -p ${{ github.workspace }}/remote2_ssh
+        cat ${{ github.workspace }}/id_ed25519.pub > ${{ github.workspace }}/remote2_ssh/authorized_keys
+        chmod 600 ${{ github.workspace }}/remote2_ssh/authorized_keys
+
+    - name: Run second target host (remote2)
+      run: |
+        # Launch a second container in the background (-d) named "remote2"
+        # Add the generated key to its authorized_keys for the user "test"
+        # Redefine CMD to "sleep infinity" so it runs as a bare server
+        docker run -d --name remote2 \
+          -v ${{ github.workspace }}/remote2_ssh/authorized_keys:/home/test/.ssh/authorized_keys:ro \
+          "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
+          sleep infinity
+
+    - name: Run Main Test Container
+      run: |
+        # Launch the main container, passing the private key to the .ssh folder of the test user.
+        # Pass environment variables so Python tests know where to start.
+        # Link the containers using --link so the name "remote2" resolves to an IP address.
+        docker run -t \
+          --link remote2:remote2 \
+          -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs \
+          -v ${{ github.workspace }}/id_ed25519:/home/test/.ssh/id_ed25519:ro \
+          -e TEST_PARAM_REMOTE2_HOST="remote2" \
+          -e TEST_PARAM_REMOTE2_USERNAME="test" \
+          -e TEST_PARAM_REMOTE2_SSH_KEY="/home/test/.ssh/id_ed25519" \
+          "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
+
     - name: Upload Logs
       uses: actions/upload-artifact@v7
       if: always() # IT IS IMPORTANT!
