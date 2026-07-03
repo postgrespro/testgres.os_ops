@@ -7,12 +7,13 @@ RUN apt-get update
 RUN apt-get install -y sudo curl ca-certificates
 RUN apt-get update
 RUN apt-get install -y openssh-server openssh-clients
+RUN apt-get install -y sshpass
 RUN apt-get install -y time
+RUN apt-get install -y su
 
 # RUN apt-get install -y mc
 
 EXPOSE 22
-
 RUN ssh-keygen -A
 
 # --------------------------------------------- dev_tools
@@ -41,24 +42,45 @@ WORKDIR /home/test/testgres
 
 ENV LANG=C.UTF-8
 
-USER test
-
-RUN chmod 700 ~/
-RUN mkdir -p ~/.ssh
+RUN chmod 700 /home/test/
+RUN mkdir -p /home/test/.ssh
+RUN chown -R test:test /home/test/.ssh
 
 #
 # Altlinux 10 and 11 too slowly create a new SSH connection (x6).
 #
 
-ENTRYPOINT sh -c " \
+ENTRYPOINT ["sh", "-c", " \
+    set -eux; \
+    echo 'SYSTEM START: PREPARING SSH'; \
+    /usr/sbin/sshd; \
+    ls -la /home/test/.ssh/; \
+    \"$@\"; \
+"]
+
+# Run tests by default (master machine role)
+CMD ["", "bash", "-c", " \
 set -eux; \
-echo HELLO FROM ENTRYPOINT; \
-echo HOME DIR IS [`realpath ~/`]; \
-sudo /usr/sbin/sshd; \
-ssh-keyscan -H localhost >> ~/.ssh/known_hosts; \
-ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts; \
-ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''; \
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys; \
-chmod 600 ~/.ssh/authorized_keys; \
-ls -la ~/.ssh/; \
-TEST_FILTER=\"\" bash ./run_tests3.sh;"
+echo \"HOME DIR IS [`realpath ~/`]\"; \
+echo \"WORK DIR IS [$(pwd)]\"; \
+if [ ! -f /home/test/.ssh/id_rsa ]; then \
+    su -c \"ssh-keygen -t rsa -f /home/test/.ssh/id_rsa -q -N ''\" test; \
+    su -c \"cat /home/test/.ssh/id_rsa.pub >> /home/test/.ssh/authorized_keys\" test; \
+    chmod 600 /home/test/.ssh/authorized_keys; \
+fi; \
+ls -la /home/test/.ssh/; \
+su -c \"ssh-keyscan -H localhost >> /home/test/.ssh/known_hosts\" test; \
+su -c \"ssh-keyscan -H 127.0.0.1 >> /home/test/.ssh/known_hosts\" test; \
+if [ -n \"${TEST_PARAM_REMOTE2_HOST:-}\" ]; then \
+    su -c \"ssh-keyscan -H ${TEST_PARAM_REMOTE2_HOST} >> /home/test/.ssh/known_hosts\" test; \
+fi; \
+if [ -n \"${TEST_PARAM_REMOTE2_SSH_KEY:-}\" ]; then \
+    cp \"${TEST_PARAM_REMOTE2_SSH_KEY}\" \"${TEST_PARAM_REMOTE2_SSH_KEY}_ci\"; \
+    export TEST_PARAM_REMOTE2_SSH_KEY=\"${TEST_PARAM_REMOTE2_SSH_KEY}_ci\"; \
+    chown test:test \"${TEST_PARAM_REMOTE2_SSH_KEY}\"; \
+    chmod 600 \"${TEST_PARAM_REMOTE2_SSH_KEY}\"; \
+    ls -la /home/test/.ssh/; \
+fi; \
+ls -la ./; \
+su - test -c \"cd /home/test/testgres && bash ./run_tests3.sh\"; \
+"]
