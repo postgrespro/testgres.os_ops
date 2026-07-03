@@ -43,7 +43,6 @@ RUN chown -R test:test /home/test/.ssh
 ENTRYPOINT ["sh", "-c", " \
     set -eux; \
     echo 'SYSTEM START: PREPARING SSH'; \
-    # service ssh enable; \
     service ssh start; \
     ls -la /home/test/.ssh/; \
     \"$@\"; \
