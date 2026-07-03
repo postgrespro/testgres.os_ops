@@ -61,14 +61,14 @@ fi; \
 ls -la /home/test/.ssh/; \
 su test -c \"ssh-keyscan -H localhost >> /home/test/.ssh/known_hosts\"; \
 su test -c \"ssh-keyscan -H 127.0.0.1 >> /home/test/.ssh/known_hosts\"; \
-if [ -n \"${TEST_PARAM_REMOTE2_HOST:-}\" ]; then \
-    su test -c \"ssh-keyscan -H ${TEST_PARAM_REMOTE2_HOST} >> /home/test/.ssh/known_hosts\"; \
+if [ -n \"${TEST_CFG_REMOTE2_HOST:-}\" ]; then \
+    su test -c \"ssh-keyscan -H ${TEST_CFG_REMOTE2_HOST} >> /home/test/.ssh/known_hosts\"; \
 fi; \
-if [ -n \"${TEST_PARAM_REMOTE2_SSH_KEY:-}\" ]; then \
-    cp \"${TEST_PARAM_REMOTE2_SSH_KEY}\" \"${TEST_PARAM_REMOTE2_SSH_KEY}_ci\"; \
-    export TEST_PARAM_REMOTE2_SSH_KEY=\"${TEST_PARAM_REMOTE2_SSH_KEY}_ci\"; \
-    chown test:test \"${TEST_PARAM_REMOTE2_SSH_KEY}\"; \
-    chmod 600 \"${TEST_PARAM_REMOTE2_SSH_KEY}\"; \
+if [ -n \"${TEST_CFG_REMOTE2_SSH_KEY:-}\" ]; then \
+    cp \"${TEST_CFG_REMOTE2_SSH_KEY}\" \"${TEST_CFG_REMOTE2_SSH_KEY}_ci\"; \
+    export TEST_CFG_REMOTE2_SSH_KEY=\"${TEST_CFG_REMOTE2_SSH_KEY}_ci\"; \
+    chown test:test \"${TEST_CFG_REMOTE2_SSH_KEY}\"; \
+    chmod 600 \"${TEST_CFG_REMOTE2_SSH_KEY}\"; \
     ls -la /home/test/.ssh/; \
 fi; \
 ls -la ./; \
