@@ -55,32 +55,24 @@ jobs:
 
     - name: Run second target host (remote2)
       run: |
-        # Launch a second container in the background (-d) named "remote2"
-        # Add the generated key to its authorized_keys for the user "test"
-        # Redefine CMD to "sleep infinity" so it runs as a bare server
         docker run -d -t --name remote2 \
           -v ${{ github.workspace }}/remote2_ssh/authorized_keys:/home/test/.ssh/authorized_keys_ci:ro \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
-          - bash -c "\
-            echo \"---------------- OS\" && \
-            cat /etc/os-release
-            echo \"---------------- USERS\" && \
-            getent passwd && \
-            echo \"---------------- DIRS\" && \
-            echo \"HOME DIR IS [`realpath ~/`]\" &&  \
-            echo \"WORK DIR IS [$(pwd)]\" && \
-            echo \"---------------- WORK DIR\" && \
-            ls -la ./ && \
-            echo \"---------------- .SSH\" && \
-            ls -la /home/test/.ssh/ && \
-            cp /home/test/.ssh/authorized_keys_ci /home/test/.ssh/authorized_keys && \
-            ls -la /home/test/.ssh/ && \
-            chown test:test /home/test/.ssh/authorized_keys && \
-            chmod 600 /home/test/.ssh/authorized_keys && \
-            chmod 700 /home/test/.ssh && \
-            ls -la /home/test/.ssh/ && \
-            sleep infinity \
-            "
+          - sleep infinity
+
+        sleep 1.0
+
+        docker exec -u root remote2 sh -c "
+          echo '--- INSIDE CONTAINER OS ---' && \
+          cat /etc/os-release && \
+          echo '---' && \
+          cp /home/test/.ssh/authorized_keys_ci /home/test/.ssh/authorized_keys && \
+          chown test.test /home/test/.ssh/authorized_keys && \
+          chmod 600 /home/test/.ssh/authorized_keys && \
+          chmod 700 /home/test/.ssh && \
+          echo '--- INSIDE CONTAINER .SSH ---' && \
+          ls -la /home/test/.ssh/
+        "
 
     - name: Run Main Test Container
       run: |
