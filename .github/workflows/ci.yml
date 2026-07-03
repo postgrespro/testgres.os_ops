@@ -58,7 +58,7 @@ jobs:
         # Launch a second container in the background (-d) named "remote2"
         # Add the generated key to its authorized_keys for the user "test"
         # Redefine CMD to "sleep infinity" so it runs as a bare server
-        docker run -d --name remote2 \
+        docker run -d -t --name remote2 \
           -v ${{ github.workspace }}/remote2_ssh/authorized_keys:/home/test/.ssh/authorized_keys_ci:ro \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - bash -c "\
