@@ -20,6 +20,7 @@ class OsOpsDescr:
 class OsOpsDescrs:
     sm_remote_conn_params = ConnectionParams(
         host=os.getenv('TEST_CFG_REMOTE2_HOST') or '127.0.0.1',
+        port=int(os.getenv('TEST_CFG_REMOTE2_PORT', 0)) if os.getenv('TEST_CFG_REMOTE2_PORT') else None,
         username=os.getenv('TEST_CFG_REMOTE2_USERNAME'),
         ssh_key=os.getenv('TEST_CFG_REMOTE2_SSH_KEY'),
         password=os.getenv('TEST_CFG_REMOTE2_PASSWORD'),
