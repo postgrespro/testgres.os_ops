@@ -1862,42 +1862,42 @@ exit(0)
         logging.info("Test is finished! Total error count is {}.".format(nErrors))
         return
 
-    T_KILL_SIGNAL_DESCR = typing.Tuple[
-        str,
-        typing.Union[int, os_signal.Signals],
-        str
-    ]
+    @dataclasses.dataclass
+    class T_KILL_SIGNAL_DESCR:
+        sign: str
+        signal: typing.Union[int, os_signal.Signals]
+        signal_num_s: str
 
     sm_kill_signal_ids: typing.List[T_KILL_SIGNAL_DESCR] = [
-        ("SIGINT", os_signal.SIGINT, "2"),
-        # ("SIGQUIT", os_signal.SIGQUIT, "3"), # it creates coredump
-        ("SIGKILL", os_signal.SIGKILL, "9"),
-        ("SIGTERM", os_signal.SIGTERM, "15"),
-        ("2", 2, "2"),
-        # ("3", 3, "3"), # it creates coredump
-        ("9", 9, "9"),
-        ("15", 15, "15"),
+        T_KILL_SIGNAL_DESCR("SIGINT", os_signal.SIGINT, "2"),
+        # T_KILL_SIGNAL_DESCR("SIGQUIT", os_signal.SIGQUIT, "3"), # it creates coredump
+        T_KILL_SIGNAL_DESCR("SIGKILL", os_signal.SIGKILL, "9"),
+        T_KILL_SIGNAL_DESCR("SIGTERM", os_signal.SIGTERM, "15"),
+        T_KILL_SIGNAL_DESCR("2", 2, "2"),
+        # T_KILL_SIGNAL_DESCR("3", 3, "3"), # it creates coredump
+        T_KILL_SIGNAL_DESCR("9", 9, "9"),
+        T_KILL_SIGNAL_DESCR("15", 15, "15"),
     ]
 
     @pytest.fixture(
         params=sm_kill_signal_ids,
-        ids=["signal: {}".format(x[0]) for x in sm_kill_signal_ids],
+        ids=["signal: {}".format(x.sign) for x in sm_kill_signal_ids],
     )
     def kill_signal_id(
         self,
         request: pytest.FixtureRequest,
     ) -> T_KILL_SIGNAL_DESCR:
         assert isinstance(request, pytest.FixtureRequest)
-        assert type(request.param) is tuple
+        assert type(request.param).__name__ == "T_KILL_SIGNAL_DESCR"
         return request.param
 
     def test_kill_signal(
         self,
         kill_signal_id: T_KILL_SIGNAL_DESCR,
     ):
-        assert type(kill_signal_id) is tuple
-        assert "{}".format(kill_signal_id[1]) == kill_signal_id[2]
-        assert "{}".format(int(kill_signal_id[1])) == kill_signal_id[2]
+        assert type(kill_signal_id) is __class__.T_KILL_SIGNAL_DESCR
+        assert "{}".format(kill_signal_id.signal) == kill_signal_id.signal_num_s
+        assert "{}".format(int(kill_signal_id.signal)) == kill_signal_id.signal_num_s
         return
 
     def test_kill(
@@ -1910,36 +1910,43 @@ exit(0)
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
-        assert type(kill_signal_id) is tuple
+        assert type(kill_signal_id) is __class__.T_KILL_SIGNAL_DESCR
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         cmd = [
-            sys.executable,
+            "python3",
+            "-u",
             "-c",
-            "import time; print('ENTER');time.sleep(300);print('EXIT')"
+            "import os, time; print(os.getpid());time.sleep(300);print('EXIT')"
         ]
 
         logging.info("Local test process is creating ...")
-        proc = subprocess.Popen(
+        proc = os_ops.exec_command(
             cmd,
-            text=True,
+            encoding="utf-8",
+            get_process=True,
         )
 
         assert proc is not None
         assert type(proc) is subprocess.Popen
-        proc_pid = proc.pid
+        assert proc.stdout is not None
+        line = proc.stdout.readline()
+        assert line is not None
+        assert type(line) is str
+        logging.info("proc output: {!r}".format(line))
+        line = line.rstrip()
+        assert line != ""
+        proc_pid = int(line)
         assert type(proc_pid) is int
         logging.info("Test process pid is {}".format(proc_pid))
 
-        logging.info("Get this test process ...")
-        p1 = psutil.Process(proc_pid)
-        assert p1 is not None
-        del p1
+        logging.info("Check this test process ...")
+        assert os_ops.get_process_children(proc_pid) == []
 
         logging.info("Kill this test process ...")
-        os_ops.kill(proc_pid, kill_signal_id[1])
+        os_ops.kill(proc_pid, kill_signal_id.signal)
 
         logging.info("Wait for finish ...")
         proc.wait()
@@ -1958,19 +1965,34 @@ exit(0)
                 time.sleep(1)
 
             try:
-                psutil.Process(proc_pid)
-            except psutil.ZombieProcess as e:
-                logging.info("Exception {}: {}".format(
-                    type(e).__name__,
-                    str(e),
+                os_ops.get_process_children(proc_pid)
+            except Exception as e:
+                if type(os_ops).__name__ == "LocalOperations":
+                    if isinstance(e, psutil.ZombieProcess):
+                        logging.info("Exception {}: {}".format(
+                            type(e).__name__,
+                            str(e),
+                        ))
+                        break
+                    if isinstance(e, psutil.NoSuchProcess):
+                        logging.info("OK. Process died.")
+                        break
+                    raise
+
+                if type(os_ops).__name__ == "RemoteOperations":
+                    if isinstance(e, ExecUtilException):
+                        assert e.exit_code == 1
+                        logging.info("OK. Process died.")
+                        break
+                    raise
+
+                logging.error("Unknown os_ops object: {}".format(
+                    type(os_ops).__name__,
                 ))
-            except psutil.NoSuchProcess:
-                logging.info("OK. Process died.")
-                break
-
-            logging.info("Process is alive!")
-            continue
-
+                raise
+            else:
+                logging.info("Process is alive!")
+                continue
         return
 
     def test_kill__unk_pid(
@@ -1983,38 +2005,59 @@ exit(0)
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
-        assert type(kill_signal_id) is tuple
+        assert type(kill_signal_id) is __class__.T_KILL_SIGNAL_DESCR
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         cmd = [
-            sys.executable,
+            "python3",
+            "-u",
             "-c",
-            "import sys; print(\"a\", file=sys.stdout); print(\"b\", file=sys.stderr)"
+            """
+import os, sys
+print('a:' + str(os.getpid()), file=sys.stdout)
+print('a2', file=sys.stdout)
+print('b', file=sys.stderr)
+"""
         ]
 
         logging.info("Local test process is creating ...")
-        proc = subprocess.Popen(
+        proc = os_ops.exec_command(
             cmd,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            get_process=True,
         )
 
         assert proc is not None
         assert type(proc) is subprocess.Popen
+
         proc_pid = proc.pid
+        assert type(proc_pid) is int
+        assert proc.stdout is not None
+        line = proc.stdout.readline()
+        assert line is not None
+        assert type(line) is str
+        logging.info("proc output: {!r}".format(line))
+        line = line.rstrip()
+        assert line != ""
+        assert line.startswith("a:")
+        line = line[2:]
+        assert line != ""
+        proc_pid = int(line)
         assert type(proc_pid) is int
         logging.info("Test process pid is {}".format(proc_pid))
 
         logging.info("Wait for finish ...")
-        pout, perr = proc.communicate()
+        pout = proc.stdout.read()
+        assert proc.stderr is not None
+        perr = proc.stderr.read()
+        proc.wait()
         logging.info("STDOUT: {}".format(pout))
-        logging.info("STDERR: {}".format(pout))
+        logging.info("STDERR: {}".format(perr))
         assert type(pout) is str
         assert type(perr) is str
-        assert pout == "a\n"
+        assert pout == "a2\n"
         assert perr == "b\n"
         assert type(proc.returncode) is int
         assert proc.returncode == 0
@@ -2033,22 +2076,38 @@ exit(0)
                 time.sleep(1)
 
             try:
-                psutil.Process(proc_pid)
-            except psutil.ZombieProcess as e:
-                logging.info("Exception {}: {}".format(
-                    type(e).__name__,
-                    str(e),
-                ))
-            except psutil.NoSuchProcess:
-                logging.info("OK. Process died.")
-                break
+                os_ops.get_process_children(proc_pid)
+            except Exception as e:
+                if type(os_ops).__name__ == "LocalOperations":
+                    if isinstance(e, psutil.ZombieProcess):
+                        logging.info("Exception {}: {}".format(
+                            type(e).__name__,
+                            str(e),
+                        ))
+                        break
+                    if isinstance(e, psutil.NoSuchProcess):
+                        logging.info("OK. Process died.")
+                        break
+                    raise
 
-            logging.info("Process is alive!")
-            continue
+                if type(os_ops).__name__ == "RemoteOperations":
+                    if isinstance(e, ExecUtilException):
+                        assert e.exit_code == 1
+                        logging.info("OK. Process died.")
+                        break
+                    raise
+
+                logging.error("Unknown os_ops object: {}".format(
+                    type(os_ops).__name__,
+                ))
+                raise
+            else:
+                logging.info("Process is alive!")
+                continue
 
         # --------------------
         with pytest.raises(expected_exception=Exception) as x:
-            os_ops.kill(proc_pid, kill_signal_id[1])
+            os_ops.kill(proc_pid, kill_signal_id.signal)
 
         assert x is not None
         assert isinstance(x.value, Exception)
@@ -2057,14 +2116,14 @@ exit(0)
         logging.info("Our error is [{}]".format(str(x.value)))
         logging.info("Our exception has type [{}]".format(type(x.value).__name__))
 
-        if type(os_ops).__name__ == "LocalOsOperations":
+        if type(os_ops).__name__ == "LocalOperations":
             assert type(x.value) is ProcessLookupError
             assert "No such process" in str(x.value)
-        elif type(os_ops).__name__ == "RemoteOsOperations":
+        elif type(os_ops).__name__ == "RemoteOperations":
             assert type(x.value) is ExecUtilException
             assert "No such process" in str(x.value)
         else:
-            RuntimeError("Unknown os_ops type: {}".format(type(os_ops).__name__))
+            __class__.helper__bug_check__unknown_os_ops_type(os_ops)
 
         return
 
