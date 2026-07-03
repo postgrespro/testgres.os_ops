@@ -63,7 +63,7 @@ jobs:
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - bash -c '\
           echo "---------------- OS" && \
-          cat /etc/os-release
+          cat /etc/os-release " && \
           echo "---------------- USERS" && \
           getent passwd && \
           echo "---------------- DIRS" && \
