@@ -100,10 +100,10 @@ jobs:
         docker run -t \
           --link ${{ env.RUN_CFG__REMOTE2_NAME }}:${{ env.RUN_CFG__REMOTE2_NAME }} \
           -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs \
-          -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}:/home/test/.ssh/id_ed25519:ro \
+          -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}:/home/test/testgres/id_ed25519_test:ro \
           -e TEST_PARAM_REMOTE2_HOST="${{ env.RUN_CFG__REMOTE2_NAME }}" \
           -e TEST_PARAM_REMOTE2_USERNAME="test" \
-          -e TEST_PARAM_REMOTE2_SSH_KEY="/home/test/.ssh/id_ed25519" \
+          -e TEST_PARAM_REMOTE2_SSH_KEY="/home/test/testgres/id_ed25519_test" \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}"
 
     - name: Upload Logs
