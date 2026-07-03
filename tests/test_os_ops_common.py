@@ -972,12 +972,20 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = __file__  # currnt file
-
-        with open(filename, 'rb') as file:  # open in a binary mode
+        with open(__file__, 'rb') as file:
             response0 = file.read()
 
         assert type(response0) is bytes
+
+        filename = os_ops.mkstemp(
+            "testgres-os_ops-test_read_binary__spec",
+        )
+
+        os_ops.write(
+            filename,
+            response0,
+            binary=True,
+        )
 
         response1 = os_ops.read_binary(filename, 0)
         assert type(response1) is bytes
@@ -1001,6 +1009,8 @@ class TestOsOpsCommon:
         response5 = os_ops.read_binary(filename, len(response1) + 1)
         assert type(response5) is bytes
         assert len(response5) == 0
+
+        os_ops.remove_file(filename)
         return
 
     def test_read_binary__spec__negative_offset(
