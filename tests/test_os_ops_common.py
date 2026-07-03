@@ -2732,7 +2732,7 @@ print('b', file=sys.stderr)
         #
         # Author: Marg G. (mark@google.com)
         #
-        # It used as is. Without any changes.
+        # It is used as is, without any modifications.
         #
 
         assert type(os_ops_descr) is OsOpsDescr
