@@ -63,7 +63,7 @@ jobs:
           -v ${{ github.workspace }}/remote2_ssh/authorized_keys:/home/test/.ssh/authorized_keys_ci:ro \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - \
-          cp /tmp/authorized_keys_ci /home/test/.ssh/authorized_keys && \
+          cp /home/test/.ssh/authorized_keys_ci /home/test/.ssh/authorized_keys && \
           chown test:test /home/test/.ssh/authorized_keys && \
           chmod 600 /home/test/.ssh/authorized_keys && \
           chmod 700 /home/test/.ssh && \
