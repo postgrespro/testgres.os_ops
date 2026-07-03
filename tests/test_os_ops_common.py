@@ -879,12 +879,20 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = __file__  # current file
-
-        with open(filename, 'r') as file:  # open in a text mode
+        with open(__file__, 'r', encoding="utf-8") as file:
             response0 = file.read()
 
         assert type(response0) is str
+
+        filename = os_ops.mkstemp(
+            "testgres-os_ops-test_read__text",
+        )
+
+        os_ops.write(
+            filename,
+            response0,
+            binary=False,
+        )
 
         response1 = os_ops.read(filename)
         assert type(response1) is str
@@ -901,6 +909,8 @@ class TestOsOpsCommon:
         response4 = os_ops.read(filename, encoding="UTF-8")
         assert type(response4) is str
         assert response4 == response0
+
+        os_ops.remove_file(filename)
         return
 
     def test_read__binary(
