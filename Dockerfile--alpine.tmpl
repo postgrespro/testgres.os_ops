@@ -61,7 +61,7 @@ echo \"HOME DIR IS [`realpath ~/`]\"; \
 echo \"WORK DIR IS [$(pwd)]\"; \
 if [ ! -f /home/test/.ssh/id_rsa ]; then \
     su test -c \"ssh-keygen -t rsa -f /home/test/.ssh/id_rsa -q -N ''\"; \
-    su test -c \"cat /home/test/.ssh/id_rsa.pub >> /home/test/.ssh/authorized_keys;\" \
+    su test -c \"cat /home/test/.ssh/id_rsa.pub >> /home/test/.ssh/authorized_keys\"; \
     chmod 600 /home/test/.ssh/authorized_keys; \
 fi; \
 ls -la /home/test/.ssh/; \
