@@ -1089,10 +1089,12 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = __file__
+        RunConditions.skip_if_windows()
 
+        filename = "/bin/sh"
+
+        LocalCheck.check_isfile(os_ops, filename)
         response = os_ops.isfile(filename)
-
         assert response is True
         return
 
