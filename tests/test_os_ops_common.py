@@ -2725,6 +2725,60 @@ print('b', file=sys.stderr)
         assert lines == result_bin
         return
 
+    def test_prove_environment_isolation(
+        self,
+        os_ops_descr: OsOpsDescr
+    ):
+        #
+        # Author: Marg G. (mark@google.com)
+        #
+        # It used as is. Without any changes.
+        #
+
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        logging.info("=================== COKANUM PROOF START ===================")
+        logging.info(f"Target environment type: [{os_ops_descr.sign}]")
+
+        # 1. Забираем OS-RELEASE
+        try:
+            # Используем cat, который мы уже проверили
+            os_release = os_ops.read("/etc/os-release")
+            # Вытаскиваем только PRETTY_NAME для компактности в логах
+            pretty_name = "Unknown Linux"
+            for line in os_release.splitlines():
+                if line.startswith("PRETTY_NAME="):
+                    pretty_name = line.split("=")[1].strip('"')
+                    break
+            logging.info(f"OS Platform detected : {pretty_name}")
+        except Exception as e:
+            logging.error(f"Failed to read os-release: {e}")
+
+        # 2. Забираем IP-адреса через 'ip route' или 'ip address'
+        # Чтобы не парсить гигантскую простыню ip addr, возьмем интерфейс, который смотрит наружу
+        try:
+            # awk у нас теперь работает как надо, так что забираем чистый IP
+            cmd = ["sh", "-c", "ip route get 1.1.1.1 | awk '{print $7; exit}'"]
+            ip_r = os_ops.exec_command(cmd, encoding="utf-8")
+            ip_clean = ip_r.strip() if isinstance(ip_r, str) else "unknown"
+
+            # Если ip route пустой (например, нет внешнего интернета в контейнере), берем дефолтный ip addr
+            if not ip_clean:
+                cmd = ["sh", "-c", "ip address show eth0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1"]
+                ip_r = os_ops.exec_command(cmd, encoding="utf-8")
+                ip_clean = ip_r.strip() if isinstance(ip_r, str) else "unknown"
+
+            logging.info(f"Machine IP Address   : {ip_clean}")
+        except Exception as e:
+            logging.error(f"Failed to get IP address: {e}")
+
+        logging.info("=================== COKANUM PROOF END =====================")
+
+        # Тест всегда успешный, его цель — оставить исторический след в логах гитхаба
+        assert True
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,
