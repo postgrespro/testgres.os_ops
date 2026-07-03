@@ -532,7 +532,10 @@ class TestOsOpsCommon:
 
         RunConditions.skip_if_windows()
 
-        assert os_ops.path_exists(__file__) is True
+        filename = "/bin/sh"
+
+        LocalCheck.check_path_exists(os_ops, filename)
+        assert os_ops.path_exists(filename) is True
         return
 
     def test_path_exists_false__directory(
