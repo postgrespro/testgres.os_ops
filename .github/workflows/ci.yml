@@ -61,7 +61,7 @@ jobs:
         docker run -d --name remote2 \
           -v ${{ github.workspace }}/remote2_ssh/authorized_keys:/home/test/.ssh/authorized_keys_ci:ro \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
-          - \
+          - bash -c '\
           echo "---------------- OS" && \
           cat /etc/os-release
           echo "---------------- USERS" && \
@@ -79,7 +79,8 @@ jobs:
           chmod 600 /home/test/.ssh/authorized_keys && \
           chmod 700 /home/test/.ssh && \
           ls -la /home/test/.ssh/ && \
-          sleep infinity
+          sleep infinity \
+          '
 
     - name: Run Main Test Container
       run: |
