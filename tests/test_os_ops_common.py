@@ -2732,8 +2732,6 @@ print('b', file=sys.stderr)
         #
         # Author: Marg G. (mark@google.com)
         #
-        # It is used as is, without any modifications.
-        #
 
         assert type(os_ops_descr) is OsOpsDescr
         os_ops = os_ops_descr.os_ops
@@ -2746,6 +2744,7 @@ print('b', file=sys.stderr)
         try:
             # Используем cat, который мы уже проверили
             os_release = os_ops.read("/etc/os-release")
+            assert type(os_release) is str
             # Вытаскиваем только PRETTY_NAME для компактности в логах
             pretty_name = "Unknown Linux"
             for line in os_release.splitlines():
@@ -2756,23 +2755,17 @@ print('b', file=sys.stderr)
         except Exception as e:
             logging.error(f"Failed to read os-release: {e}")
 
-        # 2. Забираем IP-адреса через 'ip route' или 'ip address'
-        # Чтобы не парсить гигантскую простыню ip addr, возьмем интерфейс, который смотрит наружу
+        # 2. Просто выводим сетевой ландшафт "как есть" и не паримся!
         try:
-            # awk у нас теперь работает как надо, так что забираем чистый IP
-            cmd = ["sh", "-c", "ip route get 1.1.1.1 | awk '{print $7; exit}'"]
-            ip_r = os_ops.exec_command(cmd, encoding="utf-8")
-            ip_clean = ip_r.strip() if isinstance(ip_r, str) else "unknown"
-
-            # Если ip route пустой (например, нет внешнего интернета в контейнере), берем дефолтный ip addr
-            if not ip_clean:
-                cmd = ["sh", "-c", "ip address show eth0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1"]
-                ip_r = os_ops.exec_command(cmd, encoding="utf-8")
-                ip_clean = ip_r.strip() if isinstance(ip_r, str) else "unknown"
-
-            logging.info(f"Machine IP Address   : {ip_clean}")
+            cmd = ["ip", "address"]
+            ip_output = os_ops.exec_command(cmd, encoding="utf-8")
+            assert type(ip_output) is str
+            logging.info("Network interfaces info:")
+            # Печатаем всю простыню целиком, добавив отступы для красоты
+            for line in ip_output.splitlines():
+                logging.info(f"  {line}")
         except Exception as e:
-            logging.error(f"Failed to get IP address: {e}")
+            logging.error(f"Failed to get ip address output: {e}")
 
         logging.info("=================== COKANUM PROOF END =====================")
 
