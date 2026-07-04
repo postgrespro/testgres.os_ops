@@ -2465,7 +2465,7 @@ print('b', file=sys.stderr)
         script = (
             "import time, os, subprocess; "
             "s = str(os.getpid()); "
-            "p = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
+            "p = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
             "s += ':' + str(p.pid); "
             "print(s, flush=True); "
             "time.sleep(60)"
@@ -2480,7 +2480,6 @@ print('b', file=sys.stderr)
 
         assert isinstance(p1, subprocess.Popen)
         assert p1.stdout is not None
-        p1.pid
 
         line = p1.stdout.readline()
         assert line is not None
@@ -2526,9 +2525,9 @@ print('b', file=sys.stderr)
         script = (
             "import time, os, subprocess; "
             "s = str(os.getpid()); "
-            "p1 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
-            "p2 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
-            "p3 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE, text=True); "
+            "p1 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
+            "p2 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
+            "p3 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
             "s += ':' + str(p1.pid) + ':' + str(p2.pid) + ':' + str(p3.pid); "
             "print(s, flush=True); "
             "time.sleep(60)"
