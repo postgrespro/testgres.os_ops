@@ -10,7 +10,7 @@ source "${VENV_PATH}/bin/activate"
 pip install --upgrade pip setuptools wheel
 python3 -m pip install -r tests/requirements.txt
 
-export -p | grep "TEST_CFG__"
+export -p
 
 # run builtin tests
 python3 -m pytest -l -vvv -n 4
