@@ -12,6 +12,7 @@ import re
 import signal as os_signal
 import struct
 import ipaddress
+import time
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -348,7 +349,11 @@ class RemoteOperations(OsOperations):
         return stdout.strip()
 
     # Work with dirs
-    def makedirs(self, path, remove_existing=False):
+    def makedirs(
+        self,
+        path: str,
+        remove_existing: bool = False,
+    ) -> None:
         """
         Create a directory in the remote server.
         Args:
@@ -356,31 +361,42 @@ class RemoteOperations(OsOperations):
         - remove_existing (bool): If True, the existing directory at the path will be removed.
         """
         if remove_existing:
-            cmd = "rm -rf {} && mkdir -p {}".format(path, path)
+            cmd = ["rm", "-rf", path, "&&", "mkdir", "-p", path]
         else:
-            cmd = "mkdir -p {}".format(path)
-        try:
-            result = self.exec_command(cmd)
-        except ExecUtilException as e:
-            raise Exception("Couldn't create dir {} because of error {}".format(path, e.message))
+            cmd = ["mkdir", "-p", path]
 
-        assert type(result) is bytes
-        return result
+        self.exec_command(
+            cmd,
+            encoding=get_default_encoding(),
+        )
+        return
 
     def makedir(self, path: str):
         assert type(path) is str
         cmd = ["mkdir", path]
         self.exec_command(cmd)
 
-    def rmdirs(self, path, ignore_errors=True):
+    def rmdirs(
+        self,
+        path: str,
+        ignore_errors: bool = True,
+        attempts: int = 3,
+        delay: OsOperations.T_DELAY = 1,
+    ) -> bool:
         """
-        Remove a directory in the remote server.
+        Removes a directory and its contents, retrying on failure.
         Args:
         - path (str): The path to the directory to be removed.
         - ignore_errors (bool): If True, do not raise error if directory does not exist.
+        - attempts: Number of attempts to remove the directory.
+        - delay: Delay between attempts in seconds.
         """
         assert type(path) is str
         assert type(ignore_errors) is bool
+        assert type(attempts) is int
+        assert type(delay) is int or type(delay) is float
+        assert attempts > 0
+        assert delay >= 0
 
         # ENOENT = 2 - No such file or directory
         # ENOTDIR = 20 - Not a directory
@@ -396,21 +412,36 @@ class RemoteOperations(OsOperations):
 
         cmd2 = ["sh", "-c", subprocess.list2cmdline(cmd1)]
 
-        try:
-            self.exec_command(cmd2, encoding=Helpers.GetDefaultEncoding())
-        except ExecUtilException as e:
-            if e.exit_code == 2:  # No such file or directory
-                return True
+        a = 0
+        while True:
+            assert a < attempts
+            a += 1
+            try:
+                self.exec_command(
+                    cmd2,
+                    encoding=Helpers.GetDefaultEncoding(),
+                )
+            except ExecUtilException as e:
+                if e.exit_code == 2:  # No such file or directory
+                    return True
 
-            if not ignore_errors:
-                raise
+                if a < attempts:
+                    errMsg = "Failed to remove directory {0} on attempt {1} ({2}): {3}".format(
+                        path, a, type(e).__name__, e
+                    )
+                    logging.warning(errMsg)
+                    time.sleep(delay)
+                    continue
 
-            errMsg = "Failed to remove directory {0} ({1}): {2}".format(
-                path, type(e).__name__, e
-            )
-            logging.warning(errMsg)
-            return False
-        return True
+                assert a == attempts
+
+                if not ignore_errors:
+                    raise
+
+                return False
+
+            # OK!
+            return True
 
     def rmdir(self, path: str):
         assert type(path) is str
@@ -1098,9 +1129,9 @@ class RemoteOperations(OsOperations):
         assert type(path) is str
         return __class__._is_abs_path(path)
 
-    def get_basename(self, path: str) -> str:
+    def get_path_basename(self, path: str) -> str:
         assert type(path) is str
-        return __class__._get_basename(path)
+        return __class__._get_path_basename(path)
 
     def get_abs_path(self, path: str) -> str:
         assert type(path) is str
@@ -1228,7 +1259,7 @@ class RemoteOperations(OsOperations):
         return posixpath.isabs(path)
 
     @staticmethod
-    def _get_basename(path: str) -> str:
+    def _get_path_basename(path: str) -> str:
         assert type(path) is str
         return posixpath.basename(path)
 

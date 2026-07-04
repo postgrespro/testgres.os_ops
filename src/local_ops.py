@@ -398,13 +398,18 @@ class LocalOperations(OsOperations):
         return os.name
 
     # Work with dirs
-    def makedirs(self, path, remove_existing=False):
+    def makedirs(
+        self,
+        path: str,
+        remove_existing: bool = False,
+    ) -> None:
+        assert type(path) is str
+        assert type(remove_existing) is bool
+
         if remove_existing:
             shutil.rmtree(path, ignore_errors=True)
-        try:
-            os.makedirs(path)
-        except FileExistsError:
-            pass
+
+        os.makedirs(path, exist_ok=True)
         return
 
     def makedir(self, path: str):
@@ -413,14 +418,20 @@ class LocalOperations(OsOperations):
         return
 
     # [2025-02-03] Old name of parameter attempts is "retries".
-    def rmdirs(self, path, ignore_errors=True, attempts=3, delay=1):
+    def rmdirs(
+        self,
+        path: str,
+        ignore_errors: bool = True,
+        attempts: int = 3,
+        delay: OsOperations.T_DELAY = 1,
+    ) -> bool:
         """
         Removes a directory and its contents, retrying on failure.
-
-        :param path: Path to the directory.
-        :param ignore_errors: If True, ignore errors.
-        :param retries: Number of attempts to remove the directory.
-        :param delay: Delay between attempts in seconds.
+        Args:
+        - path (str): The path to the directory to be removed.
+        - ignore_errors (bool): If True, do not raise error if directory does not exist.
+        - attempts: Number of attempts to remove the directory.
+        - delay: Delay between attempts in seconds.
         """
         assert type(path) is str
         assert type(ignore_errors) is bool
@@ -776,7 +787,7 @@ class LocalOperations(OsOperations):
         assert type(path) is str
         return os.path.isabs(path)
 
-    def get_basename(self, path: str) -> str:
+    def get_path_basename(self, path: str) -> str:
         assert type(path) is str
         return os.path.basename(path)
 

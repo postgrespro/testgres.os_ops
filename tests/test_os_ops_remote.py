@@ -1,20 +1,29 @@
 # coding: utf-8
 
+from tests.helpers.global_data import OsOpsDescr
 from tests.helpers.global_data import OsOpsDescrs
 from tests.helpers.global_data import OsOperations
+from tests.helpers.local_check import LocalCheck
 
 from src.exceptions import ExecUtilException
 
-import os
 import pytest
 
 
 class TestOsOpsRemote:
     @pytest.fixture
-    def os_ops(self):
-        return OsOpsDescrs.sm_remote_os_ops
+    def os_ops_descr(self) -> OsOpsDescr:
+        assert type(OsOpsDescrs.sm_remote_os_ops_descr) is OsOpsDescr
+        return OsOpsDescrs.sm_remote_os_ops_descr
 
-    def test_rmdirs__try_to_delete_nonexist_path(self, os_ops: OsOperations):
+    def test_rmdirs__try_to_delete_nonexist_path(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         path = "/root/test_dir"
@@ -22,17 +31,26 @@ class TestOsOpsRemote:
         assert os_ops.rmdirs(path, ignore_errors=False) is True
         return
 
-    def test_rmdirs__try_to_delete_file(self, os_ops: OsOperations):
+    def test_rmdirs__try_to_delete_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         path = os_ops.mkstemp()
         assert type(path) is str
-        assert os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
 
         with pytest.raises(ExecUtilException) as x:
             os_ops.rmdirs(path, ignore_errors=False)
 
-        assert os.path.exists(path)
+        LocalCheck.check_path_exists(os_ops, path)
+        assert os_ops.path_exists(path)
         assert type(x.value) is ExecUtilException
         assert type(x.value.description) is str
         assert x.value.description == "Utility exited with non-zero code (20). Error: `cannot remove '" + path + "': it is not a directory`"
@@ -43,10 +61,17 @@ class TestOsOpsRemote:
         assert x.value.exit_code == 20
         return
 
-    def test_read__unknown_file(self, os_ops: OsOperations):
+    def test_read__unknown_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test RemoteOperations::read with unknown file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         with pytest.raises(ExecUtilException) as x:
@@ -57,10 +82,17 @@ class TestOsOpsRemote:
         assert "/dummy" in str(x.value)
         return
 
-    def test_read_binary__spec__unk_file(self, os_ops: OsOperations):
+    def test_read_binary__spec__unk_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test RemoteOperations::read_binary with unknown file.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         with pytest.raises(ExecUtilException) as x:
@@ -71,10 +103,17 @@ class TestOsOpsRemote:
         assert "/dummy" in str(x.value)
         return
 
-    def test_get_file_size__unk_file(self, os_ops: OsOperations):
+    def test_get_file_size__unk_file(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
         """
         Test RemoteOperations::get_file_size.
         """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         with pytest.raises(ExecUtilException) as x:
