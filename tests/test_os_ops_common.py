@@ -2771,6 +2771,7 @@ print('b', file=sys.stderr)
 
         # Тест всегда успешный, его цель — оставить исторический след в логах гитхаба
         assert True
+        return
 
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
