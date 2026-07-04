@@ -82,5 +82,10 @@ if [ -n \"${TEST_CFG__REMOTE_SSH_KEY:-}\" ]; then \
     ls -la /home/test/.ssh/; \
 fi; \
 ls -la ./; \
-su - test -c \"cd /home/test/testgres && bash ./run_tests3.sh\"; \
+# AUTOMATIC TRANSFER: Save all TEST_CFG__ variables to a temporary file \
+(env | grep '^TEST_CFG__' | sed 's/^/export /' || echo '') > ./test_cfg_env.sh; \
+chown test:test ./test_cfg_env.sh; \
+cat ./test_cfg_env.sh; \
+# Run su -, pull in the file with variables and start the tests \
+su - test -c \"cd /home/test/testgres && source ./test_cfg_env.sh && bash ./run_tests3.sh\"; \
 "]
