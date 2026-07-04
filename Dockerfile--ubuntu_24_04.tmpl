@@ -11,6 +11,9 @@ RUN apt install -y sshpass
 RUN apt install -y time
 RUN apt install -y netcat-traditional
 
+# it installs "ip" utility
+RUN apt install -y iproute2
+
 RUN apt install -y git
 
 # RUN apt install -y mc
