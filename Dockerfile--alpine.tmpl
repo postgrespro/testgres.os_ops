@@ -3,32 +3,29 @@ ARG PYTHON_VERSION=3.12
 # --------------------------------------------- base1
 FROM python:${PYTHON_VERSION}-alpine AS base1
 
-RUN apk add --no-cache coreutils
+RUN apk add --no-cache \
+    coreutils \
+    bash \
+    mc \
+    procps \
+    openssh \
+    sshpass \
+    sudo \
+    git
 
 # --------------------------------------------- base2
 FROM base1 AS base2
 
-RUN apk add python3-dev build-base musl-dev linux-headers
-RUN apk add git 
+RUN apk add --no-cache \
+    python3-dev \
+    build-base\
+    musl-dev \
+    linux-headers
 
 # --------------------------------------------- final
 FROM base2 AS final
 
-RUN apk update
-RUN apk add mc
-RUN apk add bash
-
-# Full version of "ps" command
-RUN apk add --no-cache procps
-
-RUN apk add --no-cache openssh
-RUN apk add --no-cache sshpass
-RUN apk add --no-cache sudo
-
-RUN adduser -D test
-
-RUN addgroup -S sudo
-RUN adduser test sudo
+RUN adduser -D test && addgroup -S sudo && adduser test sudo
 
 EXPOSE 22
 RUN ssh-keygen -A
@@ -40,11 +37,11 @@ WORKDIR /home/test/testgres
 RUN echo "test ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # THIS CMD IS NEEDED TO CONNECT THROUGH SSH WITHOUT PASSWORD
-RUN sh -c "echo "test:*" | chpasswd -e"
+RUN echo "test:*" | chpasswd -e
 
-RUN chmod 700 /home/test/
-RUN mkdir -p /home/test/.ssh
-RUN chown -R test:test /home/test/.ssh
+RUN chmod 700 /home/test/ && \
+    mkdir -p /home/test/.ssh && \
+    chown -R test:test /home/test/.ssh
 
 #
 # \"$@\"
