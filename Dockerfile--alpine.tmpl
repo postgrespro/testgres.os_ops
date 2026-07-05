@@ -3,35 +3,34 @@ ARG PYTHON_VERSION=3.12
 # --------------------------------------------- base1
 FROM python:${PYTHON_VERSION}-alpine AS base1
 
-RUN apk add --no-cache coreutils
+RUN apk add --no-cache \
+    coreutils \
+    bash \
+    mc \
+    procps \
+    openssh \
+    sshpass \
+    sudo \
+    git
 
 # --------------------------------------------- base2
 FROM base1 AS base2
 
-RUN apk add python3-dev build-base musl-dev linux-headers
-RUN apk add git 
+RUN apk add --no-cache \
+    python3-dev \
+    build-base\
+    musl-dev \
+    linux-headers
 
 # --------------------------------------------- final
 FROM base2 AS final
 
-RUN apk add mc
-RUN apk add bash
-
-# Full version of "ps" command
-RUN apk add --no-cache procps
-
-RUN apk add --no-cache openssh
-RUN apk add --no-cache sudo
-
-RUN adduser -D test
-
-RUN addgroup -S sudo
-RUN adduser test sudo
+RUN adduser -D test && addgroup -S sudo && adduser test sudo
 
 EXPOSE 22
 RUN ssh-keygen -A
 
-ADD --chown=test:test . /home/test/testgres
+COPY --chown=test:test . /home/test/testgres
 WORKDIR /home/test/testgres
 
 # It allows to use sudo without password
