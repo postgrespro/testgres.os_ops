@@ -3,52 +3,54 @@ ARG PYTHON_VERSION=3
 # --------------------------------------------- base1
 FROM alt:p10 AS base1
 
-RUN apt-get update
-RUN apt-get install -y sudo curl ca-certificates
-RUN apt-get update
-RUN apt-get install -y openssh-server openssh-clients
-RUN apt-get install -y sshpass
-RUN apt-get install -y time
-RUN apt-get install -y su
-
-# RUN apt-get install -y mc
-
-EXPOSE 22
-RUN ssh-keygen -A
-
-# --------------------------------------------- dev_tools
-FROM base1 AS base1_with_dev_tools
-
-RUN apt-get update
-RUN apt-get install -y git
+RUN apt-get update && apt-get install -y \
+    sudo \
+    curl \
+    ca-certificates \
+    openssh-server \
+    openssh-clients \
+    sshpass \
+    time \
+    su \
+    git \
+    && apt-get clean
 
 # --------------------------------------------- base2_with_python-3
-FROM base1_with_dev_tools AS base2_with_python-3
-RUN apt-get install -y python3
-RUN apt-get install -y python3-dev
+FROM base1 AS base2_with_python-3
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-dev \
+    && apt-get clean
 
 ENV PYTHON_VERSION=3
 
 # --------------------------------------------- final
 FROM base2_with_python-${PYTHON_VERSION} AS final
 
+EXPOSE 22
+RUN ssh-keygen -A
+
 RUN adduser test -G wheel
 
 # It enables execution of "sudo service ssh start" without password
 RUN echo "test ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-ADD --chown=test:test . /home/test/testgres
+#
+# Altlinux 10 and 11 too slowly create a new SSH connection (x6).
+#
+# AI: SPEED UP SSH 6 TIMES (REMOVE REVERSE DNS LOOKUP TIMEOUTS)
+#
+RUN echo "UseDNS no" >> /etc/openssh/sshd_config
+
+COPY --chown=test:test . /home/test/testgres
 WORKDIR /home/test/testgres
 
 ENV LANG=C.UTF-8
 
-RUN chmod 700 /home/test/
-RUN mkdir -p /home/test/.ssh
-RUN chown -R test:test /home/test/.ssh
-
-#
-# Altlinux 10 and 11 too slowly create a new SSH connection (x6).
-#
+RUN chmod 700 /home/test/ && \
+    mkdir -p /home/test/.ssh && \
+    chown -R test:test /home/test/.ssh
 
 #
 # \"$@\"
