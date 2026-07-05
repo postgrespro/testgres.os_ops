@@ -135,8 +135,8 @@ jobs:
     - name: Run machine2 (for remote operations)
       run: |
         docker run -d -t \
-        --network ${{ env.RUN_CFG__NETWORK_NAME }} \
-        --name ${{ env.RUN_CFG__MACHINE2_NAME }} \
+          --network ${{ env.RUN_CFG__NETWORK_NAME }} \
+          --name ${{ env.RUN_CFG__MACHINE2_NAME }} \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - sleep infinity
 
