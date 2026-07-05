@@ -162,7 +162,8 @@ jobs:
       run: |
         # Launch the main container, passing the private key to the .ssh folder of the test user.
         # Pass environment variables so Python tests know where to start.
-        docker run -t \
+        # Added the --rm flag so that the container is automatically deleted after the tests are completed
+        docker run --rm -t \
           --network ${{ env.RUN_CFG__NETWORK_NAME }} \
           -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs \
           -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}:/home/test/testgres/id_ed25519_test:ro \
@@ -178,3 +179,12 @@ jobs:
       with:
         name: testgres.os_ops--test_logs--${{ env.RUN_CFG__NOW }}-${{ env.BASE_SIGN }}-id${{ github.run_id }}
         path: "${{ env.RUN_CFG__LOGS_DIR }}/"
+
+    - name: Cleanup Docker resources
+      if: always() # Ensures that the step is executed regardless of the result of the task
+      run: |
+        echo "=== Garbage Collection ==="
+        # Force kill the background machine (the -f flag will stop it if it is running)
+        docker rm -f "${{ env.RUN_CFG__MACHINE2_NAME }}" || true
+        # Delete the network (it will be deleted successfully, since all containers in it have already been destroyed)
+        docker network rm "${{ env.RUN_CFG__NETWORK_NAME }}" || true
