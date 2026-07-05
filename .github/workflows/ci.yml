@@ -141,11 +141,14 @@ jobs:
           chmod 600 /home/test/.ssh/authorized_keys \
         "
 
+        #
+        # Log status
+        #
         docker exec -u root ${{ env.RUN_CFG__REMOTE_NAME }} sh -c "
           echo '--- INSIDE CONTAINER OS ---' && \
           cat /etc/os-release && \
           echo '--- INSIDE CONTAINER .SSH ---' && \
-          ls -la /home/test/.ssh/
+          ls -la /home/test/.ssh/ \
         "
 
     - name: Run Main Test Container
