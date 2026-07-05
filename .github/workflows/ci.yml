@@ -137,7 +137,22 @@ jobs:
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - sleep infinity
 
-        sleep 1.0
+        echo "Waiting for container ${{ env.RUN_CFG__MACHINE2_NAME }} to start ..."
+        
+        # Set the timeout using the attempt counter
+        MAX_ATTEMPTS=50
+        ATTEMPT=0
+        
+        until [ "$(docker container inspect --format '{{.State.Running}}' "${{ env.RUN_CFG__MACHINE2_NAME }}")" = "true" ]; do
+          ATTEMPT=$((ATTEMPT + 1))
+          if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
+            echo "Error: Container did not start within the allotted time (timeout)!"
+            exit 1
+          fi
+          sleep 0.2
+        done
+        
+        echo "Container successfully launched in $((ATTEMPT * 2 / 10)) second(s)!"
 
         #
         # Setup authorized_keys
