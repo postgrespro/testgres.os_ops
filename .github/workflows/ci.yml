@@ -127,17 +127,20 @@ jobs:
     - name: Run second target host (for remote operations)
       run: |
         docker run -d -t --name ${{ env.RUN_CFG__REMOTE_NAME }} \
-          -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}.pub:/home/test/.ssh/authorized_keys_ci:ro \
+          -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}.pub:/home/test/testgres/id_ed25519_test.pub:ro \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - sleep infinity
 
         sleep 1.0
 
+        #
+        # We will COPY (not APPEND) id_ed25519_test.pub into/home/test/.ssh/authorized_keys
+        #
         docker exec -u root ${{ env.RUN_CFG__REMOTE_NAME }} sh -c "
           echo '--- INSIDE CONTAINER OS ---' && \
           cat /etc/os-release && \
           echo '---' && \
-          cp /home/test/.ssh/authorized_keys_ci /home/test/.ssh/authorized_keys && \
+          cp /home/test/testgres/id_ed25519_test.pub /home/test/.ssh/authorized_keys && \
           chown test.test /home/test/.ssh/authorized_keys && \
           chmod 600 /home/test/.ssh/authorized_keys && \
           chmod 700 /home/test/.ssh && \
