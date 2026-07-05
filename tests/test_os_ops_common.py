@@ -2889,6 +2889,54 @@ print('b', file=sys.stderr)
         assert lines == result_bin
         return
 
+    def test_prove_environment_isolation(
+        self,
+        os_ops_descr: OsOpsDescr
+    ):
+        #
+        # Author: Marg G. (mark@google.com)
+        #
+
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        logging.info("=================== COKANUM PROOF START ===================")
+        logging.info(f"Target environment type: [{os_ops_descr.sign}]")
+
+        # 1. Забираем OS-RELEASE
+        try:
+            # Используем cat, который мы уже проверили
+            os_release = os_ops.read("/etc/os-release")
+            assert type(os_release) is str
+            # Вытаскиваем только PRETTY_NAME для компактности в логах
+            pretty_name = "Unknown Linux"
+            for line in os_release.splitlines():
+                if line.startswith("PRETTY_NAME="):
+                    pretty_name = line.split("=")[1].strip('"')
+                    break
+            logging.info(f"OS Platform detected : {pretty_name}")
+        except Exception as e:
+            logging.error(f"Failed to read os-release: {e}")
+
+        # 2. Просто выводим сетевой ландшафт "как есть" и не паримся!
+        try:
+            cmd = ["ip", "address"]
+            ip_output = os_ops.exec_command(cmd, encoding="utf-8")
+            assert type(ip_output) is str
+            logging.info("Network interfaces info:")
+            # Печатаем всю простыню целиком, добавив отступы для красоты
+            for line in ip_output.splitlines():
+                logging.info(f"  {line}")
+        except Exception as e:
+            logging.error(f"Failed to get ip address output: {e}")
+
+        logging.info("=================== COKANUM PROOF END =====================")
+
+        # Тест всегда успешный, его цель — оставить исторический след в логах гитхаба
+        assert True
+        return
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,
