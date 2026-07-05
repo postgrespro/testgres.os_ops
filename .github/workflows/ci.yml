@@ -125,7 +125,7 @@ jobs:
     - name: Generate temporary SSH Key pair for CI
       run: |
         # Generate a key without a password directly on the GitHub Actions host
-        ssh-keygen -t ed25519 -N "" -f ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}
+        ssh-keygen -q -t ed25519 -N "" -f ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}
 
     - name: Setup network
       run: |
