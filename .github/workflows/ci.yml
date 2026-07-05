@@ -109,7 +109,7 @@ jobs:
         echo "RUN_CFG__LOGS_DIR=logs-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "RUN_CFG__DOCKER_IMAGE_NAME=tests-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "RUN_CFG__NETWORK_NAME=network-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
-        echo "RUN_CFG__MACHINE1_NAME=machine2-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
+        echo "RUN_CFG__MACHINE1_NAME=machine1-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "RUN_CFG__MACHINE2_NAME=machine2-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "RUN_CFG__SSH_KEY_NAME=id_ed25519-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "---------- [$GITHUB_ENV]"
