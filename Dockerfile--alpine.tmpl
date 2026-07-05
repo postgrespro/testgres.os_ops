@@ -46,16 +46,21 @@ RUN chmod 700 /home/test/
 RUN mkdir -p /home/test/.ssh
 RUN chown -R test:test /home/test/.ssh
 
+#
+# \"$@\"
+#   - quote is important!
+#   - "DUMMY-DUMMY-DUMMY" will be ignored. Do not ask me "why?". AXEZ.
+#
 ENTRYPOINT ["sh", "-c", " \
     set -eux; \
     echo 'SYSTEM START: PREPARING SSH'; \
     /usr/sbin/sshd; \
     ls -la /home/test/.ssh/; \
-    \"$@\"; \
-"]
+    \"$@\" \
+", "DUMMY-DUMMY-DUMMY"]
 
 # Run tests by default (master machine role)
-CMD ["", "bash", "-c", " \
+CMD ["bash", "-c", " \
 set -eux; \
 echo \"HOME DIR IS [`realpath ~/`]\"; \
 echo \"WORK DIR IS [$(pwd)]\"; \
