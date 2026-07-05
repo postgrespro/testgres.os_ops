@@ -45,9 +45,9 @@ WORKDIR /home/test/testgres
 
 ENV LANG=C.UTF-8
 
-RUN chmod 700 /home/test/
-RUN mkdir -p /home/test/.ssh
-RUN chown -R test:test /home/test/.ssh
+RUN chmod 700 /home/test/ && \
+    mkdir -p /home/test/.ssh && \
+    chown -R test:test /home/test/.ssh
 
 #
 # \"$@\"
