@@ -129,7 +129,7 @@ jobs:
       run: |
         docker network create ${{ env.RUN_CFG__NETWORK_NAME }}
 
-    - name: Run second target host (for remote operations)
+    - name: Run machine2 (for remote operations)
       run: |
         docker run -d -t \
         --network ${{ env.RUN_CFG__NETWORK_NAME }} \
@@ -158,7 +158,7 @@ jobs:
           ls -la /home/test/.ssh/ \
         "
 
-    - name: Run Main Test Container
+    - name: Run machine1 (main test container)
       run: |
         # Launch the main container, passing the private key to the .ssh folder of the test user.
         # Pass environment variables so Python tests know where to start.
