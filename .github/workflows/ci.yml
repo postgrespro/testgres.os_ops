@@ -141,7 +141,7 @@ jobs:
           cat /etc/os-release && \
           echo '---' && \
           cp /home/test/testgres/id_ed25519_test.pub /home/test/.ssh/authorized_keys && \
-          chown test.test /home/test/.ssh/authorized_keys && \
+          chown test:test /home/test/.ssh/authorized_keys && \
           chmod 600 /home/test/.ssh/authorized_keys && \
           chmod 700 /home/test/.ssh && \
           echo '--- INSIDE CONTAINER .SSH ---' && \
