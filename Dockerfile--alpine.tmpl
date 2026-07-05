@@ -37,26 +37,48 @@ WORKDIR /home/test/testgres
 RUN echo "test ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # THIS CMD IS NEEDED TO CONNECT THROUGH SSH WITHOUT PASSWORD
-RUN sh -c "echo "test:*" | chpasswd -e"
+RUN echo "test:*" | chpasswd -e
 
-USER test
+RUN chmod 700 /home/test/ && \
+    mkdir -p /home/test/.ssh && \
+    chown -R test:test /home/test/.ssh
 
-# THIS CMD IS NEEDED TO CONNECT THROUGH SSH WITHOUT PASSWORD
-RUN chmod 700 ~/
+#
+# \"$@\"
+#   - quote is important!
+#   - "DUMMY-DUMMY-DUMMY" will be ignored. Do not ask me "why?". AXEZ.
+#
+ENTRYPOINT ["sh", "-c", " \
+    set -eux; \
+    echo 'SYSTEM START: PREPARING SSH'; \
+    /usr/sbin/sshd; \
+    ls -la /home/test/.ssh/; \
+    \"$@\" \
+", "DUMMY-DUMMY-DUMMY"]
 
-RUN mkdir -p ~/.ssh
-#RUN chmod 700 ~/.ssh
-
-ENTRYPOINT sh -c " \
+# Run tests by default (master machine role)
+CMD ["bash", "-c", " \
 set -eux; \
-echo HELLO FROM ENTRYPOINT; \
-echo HOME DIR IS [`realpath ~/`]; \
-echo WORK DIR IS [$(pwd)]; \
-ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -N ''; \
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys; \
-chmod 600 ~/.ssh/authorized_keys; \
-ls -la ~/.ssh/; \
-sudo /usr/sbin/sshd; \
-ssh-keyscan -H localhost >> ~/.ssh/known_hosts; \
-ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts; \
-bash run_tests3.sh;"
+echo \"HOME DIR IS [`realpath ~/`]\"; \
+echo \"WORK DIR IS [$(pwd)]\"; \
+if [ ! -f /home/test/.ssh/id_rsa ]; then \
+    su test -c \"ssh-keygen -t rsa -f /home/test/.ssh/id_rsa -q -N ''\"; \
+    su test -c \"cat /home/test/.ssh/id_rsa.pub >> /home/test/.ssh/authorized_keys\"; \
+    chmod 600 /home/test/.ssh/authorized_keys; \
+fi; \
+ls -la /home/test/.ssh/; \
+su test -c \"ssh-keyscan -H localhost >> /home/test/.ssh/known_hosts\"; \
+su test -c \"ssh-keyscan -H 127.0.0.1 >> /home/test/.ssh/known_hosts\"; \
+if [ -n \"${TEST_CFG__REMOTE_HOST:-}\" ]; then \
+    su test -c \"ssh-keyscan -H ${TEST_CFG__REMOTE_HOST} >> /home/test/.ssh/known_hosts\"; \
+fi; \
+if [ -n \"${TEST_CFG__REMOTE_SSH_KEY:-}\" ]; then \
+    cp \"${TEST_CFG__REMOTE_SSH_KEY}\" \"${TEST_CFG__REMOTE_SSH_KEY}_ci\"; \
+    export TEST_CFG__REMOTE_SSH_KEY=\"${TEST_CFG__REMOTE_SSH_KEY}_ci\"; \
+    chown test:test \"${TEST_CFG__REMOTE_SSH_KEY}\"; \
+    chmod 600 \"${TEST_CFG__REMOTE_SSH_KEY}\"; \
+    ls -la /home/test/.ssh/; \
+fi; \
+ls -la ./; \
+su test -c \"bash ./run_tests3.sh\"; \
+"]
