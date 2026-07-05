@@ -106,7 +106,7 @@ jobs:
         echo "RUN_CFG__NOW=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
         echo "RUN_CFG__LOGS_DIR=logs-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "RUN_CFG__DOCKER_IMAGE_NAME=tests-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
-        echo "RUN_CFG__REMOTE_NAME=remote2-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
+        echo "RUN_CFG__MACHINE2_NAME=machine2-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "RUN_CFG__SSH_KEY_NAME=id_ed25519-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
         echo "---------- [$GITHUB_ENV]"
         cat $GITHUB_ENV
@@ -126,7 +126,7 @@ jobs:
 
     - name: Run second target host (for remote operations)
       run: |
-        docker run -d -t --name ${{ env.RUN_CFG__REMOTE_NAME }} \
+        docker run -d -t --name ${{ env.RUN_CFG__MACHINE2_NAME }} \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - sleep infinity
 
@@ -136,7 +136,7 @@ jobs:
         # Setup authorized_keys
         #
         cat ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}.pub | \
-        docker exec -i -u test ${{ env.RUN_CFG__REMOTE_NAME }} sh -c " \
+        docker exec -i -u test ${{ env.RUN_CFG__MACHINE2_NAME }} sh -c " \
           cat >> /home/test/.ssh/authorized_keys && \
           chmod 600 /home/test/.ssh/authorized_keys \
         "
@@ -144,7 +144,7 @@ jobs:
         #
         # Log status
         #
-        docker exec -u root ${{ env.RUN_CFG__REMOTE_NAME }} sh -c "
+        docker exec -u root ${{ env.RUN_CFG__MACHINE2_NAME }} sh -c "
           echo '--- INSIDE CONTAINER OS ---' && \
           cat /etc/os-release && \
           echo '--- INSIDE CONTAINER .SSH ---' && \
@@ -155,12 +155,12 @@ jobs:
       run: |
         # Launch the main container, passing the private key to the .ssh folder of the test user.
         # Pass environment variables so Python tests know where to start.
-        # Link the containers using --link so the name "remote2" resolves to an IP address.
+        # Link the containers using --link so the name "machine2" resolves to an IP address.
         docker run -t \
-          --link ${{ env.RUN_CFG__REMOTE_NAME }}:${{ env.RUN_CFG__REMOTE_NAME }} \
+          --link ${{ env.RUN_CFG__MACHINE2_NAME }}:${{ env.RUN_CFG__MACHINE2_NAME }} \
           -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs \
           -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}:/home/test/testgres/id_ed25519_test:ro \
-          -e TEST_CFG__REMOTE_HOST="${{ env.RUN_CFG__REMOTE_NAME }}" \
+          -e TEST_CFG__REMOTE_HOST="${{ env.RUN_CFG__MACHINE2_NAME }}" \
           -e TEST_CFG__REMOTE_PORT="22" \
           -e TEST_CFG__REMOTE_USERNAME="test" \
           -e TEST_CFG__REMOTE_SSH_KEY="/home/test/testgres/id_ed25519_test" \
