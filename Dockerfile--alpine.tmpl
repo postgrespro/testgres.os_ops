@@ -33,7 +33,7 @@ RUN adduser test sudo
 EXPOSE 22
 RUN ssh-keygen -A
 
-ADD --chown=test:test . /home/test/testgres
+COPY --chown=test:test . /home/test/testgres
 WORKDIR /home/test/testgres
 
 # It allows to use sudo without password
