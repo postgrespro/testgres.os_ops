@@ -134,6 +134,9 @@ jobs:
 
     - name: Run machine2 (for remote operations)
       run: |
+        #
+        # "- sleep infinity" is a right command. Docker ignores "-" and runs "sleep infinity".
+        #
         docker run -d -t \
           --network ${{ env.RUN_CFG__NETWORK_NAME }} \
           --name ${{ env.RUN_CFG__MACHINE2_NAME }} \
