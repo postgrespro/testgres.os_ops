@@ -123,20 +123,24 @@ jobs:
       run: |
         # Generate a key without a password directly on the GitHub Actions host
         ssh-keygen -t ed25519 -N "" -f ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}
-        chmod 600 ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}.pub
 
     - name: Run second target host (for remote operations)
       run: |
         docker run -d -t --name ${{ env.RUN_CFG__REMOTE_NAME }} \
-          -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}.pub:/home/test/.ssh/authorized_keys:ro \
           "${{ env.RUN_CFG__DOCKER_IMAGE_NAME }}" \
           - sleep infinity
 
         sleep 1.0
 
         #
-        # We will COPY (not APPEND) id_ed25519_test.pub into/home/test/.ssh/authorized_keys
+        # Setup authorized_keys
         #
+        cat ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}.pub | \
+        docker exec -i -u test ${{ env.RUN_CFG__REMOTE_NAME }} sh -c " \
+          cat >> /home/test/.ssh/authorized_keys && \
+          chmod 600 /home/test/.ssh/authorized_keys \
+        "
+
         docker exec -u root ${{ env.RUN_CFG__REMOTE_NAME }} sh -c "
           echo '--- INSIDE CONTAINER OS ---' && \
           cat /etc/os-release && \
