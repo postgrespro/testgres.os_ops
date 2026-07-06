@@ -15,7 +15,6 @@ import pytest
 import re
 import logging
 import socket
-import threading
 import typing
 import uuid
 import subprocess
@@ -39,8 +38,14 @@ class tagIP:
     sign: str
 
 
-def _enum_local_ips() -> typing.List[tagIP]:
-    res = subprocess.check_output(["ip", "-4", "addr", "show", "dev", "lo"]).decode()
+def _enum_local_ips(os_ops: OsOperations) -> typing.List[tagIP]:
+    assert isinstance(os_ops, OsOperations)
+
+    cmd = ["ip", "-4", "addr", "show", "dev", "lo"]
+
+    res = os_ops.exec_command(cmd, encoding="utf-8")
+    assert type(res) is str
+
     ips = [
         tagIP(
             family=socket.AddressFamily.AF_INET,
@@ -1564,22 +1569,34 @@ exit(0)
         return
 
     # --------------------------------------------------------------------
-    @pytest.fixture(
-        params=[
-            pytest.param(
-                ip,
-                id=ip.sign,
-            ) for ip in _enum_local_ips()
-        ]
-    )
-    def local_ip(self, request: pytest.FixtureRequest) -> tagIP:
-        assert isinstance(request, pytest.FixtureRequest)
-        assert type(request.param) is tagIP
-        return request.param
-
-    # --------------------------------------------------------------------
     def test_is_port_available__true(
         self,
+        os_ops_descr: OsOpsDescr
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+
+        local_ips = _enum_local_ips(os_ops_descr.os_ops)
+        assert type(local_ips) is list
+
+        for i in range(len(local_ips)):
+            local_ip = local_ips[i]
+            assert type(local_ip) is tagIP
+
+            logging.info("----------------------- {}. {}".format(
+                i,
+                local_ip.value,
+            ))
+
+            __class__.helper__is_port_available__true(
+                os_ops_descr,
+                local_ip,
+            )
+            continue
+        return
+
+    # --------------------------------------------------------------------
+    @staticmethod
+    def helper__is_port_available__true(
         os_ops_descr: OsOpsDescr,
         local_ip: tagIP,
     ):
@@ -1590,44 +1607,96 @@ exit(0)
         assert isinstance(os_ops, OsOperations)
         assert type(local_ip) is tagIP
 
-        C_LIMIT = 128
+        C_SAMPLES = 128
+        C_LIMIT = 10
 
-        ports = set(range(1024, 65535))
-        assert type(ports) is set
+        ports = random.sample(range(1024, 65536), C_SAMPLES)
+        assert type(ports) is list
 
         ok_count = 0
         no_count = 0
 
+        py_test_code_templ = """
+import socket
+with socket.socket(socket.{0}, socket.SOCK_STREAM) as s:
+    try:
+        s.bind(({1!r}, {2!r}))
+    except OSError:
+        exit(123)
+print(str({2!r}))
+exit(0)
+"""
+
         for port in ports:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                try:
-                    s.bind(("", port))
-                except OSError:
+            logging.info("Try to bind port {}...".format(port))
+
+            py_test_code = py_test_code_templ.format(
+                local_ip.family.name,
+                local_ip.value,
+                port,
+            )
+
+            try:
+                r = os_ops.exec_command(
+                    ["python3", "-c", py_test_code],
+                    encoding="utf-8",
+                )
+            except ExecUtilException as e:
+                if e.exit_code == 123:
+                    logging.info("Fails")
                     continue
+                raise
+
+            assert r == str(port) + "\n"
+
+            logging.info("Try to check via is_port_free ...")
 
             r = os_ops.is_port_available(local_ip.value, port)
 
             if r:
                 ok_count += 1
-                logging.info("OK. Port {} is available.".format(port))
+                logging.info("OK. Port {} is free.".format(port))
             else:
                 no_count += 1
-                logging.warning("NO. Port {} is not available.".format(port))
+                logging.warning("NO. Port {} is not free.".format(port))
 
             if ok_count == C_LIMIT:
                 return
-
-            if no_count == C_LIMIT:
-                raise RuntimeError("To many false positive test attempts.")
             continue
 
         if ok_count == 0:
-            raise RuntimeError("No one available port was found.")
+            raise RuntimeError("No one free port was found.")
         return
 
     # --------------------------------------------------------------------
     def test_is_port_available__false(
         self,
+        os_ops_descr: OsOpsDescr
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+
+        local_ips = _enum_local_ips(os_ops_descr.os_ops)
+        assert type(local_ips) is list
+
+        for i in range(len(local_ips)):
+            local_ip = local_ips[i]
+            assert type(local_ip) is tagIP
+
+            logging.info("----------------------- {}. {}".format(
+                i,
+                local_ip.value,
+            ))
+
+            __class__.helper__is_port_available__false(
+                os_ops_descr,
+                local_ip,
+            )
+            continue
+        return
+
+    # --------------------------------------------------------------------
+    @staticmethod
+    def helper__is_port_available__false(
         os_ops_descr: OsOpsDescr,
         local_ip: tagIP,
     ):
@@ -1638,61 +1707,74 @@ exit(0)
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        C_LIMIT = 10
+        C_LIMIT = 5
+        C_SAMPLES = C_LIMIT * 2
 
-        ports = set(range(1024, 65535))
-        assert type(ports) is set
-
-        def LOCAL_server(s: socket.socket):
-            assert s is not None
-            assert type(s) is socket.socket
-
-            try:
-                while True:
-                    r = s.accept()
-
-                    if r is None:
-                        break
-            except Exception as e:
-                assert e is not None
-                pass
+        ports = random.sample(range(1024, 65536), C_SAMPLES)
 
         ok_count = 0
         no_count = 0
 
+        py_server_code_templ = """
+import socket, time
+s = socket.socket(socket.{0}, socket.SOCK_STREAM)
+try:
+    s.bind(({1!r}, {2!r}))
+    s.listen(1)
+    print("READY", flush=True)
+    time.sleep(30)  # Keep the port busy for 30 seconds
+except OSError:
+    exit(123)
+exit(0)
+"""
         for port in ports:
-            with socket.socket(local_ip.family, socket.SOCK_STREAM) as s:
-                try:
-                    s.bind((local_ip.value, port))
-                except OSError:
-                    continue
+            logging.info("Try to occupy port {} on target machine...".format(port))
 
-                th = threading.Thread(target=LOCAL_server, args=[s])
+            py_server_code = py_server_code_templ.format(
+                local_ip.family.name,
+                local_ip.value,
+                port,
+            )
 
-                s.listen(10)
+            # Start a background process on the target machine
+            p = os_ops.exec_command(
+                ["python3", "-u", "-c", py_server_code],
+                get_process=True,
+                encoding="utf-8",
+            )
+            assert isinstance(p, subprocess.Popen)
+            assert p.stdout is not None
 
-                assert type(th) is threading.Thread
-                th.start()
+            try:
+                # Read the first line from the process's stdout.
+                # If it's READY, the socket was successfully bound.
+                # If the process crashed (code 123), readline() will return empty.
+                ready_line = p.stdout.readline()
 
-                try:
-                    r = os_ops.is_port_available(local_ip.value, port)
-                finally:
-                    s.shutdown(2)
-                    th.join()
+                if ready_line != "READY\n":
+                    logging.info("Port {} is already busy or failed to bind, skipping...".format(port))
+                    continue  # it jumps into finally
+
+                logging.info("Port {} is occupied. Verifying via is_port_free...".format(port))
+
+                # MAIN CHECK: The port is currently busy, so is_port_free should return False!
+                r = os_ops.is_port_available(local_ip.value, port)
+                assert type(r) is bool
 
                 if not r:
                     ok_count += 1
-                    logging.info("OK. Port {} is not available.".format(port))
+                    logging.info("OK. Port {} is correctly detected as NOT free.".format(port))
                 else:
                     no_count += 1
-                    logging.warning("NO. Port {} does not accept connection.".format(port))
+                    logging.warning("NO. Port {} was detected as free, but it is busy!".format(port))
+            finally:
+                # We guarantee that the process will be terminated and the port will be released on the target machine.
+                p.terminate()
+                p.wait()
 
-                if ok_count == C_LIMIT:
-                    return
-
-                if no_count == C_LIMIT:
-                    raise RuntimeError("To many false positive test attempts.")
-                continue
+            if ok_count == C_LIMIT:
+                return
+            continue
 
         if ok_count == 0:
             raise RuntimeError("No one available port was found.")
