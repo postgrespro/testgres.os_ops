@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PYTHON_VERSION=3
+ENV PYTHON_BINARY=python3
 
 # --------------------------------------------- final
 FROM base2_with_python-${PYTHON_VERSION} AS final
