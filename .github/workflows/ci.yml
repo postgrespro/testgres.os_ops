@@ -98,6 +98,8 @@ jobs:
             python: "3"
           - platform: "astralinux_1_7"
             python: "3"
+          - platform: "rockylinux_8"
+            python: "3"
 
     env:
       BASE_SIGN: "${{ matrix.platform }}-py${{ matrix.python }}"
