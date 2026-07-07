@@ -455,7 +455,8 @@ class RemoteOperations(OsOperations):
         Args:
         path (str): The path to the directory.
         """
-        command = ["ls", path]
+        assert type(path) is str
+        command = "ls " + __class__._quote_path(path)
         output = self.exec_command(cmd=command, encoding=get_default_encoding())
         assert type(output) is str
         result = output.splitlines()
