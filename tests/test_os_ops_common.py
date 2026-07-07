@@ -2852,6 +2852,72 @@ print('b', file=sys.stderr)
         os_ops.rmdir(tmp_dir)
         return
 
+    def test_path_normpath(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.get_path_normpath(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        LOCAL__check("", ".")
+
+        logging.info("------------- test one char")
+        LOCAL__check("a", "a")
+
+        logging.info("------------- test path")
+        LOCAL__check("a/b/c", "a/b/c")
+        return
+
+    def test_path_normcase(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.get_path_normcase(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        LOCAL__check("", "")
+
+        logging.info("------------- test one char")
+        LOCAL__check("a", "a")
+
+        logging.info("------------- test path")
+        LOCAL__check("a/b/c", "a/b/c")
+        return
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,

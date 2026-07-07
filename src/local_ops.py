@@ -782,3 +782,11 @@ class LocalOperations(OsOperations):
             tz=datetime.timezone.utc,
         )
         return file_stat
+
+    def get_path_normpath(self, path: str) -> str:
+        assert type(path) is str
+        return os.path.normpath(path)
+
+    def get_path_normcase(self, path: str) -> str:
+        assert type(path) is str
+        return os.path.normcase(path)
