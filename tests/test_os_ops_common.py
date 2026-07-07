@@ -451,6 +451,42 @@ class TestOsOpsCommon:
         assert response is True
         return
 
+    def test_is_executable_true_2(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        """
+        Test is_executable for an existing executable.
+        """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        assert os_ops.is_executable("/bin/sh") is True
+
+        tmpdir = os_ops.mkdtemp(name_with_surprize.value)
+
+        cmd = ["sh", "-c", "cp -p /bin/sh " + os_ops.quote_path(tmpdir)]
+
+        os_ops.exec_command(cmd)
+
+        target = os_ops.build_path(tmpdir, "sh")
+
+        assert os_ops.path_exists(target)
+
+        response = os_ops.is_executable(target)
+        assert response is True
+
+        os_ops.remove_file(target)
+        os_ops.rmdir(tmpdir)
+        return
+
     def test_is_executable_false(
         self,
         os_ops_descr: OsOpsDescr,
