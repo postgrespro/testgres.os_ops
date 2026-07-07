@@ -373,8 +373,9 @@ class RemoteOperations(OsOperations):
 
     def makedir(self, path: str):
         assert type(path) is str
-        cmd = ["mkdir", path]
-        self.exec_command(cmd)
+        cmd = "mkdir " + __class__._quote_path(path)
+        self.exec_command(cmd, encoding=get_default_encoding())
+        return
 
     def rmdirs(
         self,
