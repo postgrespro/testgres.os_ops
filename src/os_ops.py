@@ -253,7 +253,9 @@ class OsOperations:
         assert offset >= 0
         raise NotImplementedError()
 
-    def isfile(self, remote_file):
+    def isfile(self, filename: str) -> bool:
+        assert type(filename) is str
+        assert filename != ""
         raise NotImplementedError()
 
     def isdir(self, dirname):
