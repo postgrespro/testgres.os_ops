@@ -360,10 +360,29 @@ class RemoteOperations(OsOperations):
         - path (str): The path to the directory to be created.
         - remove_existing (bool): If True, the existing directory at the path will be removed.
         """
+        assert type(path) is str
+        assert path != ""
+
+        path_q = __class__._quote_path(path)
+
         if remove_existing:
-            cmd = ["rm", "-rf", path, "&&", "mkdir", "-p", path]
+            cmd_p = [
+                "rm",
+                "-rf",
+                path_q,
+                "&&",
+                "mkdir",
+                "-p",
+                path_q
+            ]
         else:
-            cmd = ["mkdir", "-p", path]
+            cmd_p = [
+                "mkdir",
+                "-p",
+                path_q,
+            ]
+
+        cmd = " ".join(cmd_p)
 
         self.exec_command(
             cmd,
