@@ -678,7 +678,12 @@ class RemoteOperations(OsOperations):
 
         This method behaves as the 'touch' command in Unix. It's equivalent to calling 'touch filename' in the shell.
         """
-        self.exec_command("touch {}".format(filename))
+        assert type(filename) is str
+        assert filename != ""
+
+        cmd = "touch " + __class__._quote_path(filename)
+
+        self.exec_command(cmd, encoding=get_default_encoding())
         return
 
     def read(
