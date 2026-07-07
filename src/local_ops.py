@@ -688,7 +688,9 @@ class LocalOperations(OsOperations):
         assert filename != ""
         return os.path.isfile(filename)
 
-    def isdir(self, dirname):
+    def isdir(self, dirname: str) -> bool:
+        assert type(dirname) is str
+        assert dirname != ""
         return os.path.isdir(dirname)
 
     def get_file_size(self, filename):
