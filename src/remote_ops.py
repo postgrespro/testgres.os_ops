@@ -1131,6 +1131,25 @@ class RemoteOperations(OsOperations):
         assert type(path) is str
         return __class__._path_normcase(path)
 
+    def create_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
+
+        # Wrap it in a strict bash command. Be sure to quote the file name!
+        # If the file exists, bash will return exit code > 0,
+        # and exec_command will throw an ExecUtilException
+        filename_q = __class__._quote_path(filename)
+        assert type(filename_q) is str
+
+        cmd = [
+            "bash",
+            "-c",
+            "(set -o noclobber; > {})".format(filename_q),
+        ]
+
+        self.exec_command(cmd, encoding=get_default_encoding())
+        return
+
     @staticmethod
     def _build_cmdline(
         cmd,
