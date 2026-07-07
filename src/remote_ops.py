@@ -463,7 +463,9 @@ class RemoteOperations(OsOperations):
         return result
 
     def path_exists(self, path):
-        command = ["test", "-e", path]
+        assert type(path) is str
+
+        command = "test -e " + __class__._quote_path(path)
 
         exec_r = self.exec_command(
             cmd=command,
