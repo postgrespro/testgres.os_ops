@@ -296,7 +296,10 @@ class RemoteOperations(OsOperations):
 
     def is_executable(self, file):
         # Check if the file is executable
-        command = ["test", "-x", file]
+        assert type(file) is str
+        assert file != ""
+
+        command = "test -x " + __class__._quote_path(file)
 
         exec_r = self.exec_command(
             cmd=command,
