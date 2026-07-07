@@ -266,8 +266,9 @@ class OsOperations:
     def get_file_size(self, filename):
         raise NotImplementedError()
 
-    def remove_file(self, filename):
+    def remove_file(self, filename: str) -> None:
         assert type(filename) is str
+        assert filename != ""
         raise NotImplementedError()
 
     # Processes control
