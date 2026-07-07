@@ -51,6 +51,56 @@ class TestOsOpsCommon:
         assert isinstance(request.param, OsOpsDescr)
         return request.param
 
+    @dataclasses.dataclass
+    class tagNameWithSurprize:
+        sign: str
+        value: str
+
+    sm_names_with_surprize: typing.List[tagNameWithSurprize] = [
+        tagNameWithSurprize(
+            sign="std",
+            value="exclusive_new_file.txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_one_double_quote",
+            value="exclusive_new_file\".txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_two_double_quote",
+            value="\"exclusive_new_file\".txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_one_single_quote",
+            value="exclusive_new_file\'.txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_two_single_quote",
+            value="\'exclusive_new_file\'.txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_single_quote_and_double_quote",
+            value="\'exclusive_new_file\".txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_double_quote_and_single_quote",
+            value="\"exclusive_new_file\'.txt",
+        ),
+    ]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id=x.sign,
+            )
+            for x in sm_names_with_surprize
+        ]
+    )
+    def name_with_surprize(self, request: pytest.FixtureRequest) -> tagNameWithSurprize:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param).__name__ == "tagNameWithSurprize"
+        return request.param
+
     def test_prop__remote(self, os_ops_descr: OsOpsDescr):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
