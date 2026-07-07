@@ -2978,6 +2978,76 @@ print('b', file=sys.stderr)
         LOCAL__check("a/b/c", "a/b/c")
         return
 
+    def test_quote_path(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.quote_path(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        LOCAL__check("", "''")
+
+        logging.info("------------- test one char")
+        LOCAL__check("a", "a")
+
+        logging.info("------------- test path")
+        LOCAL__check("a/b/c", "a/b/c")
+
+        logging.info("------------- test single quote")
+        LOCAL__check("'", "''\"'\"''")
+
+        logging.info("------------- test double quote")
+        LOCAL__check("\"", "'\"'")
+
+        logging.info("------------- test tilde")
+        LOCAL__check("~", "~")
+
+        logging.info("------------- test tilde and slash")
+        LOCAL__check("~/", "~")
+
+        logging.info("------------- test tilde and slash and path")
+        LOCAL__check("~/abc", "~/abc")
+
+        logging.info("------------- test tilde and slash and path_with_spaces")
+        LOCAL__check("~/a b c", "~/'a b c'")
+
+        logging.info("------------- test tilde and slash and path_with_spaces_and_final_slash")
+        LOCAL__check("~/a b c/", "~/'a b c/'")
+
+        logging.info("------------- test tilde and slash and path_with_dquote")
+        LOCAL__check("~/a\"b c/", "~/'a\"b c/'")
+
+        logging.info("------------- test tilde_with_user")
+        LOCAL__check("~root", "~root")
+
+        logging.info("------------- test tilde_with_user and slash")
+        LOCAL__check("~root/", "~root")
+
+        logging.info("------------- test tilde_with_user and path")
+        LOCAL__check("~root/a b c d e f ", "~root/'a b c d e f '")
+
+        logging.info("------------- test tilde_with_user and path_and_final_slash")
+        LOCAL__check("~root/a b c d e f /", "~root/'a b c d e f /'")
+
+        return
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,

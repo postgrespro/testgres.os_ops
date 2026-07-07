@@ -263,6 +263,11 @@ class RemoteOperations(OsOperations):
         assert type(parts) is tuple
         return __class__._build_path(a, *parts)
 
+    def quote_path(self, path: str) -> str:
+        assert path is not None
+        assert type(path) is str
+        return __class__._quote_path(path)
+
     # Environment setup
     def environ(self, var_name: str) -> str:
         """

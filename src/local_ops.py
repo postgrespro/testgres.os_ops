@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import shutil
+import shlex
 import stat
 import subprocess
 import tempfile
@@ -372,7 +373,12 @@ class LocalOperations(OsOperations):
         assert parts is not None
         assert type(a) is str
         assert type(parts) is tuple
-        return os.path.join(a, *parts)
+        return __class__._build_path(a, *parts)
+
+    def quote_path(self, path: str) -> str:
+        assert path is not None
+        assert type(path) is str
+        return __class__._quote_path(path)
 
     # Environment setup
     def environ(self, var_name):
@@ -790,3 +796,41 @@ class LocalOperations(OsOperations):
     def get_path_normcase(self, path: str) -> str:
         assert type(path) is str
         return os.path.normcase(path)
+
+    @staticmethod
+    def _build_path(a: str, *parts: str) -> str:
+        assert a is not None
+        assert parts is not None
+        assert type(a) is str
+        assert type(parts) is tuple
+        return os.path.join(a, *parts)
+
+    @staticmethod
+    def _quote_path(path: str) -> str:
+        assert type(path) is str
+
+        if path.startswith("~"):
+            # Split the path by the first slash into two parts
+            # Example 1: "~root/abc/def ' \"" -> tilde_part="~root", tail_part="abc/def ' \""
+            # Example 2: "~" -> tilde_part="~", tail_part=""
+            parts = path.split("/", 1)
+            tilde_part = parts[0]
+            tail_part = parts[1] if len(parts) > 1 else ""
+
+            if tail_part:
+                # Quote ONLY the tail, protecting spaces and quotes inside it
+                tail_q = __class__._quote_path2(tail_part)
+                # Glue the naked tilde and the tucked tail together using a slash
+                # You get: ~root/"abc/def ' \""
+                return __class__._build_path(tilde_part, tail_q)
+
+            # If there is no tail (just "~" or "~root"), leave it without quotes
+            return tilde_part
+
+        # If there is no tilde, quote the entire path
+        return __class__._quote_path2(path)
+
+    @staticmethod
+    def _quote_path2(path: str) -> str:
+        assert type(path) is str
+        return shlex.quote(path)
