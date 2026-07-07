@@ -23,6 +23,7 @@ import time
 import signal as os_signal
 import dataclasses
 import random
+import datetime
 
 from src.exceptions import InvalidOperationException
 from src.exceptions import ExecUtilException
@@ -82,6 +83,56 @@ class TestOsOpsCommon:
     def os_ops_descr(self, request: pytest.FixtureRequest) -> OsOpsDescr:
         assert isinstance(request, pytest.FixtureRequest)
         assert isinstance(request.param, OsOpsDescr)
+        return request.param
+
+    @dataclasses.dataclass
+    class tagNameWithSurprize:
+        sign: str
+        value: str
+
+    sm_names_with_surprize: typing.List[tagNameWithSurprize] = [
+        tagNameWithSurprize(
+            sign="std",
+            value="exclusive_new_file.txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_one_double_quote",
+            value="exclusive_new_file\".txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_two_double_quote",
+            value="\"exclusive_new_file\".txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_one_single_quote",
+            value="exclusive_new_file\'.txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_two_single_quote",
+            value="\'exclusive_new_file\'.txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_single_quote_and_double_quote",
+            value="\'exclusive_new_file\".txt",
+        ),
+        tagNameWithSurprize(
+            sign="with_double_quote_and_single_quote",
+            value="\"exclusive_new_file\'.txt",
+        ),
+    ]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id=x.sign,
+            )
+            for x in sm_names_with_surprize
+        ]
+    )
+    def name_with_surprize(self, request: pytest.FixtureRequest) -> tagNameWithSurprize:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param).__name__ == "tagNameWithSurprize"
         return request.param
 
     def test_prop__remote(self, os_ops_descr: OsOpsDescr):
@@ -434,32 +485,79 @@ class TestOsOpsCommon:
         assert response is True
         return
 
+    def test_is_executable_true_2(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        """
+        Test is_executable for an existing executable.
+        """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        assert os_ops.is_executable("/bin/sh") is True
+
+        tmpdir = os_ops.mkdtemp(name_with_surprize.value)
+
+        cmd = ["sh", "-c", "cp -p /bin/sh " + os_ops.quote_path(tmpdir)]
+
+        os_ops.exec_command(cmd)
+
+        target = os_ops.build_path(tmpdir, "sh")
+
+        assert os_ops.path_exists(target)
+
+        response = os_ops.is_executable(target)
+        assert response is True
+
+        os_ops.remove_file(target)
+        os_ops.rmdir(tmpdir)
+        return
+
     def test_is_executable_false(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test is_executable for a non-executable.
         """
         assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
         assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        response = os_ops.is_executable(__file__)
+        tmp_dir = os_ops.mkdtemp()
+        filename = os_ops.build_path(tmp_dir, name_with_surprize.value + ".no_exe")
 
+        os_ops.touch(filename)
+
+        response = os_ops.is_executable(filename)
         assert response is False
+
+        os_ops.remove_file(filename)
+        os_ops.rmdir(tmp_dir)
         return
 
     def test_makedirs_and_rmdirs_success(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test makedirs and rmdirs for successful directory creation and removal.
         """
         assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
         assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         os_ops = os_ops_descr.os_ops
@@ -467,7 +565,10 @@ class TestOsOpsCommon:
 
         RunConditions.skip_if_windows()
 
-        path = "/tmp/testgres-os_ops-test_dir-{}".format(uuid.uuid4().bytes.hex())
+        path = "/tmp/{}-{}".format(
+            name_with_surprize.value,
+            uuid.uuid4().bytes.hex()
+        )
 
         # Test makedirs
         os_ops.makedirs(path)
@@ -483,12 +584,14 @@ class TestOsOpsCommon:
     def test_makedirs_failure(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test makedirs for failure.
         """
         # Try to create a directory in a read-only location
         assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
         assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         os_ops = os_ops_descr.os_ops
@@ -496,7 +599,10 @@ class TestOsOpsCommon:
 
         RunConditions.skip_if_windows()
 
-        path = "/root/test_dir-{}".format(uuid.uuid4().bytes.hex())
+        path = "/root/test_dir-{}-{}".format(
+            name_with_surprize.value,
+            uuid.uuid4().bytes.hex(),
+        )
 
         # Test makedirs
         with pytest.raises(Exception) as x:
@@ -533,43 +639,85 @@ class TestOsOpsCommon:
             assert type(f) is str
         return
 
+    def test_listdir_2(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        """
+        Test listdir for listing directory contents.
+        """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        path = os_ops.mkdtemp(name_with_surprize.value)
+        files = os_ops.listdir(path)
+        assert isinstance(files, list)
+        assert len(files) == 0
+
+        os_ops.rmdir(path)
+        return
+
     def test_path_exists_true__directory(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test path_exists for an existing directory.
         """
         assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
         assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        RunConditions.skip_if_windows()
+        tmp_dir = os_ops.mkdtemp()
+        assert os_ops.path_exists(tmp_dir) is True
 
-        assert os_ops.path_exists("/etc") is True
+        tmp_dir2 = os_ops.build_path(tmp_dir, name_with_surprize.value)
+        os_ops.makedir(tmp_dir2)
+        assert os_ops.path_exists(tmp_dir2) is True
+
+        os_ops.rmdir(tmp_dir2)
+        os_ops.rmdir(tmp_dir)
         return
 
     def test_path_exists_true__file(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test path_exists for an existing file.
         """
         assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
         assert isinstance(os_ops_descr.os_ops, OsOperations)
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        RunConditions.skip_if_windows()
+        tmp_dir = os_ops.mkdtemp()
+        assert os_ops.path_exists(tmp_dir) is True
 
-        filename = "/bin/sh"
+        filename = os_ops.build_path(tmp_dir, name_with_surprize.value)
+
+        data = "abc"
+        os_ops.write(filename, data, binary=False)
+        assert os_ops.read(filename, binary=False) == data
 
         LocalCheck.check_path_exists(os_ops, filename)
         assert os_ops.path_exists(filename) is True
+
+        os_ops.remove_file(filename)
+        os_ops.rmdir(tmp_dir)
         return
 
     def test_path_exists_false__directory(
@@ -631,14 +779,16 @@ class TestOsOpsCommon:
     def test_mkdtemp__custom(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        C_TEMPLATE = "abcdef"
+        C_TEMPLATE = name_with_surprize.value
         path = os_ops.mkdtemp(C_TEMPLATE)
         logging.info("Path is [{0}].".format(path))
         LocalCheck.check_path_exists(os_ops, path)
@@ -653,9 +803,11 @@ class TestOsOpsCommon:
     def test_rmdirs(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -664,7 +816,10 @@ class TestOsOpsCommon:
 
         path = os_ops.build_path(
             tmpdir,
-            "testgres-os_ops-test_rmdirs-" + uuid.uuid4().bytes.hex(),
+            "testgres-os_ops-test_rmdirs-{}-{}".format(
+                name_with_surprize.value,
+                uuid.uuid4().bytes.hex(),
+            )
         )
 
         local_detecter_is_created = False
@@ -682,7 +837,7 @@ class TestOsOpsCommon:
             local_detecter_is_created = True
             logging.info("Local detecter is created [{}]".format(path))
 
-        cmd = ["mkdir", path]
+        cmd = ["sh", "-c", "mkdir " + os_ops.quote_path(path)]
         os_ops.exec_command(cmd)
 
         LocalCheck.check_path_exists(os_ops, path)
@@ -703,9 +858,11 @@ class TestOsOpsCommon:
     def test_rmdirs__01_with_subfolder(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -715,7 +872,7 @@ class TestOsOpsCommon:
         LocalCheck.check_path_exists(os_ops, path)
         assert os_ops.path_exists(path)
 
-        dir1 = os_ops.build_path(path, "dir1")
+        dir1 = os_ops.build_path(path, name_with_surprize.value)
         LocalCheck.check_path_does_not_exists(os_ops, dir1)
         assert not os_ops.path_exists(dir1)
 
@@ -734,9 +891,11 @@ class TestOsOpsCommon:
     def test_rmdirs__02_with_file(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -746,7 +905,7 @@ class TestOsOpsCommon:
         LocalCheck.check_path_exists(os_ops, path)
         assert os_ops.path_exists(path)
 
-        file1 = os_ops.build_path(path, "file1.txt")
+        file1 = os_ops.build_path(path, name_with_surprize.value)
         LocalCheck.check_path_does_not_exists(os_ops, file1)
         assert not os_ops.path_exists(file1)
 
@@ -765,9 +924,11 @@ class TestOsOpsCommon:
     def test_rmdirs__03_with_subfolder_and_file(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -777,7 +938,7 @@ class TestOsOpsCommon:
         LocalCheck.check_path_exists(os_ops, path)
         assert os_ops.path_exists(path)
 
-        dir1 = os_ops.build_path(path, "dir1")
+        dir1 = os_ops.build_path(path, name_with_surprize.value)
         LocalCheck.check_path_does_not_exists(os_ops, dir1)
         assert not os_ops.path_exists(dir1)
 
@@ -787,7 +948,7 @@ class TestOsOpsCommon:
         assert os_ops.isdir(dir1)
         assert not os_ops.isfile(dir1)
 
-        file1 = os_ops.build_path(dir1, "file1.txt")
+        file1 = os_ops.build_path(dir1, name_with_surprize.value)
         LocalCheck.check_path_does_not_exists(os_ops, file1)
         assert not os_ops.path_exists(file1)
 
@@ -809,19 +970,21 @@ class TestOsOpsCommon:
     def test_write_text_file(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test write for writing data to a text file.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
 
-        filename = os_ops.mkstemp()
+        filename = os_ops.mkstemp(name_with_surprize.value)
         data = "Hello, world!"
 
         os_ops.write(filename, data, truncate=True)
@@ -837,48 +1000,56 @@ class TestOsOpsCommon:
     def test_write_binary_file(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test write for writing data to a binary file.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
 
-        filename = "/tmp/test_file.bin"
+        filename = os_ops.mkstemp(name_with_surprize.value)
         data = b"\x00\x01\x02\x03"
 
         os_ops.write(filename, data, binary=True, truncate=True)
 
         response = os_ops.read(filename, binary=True)
-
         assert response == data
+
+        os_ops.remove_file(filename)
         return
 
     def test_read_text_file(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test read for reading data from a text file.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
         RunConditions.skip_if_windows()
 
-        filename = "/etc/hosts"
+        filename = os_ops.mkstemp(name_with_surprize.value)
+
+        C_DATA = "\nabc\n321\n\n"
+        os_ops.write(filename, C_DATA)
 
         response = os_ops.read(filename)
-
         assert isinstance(response, str)
+        assert response == C_DATA
         return
 
     def test_read_binary_file(
@@ -953,12 +1124,14 @@ class TestOsOpsCommon:
     def test_read__binary(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test OsOperations::read for binary data.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -969,7 +1142,7 @@ class TestOsOpsCommon:
         assert type(response0) is bytes
 
         filename = os_ops.mkstemp(
-            "testgres-os_ops-test_read__binary",
+            name_with_surprize.value,
         )
 
         os_ops.write(
@@ -998,23 +1171,27 @@ class TestOsOpsCommon:
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = __file__  # current file
+        filename = os_ops.mkstemp()
 
         with pytest.raises(
                 InvalidOperationException,
                 match=re.escape("Enconding is not allowed for read binary operation")):
             os_ops.read(filename, encoding="", binary=True)
+
+        os_ops.remove_file(filename)
         return
 
     def test_read_binary__spec(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test OsOperations::read_binary.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -1025,7 +1202,7 @@ class TestOsOpsCommon:
         assert type(response0) is bytes
 
         filename = os_ops.mkstemp(
-            "testgres-os_ops-test_read_binary__spec",
+            name_with_surprize.value,
         )
 
         os_ops.write(
@@ -1063,36 +1240,44 @@ class TestOsOpsCommon:
     def test_read_binary__spec__negative_offset(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test OsOperations::read_binary with negative offset.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
+        filename = os_ops.mkstemp(name_with_surprize.value)
+
         with pytest.raises(
                 ValueError,
                 match=re.escape("Negative 'offset' is not supported.")):
-            os_ops.read_binary(__file__, -1)
+            os_ops.read_binary(filename, -1)
+
+        os_ops.remove_file(filename)
         return
 
     def test_get_file_size(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test OsOperations::get_file_size.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = os_ops.mkstemp("testgres-os_ops-test_get_file_size-")
+        filename = os_ops.mkstemp(name_with_surprize.value)
         sz = os_ops.get_file_size(filename)
         assert type(sz) is int
         assert sz == 0
@@ -1113,34 +1298,38 @@ class TestOsOpsCommon:
     def test_isfile_true(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test isfile for an existing file.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        RunConditions.skip_if_windows()
-
-        filename = "/bin/sh"
+        filename = os_ops.mkstemp(name_with_surprize.value)
 
         LocalCheck.check_isfile(os_ops, filename)
         response = os_ops.isfile(filename)
         assert response is True
+
+        os_ops.remove_file(filename)
         return
 
     def test_isfile_false__not_exist(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test isfile for a non-existing file.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
@@ -1149,7 +1338,7 @@ class TestOsOpsCommon:
 
         filename = os_ops.build_path(
             tmpdir,
-            "nonexistent_file-{}.txt".format(uuid.uuid4().bytes.hex()),
+            name_with_surprize.value,
         )
 
         LocalCheck.check_path_does_not_exists(os_ops, filename)
@@ -1209,17 +1398,19 @@ class TestOsOpsCommon:
     def test_isdir_true(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test isdir for an existing directory.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        tmpdir = os_ops.get_tempdir()
+        tmpdir = os_ops.mkdtemp(name_with_surprize.value)
         LocalCheck.check_path_exists(os_ops, tmpdir)
         LocalCheck.check_isdir(os_ops, tmpdir)
         LocalCheck.check_not_isfile(os_ops, tmpdir)
@@ -1227,6 +1418,8 @@ class TestOsOpsCommon:
 
         response = os_ops.isdir(tmpdir)
         assert response is True
+
+        os_ops.rmdir(tmpdir)
         return
 
     def test_isdir_false__not_exist(
@@ -2551,8 +2744,13 @@ print('b', file=sys.stderr)
         expected_r = exec_r.rstrip()
         LOCAL__check("~", expected_r)
 
+        LOCAL__check("~/", expected_r)
+
         # Tilda with a ROOT user
-        LOCAL__check("~root/abc", "/root/abc")
+        LOCAL__check("~root", "/root")
+        LOCAL__check("~root/", "/root")
+        LOCAL__check("~root", "/root")
+        LOCAL__check("~root/abc/", "/root/abc")
 
         logging.info("------------- test spaces and special chars")
         # Folder with quotes, and spaces.
@@ -2564,6 +2762,11 @@ print('b', file=sys.stderr)
         # weird_name = "my folder $VAR 'single' \"double\""
         # expected_r = os_ops.build_path(cwd, weird_name)
         # LOCAL__check(weird_name, expected_r)
+
+        for n in __class__.sm_names_with_surprize:
+            logging.info("--------------------- test names with surprizes [{}]".format(n.sign))
+            expected_r = os_ops.build_path(cwd, n.value)
+            LOCAL__check(n.value, expected_r)
 
         logging.info("OK. GO HOME!")
         return
@@ -2927,15 +3130,17 @@ print('b', file=sys.stderr)
         self,
         os_ops_descr: OsOpsDescr,
         readlines_data_txt: tagReadLinesData_TXT,
+        name_with_surprize: tagNameWithSurprize,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
-        assert isinstance(readlines_data_txt, __class__.tagReadLinesData_TXT)
+        assert type(readlines_data_txt) is __class__.tagReadLinesData_TXT
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        tmpfile = os_ops.mkstemp()
+        tmpfile = os_ops.mkstemp(name_with_surprize.value)
 
         os_ops.write(tmpfile, readlines_data_txt.source, binary=False)
 
@@ -2950,15 +3155,17 @@ print('b', file=sys.stderr)
         self,
         os_ops_descr: OsOpsDescr,
         readlines_data_txt: tagReadLinesData_TXT,
+        name_with_surprize: tagNameWithSurprize,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
         assert isinstance(readlines_data_txt, __class__.tagReadLinesData_TXT)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        tmpfile = os_ops.mkstemp()
+        tmpfile = os_ops.mkstemp(name_with_surprize.value)
 
         os_ops.write(tmpfile, readlines_data_txt.source, binary=True)
 
@@ -3017,6 +3224,322 @@ print('b', file=sys.stderr)
 
         # Тест всегда успешный, его цель — оставить исторический след в логах гитхаба
         assert True
+        return
+
+    def test_get_file_stat__common(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        #
+        # Author: Marg G. (mark@google.com)
+        #
+
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        # Готовим пути и данные
+        tmp_dir = os_ops.mkdtemp()
+        assert type(tmp_dir) is str
+        assert tmp_dir != ""
+
+        filename = os_ops.build_path(tmp_dir, name_with_surprize.value)
+        initial_data = "Hello"
+        append_data = " World!!!"
+
+        # Записываем начальные данные и проверяем исходный stat
+        os_ops.write(filename, initial_data, truncate=True)
+
+        stat1 = os_ops.get_file_stat(filename)
+        assert type(stat1) is dict
+
+        # Проверяем наличие и типы свойств через константы
+        assert OsOperations.C_FILE_STAT_PROP__SIZE in stat1
+        assert OsOperations.C_FILE_STAT_PROP__MTIME in stat1
+        assert type(stat1[OsOperations.C_FILE_STAT_PROP__SIZE]) is int
+        assert isinstance(stat1[OsOperations.C_FILE_STAT_PROP__MTIME], datetime.datetime)
+
+        # Проверяем точный размер
+        assert stat1[OsOperations.C_FILE_STAT_PROP__SIZE] == len(initial_data)
+        # Проверяем, что таймзоны сбросились в UTC
+        assert stat1[OsOperations.C_FILE_STAT_PROP__MTIME].tzinfo == datetime.timezone.utc
+
+        logging.info("stat1.size: {}".format(stat1[OsOperations.C_FILE_STAT_PROP__SIZE]))
+        logging.info("stat1.mtime: {}".format(stat1[OsOperations.C_FILE_STAT_PROP__MTIME]))
+
+        # Делаем микро-паузу, чтобы операционная система зафиксировала изменение времени
+        time.sleep(1.1)
+
+        # Шаг 2: Дописываем данные (изменяем размер и mtime)
+        os_ops.write(filename, append_data, truncate=False)
+
+        stat2 = os_ops.get_file_stat(filename)
+        assert type(stat2) is dict
+
+        logging.info("stat2.size: {}".format(stat2[OsOperations.C_FILE_STAT_PROP__SIZE]))
+        logging.info("stat2.mtime: {}".format(stat2[OsOperations.C_FILE_STAT_PROP__MTIME]))
+
+        # Проверяем, что новый размер равен сумме двух строк
+        expected_size = len(initial_data) + len(append_data)
+        assert stat2[OsOperations.C_FILE_STAT_PROP__SIZE] == expected_size
+
+        # Проверяем, что дата модификации честно сдвинулась вперед
+        assert stat2[OsOperations.C_FILE_STAT_PROP__MTIME] > stat1[OsOperations.C_FILE_STAT_PROP__MTIME]
+
+        logging.info("SUCCESS. File stat size and mtime verified successfully.")
+
+        file_content = os_ops.read(filename, binary=False)
+        assert file_content == initial_data + append_data
+
+        # Проверка граничного условия (несуществующий файл)
+        # Метод обязан выкидывать ошибку (FileNotFoundError или ExecUtilException)
+        fake_filename = os_ops.build_path(tmp_dir, "does_not_exist.txt")
+
+        with pytest.raises(Exception) as x:
+            os_ops.get_file_stat(fake_filename)
+
+        assert x is not None
+        assert not isinstance(x.value, AssertionError)
+        logging.info("SUCCESS. Error on missing file verified. Exception: {}".format(type(x.value).__name__))
+
+        # -------
+        logging.info("cleanup")
+        os_ops.remove_file(filename)
+        os_ops.rmdir(tmp_dir)
+        return
+
+    def test_path_normpath(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.get_path_normpath(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        LOCAL__check("", ".")
+
+        logging.info("------------- test one char")
+        LOCAL__check("a", "a")
+
+        logging.info("------------- test path")
+        LOCAL__check("a/b/c", "a/b/c")
+        return
+
+    def test_path_normcase(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.get_path_normcase(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        LOCAL__check("", "")
+
+        logging.info("------------- test one char")
+        LOCAL__check("a", "a")
+
+        logging.info("------------- test path")
+        LOCAL__check("a/b/c", "a/b/c")
+        return
+
+    def test_quote_path(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.quote_path(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        LOCAL__check("", "''")
+
+        logging.info("------------- test one char")
+        LOCAL__check("a", "a")
+
+        logging.info("------------- test path")
+        LOCAL__check("a/b/c", "a/b/c")
+
+        logging.info("------------- test single quote")
+        LOCAL__check("'", "''\"'\"''")
+
+        logging.info("------------- test double quote")
+        LOCAL__check("\"", "'\"'")
+
+        logging.info("------------- test tilde")
+        LOCAL__check("~", "~")
+
+        logging.info("------------- test tilde and slash")
+        LOCAL__check("~/", "~")
+
+        logging.info("------------- test tilde and slash and path")
+        LOCAL__check("~/abc", "~/abc")
+
+        logging.info("------------- test tilde and slash and path_with_spaces")
+        LOCAL__check("~/a b c", "~/'a b c'")
+
+        logging.info("------------- test tilde and slash and path_with_spaces_and_final_slash")
+        LOCAL__check("~/a b c/", "~/'a b c/'")
+
+        logging.info("------------- test tilde and slash and path_with_dquote")
+        LOCAL__check("~/a\"b c/", "~/'a\"b c/'")
+
+        logging.info("------------- test tilde_with_user")
+        LOCAL__check("~root", "~root")
+
+        logging.info("------------- test tilde_with_user and slash")
+        LOCAL__check("~root/", "~root")
+
+        logging.info("------------- test tilde_with_user and path")
+        LOCAL__check("~root/a b c d e f ", "~root/'a b c d e f '")
+
+        logging.info("------------- test tilde_with_user and path_and_final_slash")
+        LOCAL__check("~root/a b c d e f /", "~root/'a b c d e f /'")
+
+        return
+
+    def test_copytree__empty(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        tmpdir = os_ops.mkdtemp(name_with_surprize.value)
+
+        src = os_ops.build_path(tmpdir, "src")
+        dst = os_ops.build_path(tmpdir, "dst")
+
+        os_ops.makedir(src)
+        os_ops.copytree(src, dst)
+
+        assert os_ops.path_exists(src)
+        assert os_ops.path_exists(dst)
+
+        os_ops.rmdirs(tmpdir)
+        assert not os_ops.path_exists(tmpdir)
+        return
+
+    def test_copytree__with_content(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        tmpdir = os_ops.mkdtemp(name_with_surprize.value)
+
+        src = os_ops.build_path(tmpdir, "src")
+        dst = os_ops.build_path(tmpdir, "dst")
+
+        os_ops.makedir(src)
+
+        src_file1 = os_ops.build_path(src, "file1.dat")
+        os_ops.write(src_file1, "abc")
+        src_dir1 = os_ops.build_path(src, "dir1")
+        os_ops.makedir(src_dir1)
+        src_dir1_file2 = os_ops.build_path(src_dir1, "file2")
+        os_ops.write(src_dir1_file2, "cba")
+
+        os_ops.copytree(src, dst)
+
+        assert os_ops.path_exists(src)
+        assert os_ops.path_exists(dst)
+
+        dst_file1 = os_ops.build_path(dst, "file1.dat")
+        assert os_ops.read(dst_file1, binary=False) == "abc"
+        dst_dir1 = os_ops.build_path(dst, "dir1")
+        assert os_ops.path_exists(dst_dir1)
+        dst_dir1_file2 = os_ops.build_path(dst_dir1, "file2")
+        assert os_ops.path_exists(dst_dir1_file2)
+        assert os_ops.read(dst_dir1_file2, binary=False) == "cba"
+
+        os_ops.rmdirs(tmpdir)
+        assert not os_ops.path_exists(tmpdir)
+        return
+
+    def test_create_file__exclusive(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        tmp_dir = os_ops.mkdtemp()
+        filename = os_ops.build_path(tmp_dir, name_with_surprize.value)
+
+        # Step 1: The first attempt should be successful - the file is created from scratch
+        os_ops.create_file(filename)
+        assert os_ops.get_file_stat(filename)[OsOperations.C_FILE_STAT_PROP__SIZE] == 0
+        logging.info("SUCCESS. New file created successfully.")
+
+        # Step 2: The second attempt MUST throw an exception because the file already exists
+        with pytest.raises(Exception) as x:
+            os_ops.create_file(filename)
+
+        assert x is not None
+        assert not isinstance(x.value, AssertionError)
+        logging.info("SUCCESS. Blocked recreation of an existing file. Exception: {}".format(type(x.value).__name__))
+
+        os_ops.remove_file(filename)
+        os_ops.rmdir(tmp_dir)
         return
 
     @staticmethod

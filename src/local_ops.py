@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import shutil
+import shlex
 import stat
 import subprocess
 import tempfile
@@ -17,6 +18,7 @@ import threading
 import copy
 import signal as os_signal
 import ipaddress
+import datetime
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -372,7 +374,12 @@ class LocalOperations(OsOperations):
         assert parts is not None
         assert type(a) is str
         assert type(parts) is tuple
-        return os.path.join(a, *parts)
+        return __class__._build_path(a, *parts)
+
+    def quote_path(self, path: str) -> str:
+        assert path is not None
+        assert type(path) is str
+        return __class__._quote_path(path)
 
     # Environment setup
     def environ(self, var_name):
@@ -684,19 +691,27 @@ class LocalOperations(OsOperations):
             assert type(r) is bytes
             return r
 
-    def isfile(self, remote_file):
-        return os.path.isfile(remote_file)
+    def isfile(self, filename: str) -> bool:
+        assert type(filename) is str
+        assert filename != ""
+        return os.path.isfile(filename)
 
-    def isdir(self, dirname):
+    def isdir(self, dirname: str) -> bool:
+        assert type(dirname) is str
+        assert dirname != ""
         return os.path.isdir(dirname)
 
-    def get_file_size(self, filename):
+    def get_file_size(self, filename: str) -> int:
         assert filename is not None
         assert type(filename) is str
+        assert filename != ""
         return os.path.getsize(filename)
 
-    def remove_file(self, filename):
-        return os.remove(filename)
+    def remove_file(self, filename: str) -> None:
+        assert filename is not None
+        assert type(filename) is str
+        os.remove(filename)
+        return
 
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
@@ -804,3 +819,75 @@ class LocalOperations(OsOperations):
         r = os.path.abspath(expanded)
         assert type(r) is str
         return r
+
+    def get_file_stat(self, filename: str) -> OsOperations.T_FILE_STAT:
+        assert type(filename) is str
+        assert filename != ""
+
+        # os.stat will automatically throw FileNotFoundError if the file does not exist
+        st = os.stat(filename)
+
+        file_stat = dict()
+
+        file_stat[OsOperations.C_FILE_STAT_PROP__SIZE] = int(st.st_size)
+        file_stat[OsOperations.C_FILE_STAT_PROP__MTIME] = datetime.datetime.fromtimestamp(
+            st.st_mtime,
+            tz=datetime.timezone.utc,
+        )
+        return file_stat
+
+    def get_path_normpath(self, path: str) -> str:
+        assert type(path) is str
+        return os.path.normpath(path)
+
+    def get_path_normcase(self, path: str) -> str:
+        assert type(path) is str
+        return os.path.normcase(path)
+
+    def create_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
+
+        # The 'xb' mode will throw a FileExistsError if the file already exists in the system
+        with open(filename, "xb") as _:
+            pass
+
+        return
+
+    @staticmethod
+    def _build_path(a: str, *parts: str) -> str:
+        assert a is not None
+        assert parts is not None
+        assert type(a) is str
+        assert type(parts) is tuple
+        return os.path.join(a, *parts)
+
+    @staticmethod
+    def _quote_path(path: str) -> str:
+        assert type(path) is str
+
+        if path.startswith("~"):
+            # Split the path by the first slash into two parts
+            # Example 1: "~root/abc/def ' \"" -> tilde_part="~root", tail_part="abc/def ' \""
+            # Example 2: "~" -> tilde_part="~", tail_part=""
+            parts = path.split("/", 1)
+            tilde_part = parts[0]
+            tail_part = parts[1] if len(parts) > 1 else ""
+
+            if tail_part:
+                # Quote ONLY the tail, protecting spaces and quotes inside it
+                tail_q = __class__._quote_path2(tail_part)
+                # Glue the naked tilde and the tucked tail together using a slash
+                # You get: ~root/"abc/def ' \""
+                return __class__._build_path(tilde_part, tail_q)
+
+            # If there is no tail (just "~" or "~root"), leave it without quotes
+            return tilde_part
+
+        # If there is no tilde, quote the entire path
+        return __class__._quote_path2(path)
+
+    @staticmethod
+    def _quote_path2(path: str) -> str:
+        assert type(path) is str
+        return shlex.quote(path)

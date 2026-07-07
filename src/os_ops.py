@@ -114,6 +114,11 @@ class OsOperations:
         assert type(parts) is tuple
         raise NotImplementedError()
 
+    def quote_path(self, path: str) -> str:
+        assert path is not None
+        assert type(path) is str
+        raise NotImplementedError()
+
     # Environment setup
     def environ(self, var_name):
         raise NotImplementedError()
@@ -253,17 +258,24 @@ class OsOperations:
         assert offset >= 0
         raise NotImplementedError()
 
-    def isfile(self, remote_file):
-        raise NotImplementedError()
-
-    def isdir(self, dirname):
-        raise NotImplementedError()
-
-    def get_file_size(self, filename):
-        raise NotImplementedError()
-
-    def remove_file(self, filename):
+    def isfile(self, filename: str) -> bool:
         assert type(filename) is str
+        assert filename != ""
+        raise NotImplementedError()
+
+    def isdir(self, dirname: str) -> bool:
+        assert type(dirname) is str
+        assert dirname != ""
+        raise NotImplementedError()
+
+    def get_file_size(self, filename: str) -> int:
+        assert type(filename) is str
+        assert filename != ""
+        raise NotImplementedError()
+
+    def remove_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
         raise NotImplementedError()
 
     # Processes control
@@ -310,4 +322,30 @@ class OsOperations:
 
     def get_abs_path(self, path: str) -> str:
         assert type(path) is str
+        raise NotImplementedError()
+
+    # file size: int
+    C_FILE_STAT_PROP__SIZE = "size"
+    # file modification time: datetime
+    C_FILE_STAT_PROP__MTIME = "mtime"
+
+    # file properites {C_FILE_STAT_PROP__xxx -> value}
+    T_FILE_STAT = typing.Dict[str, typing.Any]
+
+    def get_file_stat(self, filename: str) -> T_FILE_STAT:
+        assert type(filename) is str
+        assert filename != ""
+        raise NotImplementedError()
+
+    def get_path_normpath(self, path: str) -> str:
+        assert type(path) is str
+        raise NotImplementedError()
+
+    def get_path_normcase(self, path: str) -> str:
+        assert type(path) is str
+        raise NotImplementedError()
+
+    def create_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
         raise NotImplementedError()

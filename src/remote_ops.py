@@ -13,6 +13,8 @@ import signal as os_signal
 import struct
 import ipaddress
 import time
+import datetime
+import shlex
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -263,6 +265,11 @@ class RemoteOperations(OsOperations):
         assert type(parts) is tuple
         return __class__._build_path(a, *parts)
 
+    def quote_path(self, path: str) -> str:
+        assert path is not None
+        assert type(path) is str
+        return __class__._quote_path(path)
+
     # Environment setup
     def environ(self, var_name: str) -> str:
         """
@@ -296,7 +303,10 @@ class RemoteOperations(OsOperations):
 
     def is_executable(self, file):
         # Check if the file is executable
-        command = ["test", "-x", file]
+        assert type(file) is str
+        assert file != ""
+
+        command = "test -x " + __class__._quote_path(file)
 
         exec_r = self.exec_command(
             cmd=command,
@@ -360,10 +370,29 @@ class RemoteOperations(OsOperations):
         - path (str): The path to the directory to be created.
         - remove_existing (bool): If True, the existing directory at the path will be removed.
         """
+        assert type(path) is str
+        assert path != ""
+
+        path_q = __class__._quote_path(path)
+
         if remove_existing:
-            cmd = ["rm", "-rf", path, "&&", "mkdir", "-p", path]
+            cmd_p = [
+                "rm",
+                "-rf",
+                path_q,
+                "&&",
+                "mkdir",
+                "-p",
+                path_q
+            ]
         else:
-            cmd = ["mkdir", "-p", path]
+            cmd_p = [
+                "mkdir",
+                "-p",
+                path_q,
+            ]
+
+        cmd = " ".join(cmd_p)
 
         self.exec_command(
             cmd,
@@ -373,8 +402,9 @@ class RemoteOperations(OsOperations):
 
     def makedir(self, path: str):
         assert type(path) is str
-        cmd = ["mkdir", path]
-        self.exec_command(cmd)
+        cmd = "mkdir " + __class__._quote_path(path)
+        self.exec_command(cmd, encoding=get_default_encoding())
+        return
 
     def rmdirs(
         self,
@@ -401,16 +431,20 @@ class RemoteOperations(OsOperations):
         # ENOENT = 2 - No such file or directory
         # ENOTDIR = 20 - Not a directory
 
-        cmd1 = [
-            "if", "[", "-d", path, "]", ";",
-            "then", "rm", "-rf", path, ";",
-            "elif", "[", "-e", path, "]", ";",
-            "then", "{", "echo", "cannot remove '" + path + "': it is not a directory", ">&2", ";", "exit", "20", ";", "}", ";",
-            "else", "{", "echo", "directory '" + path + "' does not exist", ">&2", ";", "exit", "2", ";", "}", ";",
+        path_q = __class__._quote_path(path)
+
+        cmd1_p = [
+            "if", "[", "-d", path_q, "]", ";",
+            "then", "rm", "-rf", path_q, ";",
+            "elif", "[", "-e", path_q, "]", ";",
+            "then", "{", "echo", "cannot remove " + path_q + ": it is not a directory", ">&2", ";", "exit", "20", ";", "}", ";",
+            "else", "{", "echo", "directory " + path_q + " does not exist", ">&2", ";", "exit", "2", ";", "}", ";",
             "fi"
         ]
 
-        cmd2 = ["sh", "-c", subprocess.list2cmdline(cmd1)]
+        cmd1 = " ".join(cmd1_p)
+
+        cmd2 = ["sh", "-c", cmd1]
 
         a = 0
         while True:
@@ -445,8 +479,8 @@ class RemoteOperations(OsOperations):
 
     def rmdir(self, path: str):
         assert type(path) is str
-        cmd = ["rmdir", path]
-        self.exec_command(cmd)
+        cmd = "rmdir " + __class__._quote_path(path)
+        self.exec_command(cmd, encoding=get_default_encoding())
         return
 
     def listdir(self, path):
@@ -455,7 +489,8 @@ class RemoteOperations(OsOperations):
         Args:
         path (str): The path to the directory.
         """
-        command = ["ls", path]
+        assert type(path) is str
+        command = "ls " + __class__._quote_path(path)
         output = self.exec_command(cmd=command, encoding=get_default_encoding())
         assert type(output) is str
         result = output.splitlines()
@@ -463,7 +498,9 @@ class RemoteOperations(OsOperations):
         return result
 
     def path_exists(self, path):
-        command = ["test", "-e", path]
+        assert type(path) is str
+
+        command = "test -e " + __class__._quote_path(path)
 
         exec_r = self.exec_command(
             cmd=command,
@@ -517,9 +554,19 @@ class RemoteOperations(OsOperations):
         - prefix (str): The prefix of the temporary directory name.
         """
         if prefix:
-            command = ["mktemp", "-d", "-t", prefix + "XXXXXX"]
+            command_p = [
+                "mktemp",
+                "-d",
+                "-t",
+                __class__._quote_path(prefix + "XXXXXX"),
+            ]
         else:
-            command = ["mktemp", "-d"]
+            command_p = [
+                "mktemp",
+                "-d",
+            ]
+
+        command = " ".join(command_p)
 
         exec_r = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
 
@@ -550,9 +597,17 @@ class RemoteOperations(OsOperations):
         - prefix (str): The prefix of the temporary directory name.
         """
         if prefix:
-            command = ["mktemp", "-t", prefix + "XXXXXX"]
+            command_p = [
+                "mktemp",
+                "-t",
+                __class__._quote_path(prefix + "XXXXXX"),
+            ]
         else:
-            command = ["mktemp"]
+            command_p = [
+                "mktemp",
+            ]
+
+        command = " ".join(command_p)
 
         exec_r = self.exec_command(
             command,
@@ -582,11 +637,21 @@ class RemoteOperations(OsOperations):
         return temp_file
 
     def copytree(self, src, dst):
+        assert type(src) is str
+        assert type(dst) is str
+
         if __class__._is_abs_path(dst):
+            # WTF?
             dst = __class__._build_path('~', dst)
+
         if self.isdir(dst):
             raise FileExistsError("Directory {} already exists.".format(dst))
-        return self.exec_command("cp -r {} {}".format(src, dst))
+
+        cmd = "cp -r {} {}".format(
+            __class__._quote_path(src),
+            __class__._quote_path(dst),
+        )
+        return self.exec_command(cmd)
 
     # Work with files
     def write(
@@ -630,15 +695,17 @@ class RemoteOperations(OsOperations):
         # Extract the path to the parent directory
         remote_directory = __class__._get_dirname(filename)
 
-        remote_cmd = [
+        remote_cmd_p = [
             "mkdir",
             "-p",
-            remote_directory,
+            __class__._quote_path(remote_directory),
             "&&",
             "cat",
             redirect_op,
-            filename,
+            __class__._quote_path(filename),
         ]
+
+        remote_cmd = " ".join(remote_cmd_p)
 
         # 4. Execute ONE network request
         # Pass final_data to the stdin parameter of the exec_command method
@@ -678,7 +745,12 @@ class RemoteOperations(OsOperations):
 
         This method behaves as the 'touch' command in Unix. It's equivalent to calling 'touch filename' in the shell.
         """
-        self.exec_command("touch {}".format(filename))
+        assert type(filename) is str
+        assert filename != ""
+
+        cmd = "touch " + __class__._quote_path(filename)
+
+        self.exec_command(cmd, encoding=get_default_encoding())
         return
 
     def read(
@@ -716,7 +788,7 @@ class RemoteOperations(OsOperations):
 
     def _read__binary(self, filename):
         assert type(filename) is str
-        cmd = ["cat", filename]
+        cmd = "cat " + __class__._quote_path(filename)
         content = self.exec_command(cmd)
         assert type(content) is bytes
         return content
@@ -734,9 +806,19 @@ class RemoteOperations(OsOperations):
         assert encoding is None or type(encoding) is str
 
         if num_lines > 0:
-            cmd = ["tail", "-n", str(num_lines), filename]
+            cmd_p = [
+                "tail",
+                "-n",
+                str(num_lines),
+                __class__._quote_path(filename),
+            ]
         else:
-            cmd = ["cat", filename]
+            cmd_p = [
+                "cat",
+                __class__._quote_path(filename),
+            ]
+
+        cmd = " ".join(cmd_p)
 
         if binary:
             assert encoding is None
@@ -768,91 +850,59 @@ class RemoteOperations(OsOperations):
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
 
-        cmd = ["tail", "-c", "+{}".format(offset + 1), filename]
+        filename_q = __class__._quote_path(filename)
+        cmd_p = ["tail", "-c", "+{}".format(offset + 1), filename_q]
+
+        cmd = " ".join(cmd_p)
+
         r = self.exec_command(cmd)
         assert type(r) is bytes
         return r
 
-    def isfile(self, remote_file):
-        cmd = "test -f {}; echo $?".format(remote_file)
+    def isfile(self, filename: str) -> bool:
+        assert type(filename) is str
+        assert filename != ""
+
+        filename_q = __class__._quote_path(filename)
+        assert type(filename_q) is str
+
+        cmd = "test -f {}; echo $?".format(filename_q)
         stdout = self.exec_command(cmd)
         assert type(stdout) is bytes
         result = int(stdout.strip())
         return result == 0
 
-    def isdir(self, dirname):
-        cmd = "if [ -d {} ]; then echo True; else echo False; fi".format(dirname)
+    def isdir(self, dirname: str) -> bool:
+        assert type(dirname) is str
+        assert dirname != ""
+
+        dirname_q = __class__._quote_path(dirname)
+
+        cmd = "if [ -d {} ]; then echo True; else echo False; fi".format(dirname_q)
         stdout = self.exec_command(cmd)
         assert type(stdout) is bytes
         return stdout.strip() == b"True"
 
-    def get_file_size(self, filename):
-        C_ERR_SRC = "RemoteOpertions::get_file_size"
-
-        assert filename is not None
+    def get_file_size(self, filename: str) -> int:
         assert type(filename) is str
-        cmd = ["du", "-b", filename]
+        assert filename != ""
 
-        s = self.exec_command(cmd, encoding=get_default_encoding())
-        assert type(s) is str
+        filename_q = __class__._quote_path(filename)
+        assert type(filename_q) is str
 
-        if len(s) == 0:
-            raise Exception(
-                "[BUG CHECK] Can't get size of file [{2}]. Remote operation returned an empty string. Check point [{0}][{1}].".format(
-                    C_ERR_SRC,
-                    "#001",
-                    filename
-                )
-            )
+        cmd = "stat -c %s " + filename_q
 
-        i = 0
+        # exec_command will throw ExecUtilException (e.g. with code 1) if the file does not exist
+        res = self.exec_command(cmd, encoding=get_default_encoding())
+        assert type(res) is str
+        return int(res)
 
-        while i < len(s) and s[i].isdigit():
-            assert s[i] >= '0'
-            assert s[i] <= '9'
-            i += 1
-
-        if i == 0:
-            raise Exception(
-                "[BUG CHECK] Can't get size of file [{2}]. Remote operation returned a bad formatted string. Check point [{0}][{1}].".format(
-                    C_ERR_SRC,
-                    "#002",
-                    filename
-                )
-            )
-
-        if i == len(s):
-            raise Exception(
-                "[BUG CHECK] Can't get size of file [{2}]. Remote operation returned a bad formatted string. Check point [{0}][{1}].".format(
-                    C_ERR_SRC,
-                    "#003",
-                    filename
-                )
-            )
-
-        if not s[i].isspace():
-            raise Exception(
-                "[BUG CHECK] Can't get size of file [{2}]. Remote operation returned a bad formatted string. Check point [{0}][{1}].".format(
-                    C_ERR_SRC,
-                    "#004",
-                    filename
-                )
-            )
-
-        r = 0
-
-        for i2 in range(0, i):
-            ch = s[i2]
-            assert ch >= '0'
-            assert ch <= '9'
-            # Here is needed to check overflow or that it is a human-valid result?
-            r = (r * 10) + ord(ch) - ord('0')
-
-        return r
-
-    def remove_file(self, filename):
-        cmd = "rm {}".format(filename)
-        return self.exec_command(cmd)
+    def remove_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
+        cmd = "rm " + __class__._quote_path(filename)
+        self.exec_command(cmd, encoding=get_default_encoding())
+        return
 
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
@@ -1136,20 +1186,77 @@ class RemoteOperations(OsOperations):
     def get_abs_path(self, path: str) -> str:
         assert type(path) is str
 
-        cleaned_path = __class__._normpath(path)
+        cleaned_path = __class__._path_normpath(path)
         assert type(cleaned_path) is str
+
+        path_q = __class__._quote_path(cleaned_path)
+
+        cmd = "realpath -m " + path_q
 
         #
         # "-m" is used to ignore not exist parts of path
         #
         r = self.exec_command(
-            ["realpath", "-m", cleaned_path],
+            cmd,
             encoding=get_default_encoding(),
         )
         assert type(r) is str
         r = __class__._strip_last_eol(r)
         assert type(r) is str
         return r
+
+    def get_file_stat(self, filename: str) -> OsOperations.T_FILE_STAT:
+        assert type(filename) is str
+        assert filename != ""
+
+        filename_q = __class__._quote_path(filename)
+        assert type(filename_q) is str
+
+        # Request the size (%s) and mtime in seconds (%Y) using a strict separator
+        cmd = "stat -c '%s|%Y' " + filename_q
+
+        # exec_command will throw ExecUtilException (e.g. with code 1) if the file does not exist
+        res = self.exec_command(cmd, encoding=get_default_encoding())
+        assert type(res) is str
+
+        parts = res.strip().split("|")
+        assert len(parts) == 2
+
+        file_stat = dict()
+
+        file_stat[OsOperations.C_FILE_STAT_PROP__SIZE] = int(parts[0])
+        file_stat[OsOperations.C_FILE_STAT_PROP__MTIME] = datetime.datetime.fromtimestamp(
+            float(parts[1]),
+            tz=datetime.timezone.utc,
+        )
+        return file_stat
+
+    def get_path_normpath(self, path: str) -> str:
+        assert type(path) is str
+        return __class__._path_normpath(path)
+
+    def get_path_normcase(self, path: str) -> str:
+        assert type(path) is str
+        return __class__._path_normcase(path)
+
+    def create_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
+
+        # Wrap it in a strict bash command. Be sure to quote the file name!
+        # If the file exists, bash will return exit code > 0,
+        # and exec_command will throw an ExecUtilException
+        filename_q = __class__._quote_path(filename)
+        assert type(filename_q) is str
+
+        cmd = [
+            "bash",
+            "-c",
+            "(set -o noclobber; > {})".format(filename_q),
+        ]
+
+        self.exec_command(cmd, encoding=get_default_encoding())
+        return
 
     @staticmethod
     def _build_cmdline(
@@ -1264,9 +1371,14 @@ class RemoteOperations(OsOperations):
         return posixpath.basename(path)
 
     @staticmethod
-    def _normpath(path: str) -> str:
+    def _path_normpath(path: str) -> str:
         assert type(path) is str
         return posixpath.normpath(path)
+
+    @staticmethod
+    def _path_normcase(path: str) -> str:
+        assert type(path) is str
+        return posixpath.normcase(path)
 
     @staticmethod
     def _strip_last_eol(text: str) -> str:
@@ -1281,6 +1393,36 @@ class RemoteOperations(OsOperations):
         assert type(r) is str
         assert r + __class__._C_EOL == text
         return r
+
+    @staticmethod
+    def _quote_path(path: str) -> str:
+        assert type(path) is str
+
+        if path.startswith("~"):
+            # Split the path by the first slash into two parts
+            # Example 1: "~root/abc/def ' \"" -> tilde_part="~root", tail_part="abc/def ' \""
+            # Example 2: "~" -> tilde_part="~", tail_part=""
+            parts = path.split("/", 1)
+            tilde_part = parts[0]
+            tail_part = parts[1] if len(parts) > 1 else ""
+
+            if tail_part:
+                # Quote ONLY the tail, protecting spaces and quotes inside it
+                tail_q = __class__._quote_path2(tail_part)
+                # Glue the naked tilde and the tucked tail together using a slash
+                # You get: ~root/"abc/def ' \""
+                return __class__._build_path(tilde_part, tail_q)
+
+            # If there is no tail (just "~" or "~root"), leave it without quotes
+            return tilde_part
+
+        # If there is no tilde, quote the entire path
+        return __class__._quote_path2(path)
+
+    @staticmethod
+    def _quote_path2(path: str) -> str:
+        assert type(path) is str
+        return shlex.quote(path)
 
 
 def normalize_error(error):
