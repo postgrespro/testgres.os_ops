@@ -258,7 +258,9 @@ class OsOperations:
         assert filename != ""
         raise NotImplementedError()
 
-    def isdir(self, dirname):
+    def isdir(self, dirname: str) -> bool:
+        assert type(dirname) is str
+        assert dirname != ""
         raise NotImplementedError()
 
     def get_file_size(self, filename):
