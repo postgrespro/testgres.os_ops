@@ -794,7 +794,10 @@ class RemoteOperations(OsOperations):
         assert type(filename) is str
         assert filename != ""
 
-        cmd = ["stat", "-c", "%s", filename]
+        filename_q = __class__._quote_path(filename)
+        assert type(filename_q) is str
+
+        cmd = "stat -c %s " + filename_q
 
         # exec_command will throw ExecUtilException (e.g. with code 1) if the file does not exist
         res = self.exec_command(cmd, encoding=get_default_encoding())
