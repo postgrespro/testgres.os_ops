@@ -3048,6 +3048,72 @@ print('b', file=sys.stderr)
 
         return
 
+    def test_copytree__empty(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        tmpdir = os_ops.mkdtemp(name_with_surprize.value)
+
+        src = os_ops.build_path(tmpdir, "src")
+        dst = os_ops.build_path(tmpdir, "dst")
+
+        os_ops.makedir(src)
+        os_ops.copytree(src, dst)
+
+        assert os_ops.path_exists(src)
+        assert os_ops.path_exists(dst)
+
+        os_ops.rmdirs(tmpdir)
+        assert not os_ops.path_exists(tmpdir)
+        return
+
+    def test_copytree__with_content(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        tmpdir = os_ops.mkdtemp(name_with_surprize.value)
+
+        src = os_ops.build_path(tmpdir, "src")
+        dst = os_ops.build_path(tmpdir, "dst")
+
+        os_ops.makedir(src)
+
+        src_file1 = os_ops.build_path(src, "file1.dat")
+        os_ops.write(src_file1, "abc")
+        src_dir1 = os_ops.build_path(src, "dir1")
+        os_ops.makedir(src_dir1)
+        src_dir1_file2 = os_ops.build_path(src_dir1, "file2")
+        os_ops.write(src_dir1_file2, "cba")
+
+        os_ops.copytree(src, dst)
+
+        assert os_ops.path_exists(src)
+        assert os_ops.path_exists(dst)
+
+        dst_file1 = os_ops.build_path(dst, "file1.dat")
+        assert os_ops.read(dst_file1, binary=False) == "abc"
+        dst_dir1 = os_ops.build_path(dst, "dir1")
+        assert os_ops.path_exists(dst_dir1)
+        dst_dir1_file2 = os_ops.build_path(dst_dir1, "file2")
+        assert os_ops.path_exists(dst_dir1_file2)
+        assert os_ops.read(dst_dir1_file2, binary=False) == "cba"
+
+        os_ops.rmdirs(tmpdir)
+        assert not os_ops.path_exists(tmpdir)
+        return
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,
