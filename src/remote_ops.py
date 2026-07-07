@@ -517,9 +517,19 @@ class RemoteOperations(OsOperations):
         - prefix (str): The prefix of the temporary directory name.
         """
         if prefix:
-            command = ["mktemp", "-d", "-t", prefix + "XXXXXX"]
+            command_p = [
+                "mktemp",
+                "-d",
+                "-t",
+                __class__._quote_path(prefix + "XXXXXX"),
+            ]
         else:
-            command = ["mktemp", "-d"]
+            command_p = [
+                "mktemp",
+                "-d",
+            ]
+
+        command = " ".join(command_p)
 
         exec_r = self.exec_command(command, verbose=True, encoding=get_default_encoding(), ignore_errors=True)
 
