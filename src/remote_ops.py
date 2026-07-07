@@ -804,7 +804,7 @@ class RemoteOperations(OsOperations):
     def remove_file(self, filename: str) -> None:
         assert type(filename) is str
         assert filename != ""
-        cmd = ["rm", filename]
+        cmd = "rm " + __class__._quote_path(filename)
         self.exec_command(cmd, encoding=get_default_encoding())
         return
 
