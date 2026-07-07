@@ -785,7 +785,10 @@ class RemoteOperations(OsOperations):
     def isdir(self, dirname: str) -> bool:
         assert type(dirname) is str
         assert dirname != ""
-        cmd = "if [ -d {} ]; then echo True; else echo False; fi".format(dirname)
+
+        dirname_q = __class__._quote_path(dirname)
+
+        cmd = "if [ -d {} ]; then echo True; else echo False; fi".format(dirname_q)
         stdout = self.exec_command(cmd)
         assert type(stdout) is bytes
         return stdout.strip() == b"True"
