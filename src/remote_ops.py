@@ -852,9 +852,12 @@ class RemoteOperations(OsOperations):
 
         return r
 
-    def remove_file(self, filename):
-        cmd = "rm {}".format(filename)
-        return self.exec_command(cmd)
+    def remove_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
+        cmd = ["rm", filename]
+        self.exec_command(cmd, encoding=get_default_encoding())
+        return
 
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):

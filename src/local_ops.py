@@ -698,8 +698,11 @@ class LocalOperations(OsOperations):
         assert type(filename) is str
         return os.path.getsize(filename)
 
-    def remove_file(self, filename):
-        return os.remove(filename)
+    def remove_file(self, filename: str) -> None:
+        assert filename is not None
+        assert type(filename) is str
+        os.remove(filename)
+        return
 
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
