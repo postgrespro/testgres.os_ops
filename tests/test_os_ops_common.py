@@ -2836,12 +2836,14 @@ print('b', file=sys.stderr)
     def test_get_file_stat__common(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         #
         # Author: Marg G. (mark@google.com)
         #
 
         assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
@@ -2850,7 +2852,7 @@ print('b', file=sys.stderr)
         assert type(tmp_dir) is str
         assert tmp_dir != ""
 
-        filename = os_ops.build_path(tmp_dir, "test_stat.txt")
+        filename = os_ops.build_path(tmp_dir, name_with_surprize.value)
         initial_data = "Hello"
         append_data = " World!!!"
 
@@ -2894,6 +2896,9 @@ print('b', file=sys.stderr)
         assert stat2[OsOperations.C_FILE_STAT_PROP__MTIME] > stat1[OsOperations.C_FILE_STAT_PROP__MTIME]
 
         logging.info("SUCCESS. File stat size and mtime verified successfully.")
+
+        file_content = os_ops.read(filename, binary=False)
+        assert file_content == initial_data + append_data
 
         # Проверка граничного условия (несуществующий файл)
         # Метод обязан выкидывать ошибку (FileNotFoundError или ExecUtilException)
