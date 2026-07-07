@@ -401,16 +401,20 @@ class RemoteOperations(OsOperations):
         # ENOENT = 2 - No such file or directory
         # ENOTDIR = 20 - Not a directory
 
-        cmd1 = [
-            "if", "[", "-d", path, "]", ";",
-            "then", "rm", "-rf", path, ";",
-            "elif", "[", "-e", path, "]", ";",
-            "then", "{", "echo", "cannot remove '" + path + "': it is not a directory", ">&2", ";", "exit", "20", ";", "}", ";",
-            "else", "{", "echo", "directory '" + path + "' does not exist", ">&2", ";", "exit", "2", ";", "}", ";",
+        path_q = __class__._quote_path(path)
+
+        cmd1_p = [
+            "if", "[", "-d", path_q, "]", ";",
+            "then", "rm", "-rf", path_q, ";",
+            "elif", "[", "-e", path_q, "]", ";",
+            "then", "{", "echo", "cannot remove " + path_q + ": it is not a directory", ">&2", ";", "exit", "20", ";", "}", ";",
+            "else", "{", "echo", "directory " + path_q + " does not exist", ">&2", ";", "exit", "2", ";", "}", ";",
             "fi"
         ]
 
-        cmd2 = ["sh", "-c", subprocess.list2cmdline(cmd1)]
+        cmd1 = " ".join(cmd1_p)
+
+        cmd2 = ["sh", "-c", cmd1]
 
         a = 0
         while True:
