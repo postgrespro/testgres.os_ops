@@ -734,9 +734,19 @@ class RemoteOperations(OsOperations):
         assert encoding is None or type(encoding) is str
 
         if num_lines > 0:
-            cmd = ["tail", "-n", str(num_lines), filename]
+            cmd_p = [
+                "tail",
+                "-n",
+                str(num_lines),
+                __class__._quote_path(filename),
+            ]
         else:
-            cmd = ["cat", filename]
+            cmd_p = [
+                "cat",
+                __class__._quote_path(filename),
+            ]
+
+        cmd = " ".join(cmd_p)
 
         if binary:
             assert encoding is None
