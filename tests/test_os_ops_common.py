@@ -550,6 +550,30 @@ class TestOsOpsCommon:
             assert type(f) is str
         return
 
+    def test_listdir_2(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        """
+        Test listdir for listing directory contents.
+        """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        path = os_ops.mkdtemp(name_with_surprize.value)
+        files = os_ops.listdir(path)
+        assert isinstance(files, list)
+        assert len(files) == 0
+
+        os_ops.rmdir(path)
+        return
+
     def test_path_exists_true__directory(
         self,
         os_ops_descr: OsOpsDescr,
