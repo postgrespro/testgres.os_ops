@@ -768,7 +768,11 @@ class RemoteOperations(OsOperations):
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
 
-        cmd = ["tail", "-c", "+{}".format(offset + 1), filename]
+        filename_q = __class__._quote_path(filename)
+        cmd_p = ["tail", "-c", "+{}".format(offset + 1), filename_q]
+
+        cmd = " ".join(cmd_p)
+
         r = self.exec_command(cmd)
         assert type(r) is bytes
         return r
