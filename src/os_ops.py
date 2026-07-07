@@ -336,3 +336,8 @@ class OsOperations:
     def get_path_normcase(self, path: str) -> str:
         assert type(path) is str
         raise NotImplementedError()
+
+    def create_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
+        raise NotImplementedError()

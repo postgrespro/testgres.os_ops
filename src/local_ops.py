@@ -797,6 +797,16 @@ class LocalOperations(OsOperations):
         assert type(path) is str
         return os.path.normcase(path)
 
+    def create_file(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
+
+        # The 'xb' mode will throw a FileExistsError if the file already exists in the system
+        with open(filename, "xb") as _:
+            pass
+
+        return
+
     @staticmethod
     def _build_path(a: str, *parts: str) -> str:
         assert a is not None

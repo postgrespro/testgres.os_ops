@@ -3265,6 +3265,36 @@ print('b', file=sys.stderr)
         assert not os_ops.path_exists(tmpdir)
         return
 
+    def test_create_file__exclusive(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        tmp_dir = os_ops.mkdtemp()
+        filename = os_ops.build_path(tmp_dir, name_with_surprize.value)
+
+        # Step 1: The first attempt should be successful - the file is created from scratch
+        os_ops.create_file(filename)
+        assert os_ops.get_file_stat(filename)[OsOperations.C_FILE_STAT_PROP__SIZE] == 0
+        logging.info("SUCCESS. New file created successfully.")
+
+        # Step 2: The second attempt MUST throw an exception because the file already exists
+        with pytest.raises(Exception) as x:
+            os_ops.create_file(filename)
+
+        assert x is not None
+        assert not isinstance(x.value, AssertionError)
+        logging.info("SUCCESS. Blocked recreation of an existing file. Exception: {}".format(type(x.value).__name__))
+
+        os_ops.remove_file(filename)
+        os_ops.rmdir(tmp_dir)
+        return
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,
