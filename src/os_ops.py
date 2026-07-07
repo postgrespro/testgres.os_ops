@@ -308,3 +308,16 @@ class OsOperations:
     def get_abs_path(self, path: str) -> str:
         assert type(path) is str
         raise NotImplementedError()
+
+    # file size: int
+    C_FILE_STAT_PROP__SIZE = "size"
+    # file modification time: datetime
+    C_FILE_STAT_PROP__MTIME = "mtime"
+
+    # file properites {C_FILE_STAT_PROP__xxx -> value}
+    T_FILE_STAT = typing.Dict[str, typing.Any]
+
+    def get_file_stat(self, filename: str) -> T_FILE_STAT:
+        assert type(filename) is str
+        assert filename != ""
+        raise NotImplementedError()
