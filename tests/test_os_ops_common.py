@@ -22,6 +22,7 @@ import time
 import signal as os_signal
 import dataclasses
 import random
+import datetime
 
 from src.exceptions import InvalidOperationException
 from src.exceptions import ExecUtilException
@@ -2770,6 +2771,85 @@ print('b', file=sys.stderr)
 
         # Тест всегда успешный, его цель — оставить исторический след в логах гитхаба
         assert True
+        return
+
+    def test_get_file_stat__common(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        #
+        # Author: Marg G. (mark@google.com)
+        #
+
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        # Готовим пути и данные
+        tmp_dir = os_ops.mkdtemp()
+        assert type(tmp_dir) is str
+        assert tmp_dir != ""
+
+        filename = os_ops.build_path(tmp_dir, "test_stat.txt")
+        initial_data = "Hello"
+        append_data = " World!!!"
+
+        # Записываем начальные данные и проверяем исходный stat
+        os_ops.write(filename, initial_data, truncate=True)
+
+        stat1 = os_ops.get_file_stat(filename)
+        assert type(stat1) is dict
+
+        # Проверяем наличие и типы свойств через константы
+        assert OsOperations.C_FILE_STAT_PROP__SIZE in stat1
+        assert OsOperations.C_FILE_STAT_PROP__MTIME in stat1
+        assert type(stat1[OsOperations.C_FILE_STAT_PROP__SIZE]) is int
+        assert isinstance(stat1[OsOperations.C_FILE_STAT_PROP__MTIME], datetime.datetime)
+
+        # Проверяем точный размер
+        assert stat1[OsOperations.C_FILE_STAT_PROP__SIZE] == len(initial_data)
+        # Проверяем, что таймзоны сбросились в UTC
+        assert stat1[OsOperations.C_FILE_STAT_PROP__MTIME].tzinfo == datetime.timezone.utc
+
+        logging.info("stat1.size: {}".format(stat1[OsOperations.C_FILE_STAT_PROP__SIZE]))
+        logging.info("stat1.mtime: {}".format(stat1[OsOperations.C_FILE_STAT_PROP__MTIME]))
+
+        # Делаем микро-паузу, чтобы операционная система зафиксировала изменение времени
+        time.sleep(1.1)
+
+        # Шаг 2: Дописываем данные (изменяем размер и mtime)
+        os_ops.write(filename, append_data, truncate=False)
+
+        stat2 = os_ops.get_file_stat(filename)
+        assert type(stat2) is dict
+
+        logging.info("stat2.size: {}".format(stat2[OsOperations.C_FILE_STAT_PROP__SIZE]))
+        logging.info("stat2.mtime: {}".format(stat2[OsOperations.C_FILE_STAT_PROP__MTIME]))
+
+        # Проверяем, что новый размер равен сумме двух строк
+        expected_size = len(initial_data) + len(append_data)
+        assert stat2[OsOperations.C_FILE_STAT_PROP__SIZE] == expected_size
+
+        # Проверяем, что дата модификации честно сдвинулась вперед
+        assert stat2[OsOperations.C_FILE_STAT_PROP__MTIME] > stat1[OsOperations.C_FILE_STAT_PROP__MTIME]
+
+        logging.info("SUCCESS. File stat size and mtime verified successfully.")
+
+        # Проверка граничного условия (несуществующий файл)
+        # Метод обязан выкидывать ошибку (FileNotFoundError или ExecUtilException)
+        fake_filename = os_ops.build_path(tmp_dir, "does_not_exist.txt")
+
+        with pytest.raises(Exception) as x:
+            os_ops.get_file_stat(fake_filename)
+
+        assert x is not None
+        assert not isinstance(x.value, AssertionError)
+        logging.info("SUCCESS. Error on missing file verified. Exception: {}".format(type(x.value).__name__))
+
+        # -------
+        logging.info("cleanup")
+        os_ops.remove_file(filename)
+        os_ops.rmdir(tmp_dir)
         return
 
     @staticmethod

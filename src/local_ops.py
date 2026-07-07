@@ -16,6 +16,7 @@ import typing
 import threading
 import copy
 import signal as os_signal
+import datetime
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -764,3 +765,19 @@ class LocalOperations(OsOperations):
         r = os.path.abspath(expanded)
         assert type(r) is str
         return r
+
+    def get_file_stat(self, filename: str) -> OsOperations.T_FILE_STAT:
+        assert type(filename) is str
+        assert filename != ""
+
+        # os.stat will automatically throw FileNotFoundError if the file does not exist
+        st = os.stat(filename)
+
+        file_stat = dict()
+
+        file_stat[OsOperations.C_FILE_STAT_PROP__SIZE] = int(st.st_size)
+        file_stat[OsOperations.C_FILE_STAT_PROP__MTIME] = datetime.datetime.fromtimestamp(
+            st.st_mtime,
+            tz=datetime.timezone.utc,
+        )
+        return file_stat

@@ -11,6 +11,7 @@ import copy
 import re
 import signal as os_signal
 import time
+import datetime
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -1049,6 +1050,29 @@ class RemoteOperations(OsOperations):
         r = __class__._strip_last_eol(r)
         assert type(r) is str
         return r
+
+    def get_file_stat(self, filename: str) -> OsOperations.T_FILE_STAT:
+        assert type(filename) is str
+        assert filename != ""
+
+        # Request the size (%s) and mtime in seconds (%Y) using a strict separator
+        cmd = ["stat", "-c", "'%s|%Y'", filename]
+
+        # exec_command will throw ExecUtilException (e.g. with code 1) if the file does not exist
+        res = self.exec_command(cmd, encoding=get_default_encoding())
+        assert type(res) is str
+
+        parts = res.strip().split("|")
+        assert len(parts) == 2
+
+        file_stat = dict()
+
+        file_stat[OsOperations.C_FILE_STAT_PROP__SIZE] = int(parts[0])
+        file_stat[OsOperations.C_FILE_STAT_PROP__MTIME] = datetime.datetime.fromtimestamp(
+            float(parts[1]),
+            tz=datetime.timezone.utc,
+        )
+        return file_stat
 
     @staticmethod
     def _build_cmdline(
