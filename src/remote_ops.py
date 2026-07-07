@@ -983,7 +983,7 @@ class RemoteOperations(OsOperations):
     def get_abs_path(self, path: str) -> str:
         assert type(path) is str
 
-        cleaned_path = __class__._normpath(path)
+        cleaned_path = __class__._path_normpath(path)
         assert type(cleaned_path) is str
 
         #
@@ -1020,6 +1020,14 @@ class RemoteOperations(OsOperations):
             tz=datetime.timezone.utc,
         )
         return file_stat
+
+    def get_path_normpath(self, path: str) -> str:
+        assert type(path) is str
+        return __class__._path_normpath(path)
+
+    def get_path_normcase(self, path: str) -> str:
+        assert type(path) is str
+        return __class__._path_normcase(path)
 
     @staticmethod
     def _build_cmdline(
@@ -1134,9 +1142,14 @@ class RemoteOperations(OsOperations):
         return posixpath.basename(path)
 
     @staticmethod
-    def _normpath(path: str) -> str:
+    def _path_normpath(path: str) -> str:
         assert type(path) is str
         return posixpath.normpath(path)
+
+    @staticmethod
+    def _path_normcase(path: str) -> str:
+        assert type(path) is str
+        return posixpath.normcase(path)
 
     @staticmethod
     def _strip_last_eol(text: str) -> str:
