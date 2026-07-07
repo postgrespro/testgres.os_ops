@@ -2355,8 +2355,13 @@ print('b', file=sys.stderr)
         expected_r = exec_r.rstrip()
         LOCAL__check("~", expected_r)
 
+        LOCAL__check("~/", expected_r)
+
         # Tilda with a ROOT user
-        LOCAL__check("~root/abc", "/root/abc")
+        LOCAL__check("~root", "/root")
+        LOCAL__check("~root/", "/root")
+        LOCAL__check("~root", "/root")
+        LOCAL__check("~root/abc/", "/root/abc")
 
         logging.info("------------- test spaces and special chars")
         # Folder with quotes, and spaces.
@@ -2368,6 +2373,11 @@ print('b', file=sys.stderr)
         # weird_name = "my folder $VAR 'single' \"double\""
         # expected_r = os_ops.build_path(cwd, weird_name)
         # LOCAL__check(weird_name, expected_r)
+
+        for n in __class__.sm_names_with_surprize:
+            logging.info("--------------------- test names with surprizes [{}]".format(n.sign))
+            expected_r = os_ops.build_path(cwd, n.value)
+            LOCAL__check(n.value, expected_r)
 
         logging.info("OK. GO HOME!")
         return

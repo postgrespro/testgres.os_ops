@@ -987,11 +987,15 @@ class RemoteOperations(OsOperations):
         cleaned_path = __class__._path_normpath(path)
         assert type(cleaned_path) is str
 
+        path_q = __class__._quote_path(cleaned_path)
+
+        cmd = "realpath -m " + path_q
+
         #
         # "-m" is used to ignore not exist parts of path
         #
         r = self.exec_command(
-            ["realpath", "-m", cleaned_path],
+            cmd,
             encoding=get_default_encoding(),
         )
         assert type(r) is str
