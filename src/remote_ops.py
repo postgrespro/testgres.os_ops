@@ -582,11 +582,21 @@ class RemoteOperations(OsOperations):
         return temp_file
 
     def copytree(self, src, dst):
+        assert type(src) is str
+        assert type(dst) is str
+
         if __class__._is_abs_path(dst):
+            # WTF?
             dst = __class__._build_path('~', dst)
+
         if self.isdir(dst):
             raise FileExistsError("Directory {} already exists.".format(dst))
-        return self.exec_command("cp -r {} {}".format(src, dst))
+
+        cmd = "cp -r {} {}".format(
+            __class__._quote_path(src),
+            __class__._quote_path(dst),
+        )
+        return self.exec_command(cmd)
 
     # Work with files
     def write(
