@@ -683,8 +683,10 @@ class LocalOperations(OsOperations):
             assert type(r) is bytes
             return r
 
-    def isfile(self, remote_file):
-        return os.path.isfile(remote_file)
+    def isfile(self, filename: str) -> bool:
+        assert type(filename) is str
+        assert filename != ""
+        return os.path.isfile(filename)
 
     def isdir(self, dirname):
         return os.path.isdir(dirname)

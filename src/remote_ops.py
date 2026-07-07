@@ -771,8 +771,10 @@ class RemoteOperations(OsOperations):
         assert type(r) is bytes
         return r
 
-    def isfile(self, remote_file):
-        cmd = "test -f {}; echo $?".format(remote_file)
+    def isfile(self, filename: str) -> bool:
+        assert type(filename) is str
+        assert filename != ""
+        cmd = "test -f {}; echo $?".format(filename)
         stdout = self.exec_command(cmd)
         assert type(stdout) is bytes
         result = int(stdout.strip())
