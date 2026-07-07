@@ -114,6 +114,11 @@ class OsOperations:
         assert type(parts) is tuple
         raise NotImplementedError()
 
+    def quote_path(self, path: str) -> str:
+        assert path is not None
+        assert type(path) is str
+        raise NotImplementedError()
+
     # Environment setup
     def environ(self, var_name):
         raise NotImplementedError()
