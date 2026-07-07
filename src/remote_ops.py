@@ -1007,8 +1007,11 @@ class RemoteOperations(OsOperations):
         assert type(filename) is str
         assert filename != ""
 
+        filename_q = __class__._quote_path(filename)
+        assert type(filename_q) is str
+
         # Request the size (%s) and mtime in seconds (%Y) using a strict separator
-        cmd = ["stat", "-c", "'%s|%Y'", filename]
+        cmd = "stat -c '%s|%Y' " + filename_q
 
         # exec_command will throw ExecUtilException (e.g. with code 1) if the file does not exist
         res = self.exec_command(cmd, encoding=get_default_encoding())
