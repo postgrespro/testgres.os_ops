@@ -1,10 +1,12 @@
 from .exceptions import ExecUtilException
 from .helpers import Helpers
 
+import typing
+
 
 class RaiseError:
     @staticmethod
-    def UtilityExitedWithNonZeroCode(cmd, exit_code, msg_arg, error, out):
+    def UtilityExitedWithNonZeroCode(cmd, exit_code, msg_arg, error, out) -> typing.NoReturn:
         assert type(exit_code) is int
 
         msg_arg_s = __class__._TranslateDataIntoString(msg_arg)
@@ -23,7 +25,7 @@ class RaiseError:
             error=error)
 
     @staticmethod
-    def CommandExecutionError(cmd, exit_code, message, error, out):
+    def CommandExecutionError(cmd, exit_code, message, error, out) -> typing.NoReturn:
         assert type(exit_code) is int
         assert type(message) is str
         assert message != ""
