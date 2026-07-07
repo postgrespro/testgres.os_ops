@@ -630,15 +630,17 @@ class RemoteOperations(OsOperations):
         # Extract the path to the parent directory
         remote_directory = __class__._get_dirname(filename)
 
-        remote_cmd = [
+        remote_cmd_p = [
             "mkdir",
             "-p",
-            remote_directory,
+            __class__._quote_path(remote_directory),
             "&&",
             "cat",
             redirect_op,
-            filename,
+            __class__._quote_path(filename),
         ]
+
+        remote_cmd = " ".join(remote_cmd_p)
 
         # 4. Execute ONE network request
         # Pass final_data to the stdin parameter of the exec_command method
