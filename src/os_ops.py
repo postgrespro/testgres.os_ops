@@ -224,7 +224,9 @@ class OsOperations:
 
         raise NotImplementedError()
 
-    def touch(self, filename):
+    def touch(self, filename: str) -> None:
+        assert type(filename) is str
+        assert filename != ""
         raise NotImplementedError()
 
     def read(

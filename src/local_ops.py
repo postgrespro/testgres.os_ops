@@ -18,6 +18,7 @@ import threading
 import copy
 import signal as os_signal
 import datetime
+import pathlib
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -578,17 +579,16 @@ class LocalOperations(OsOperations):
 
         raise InvalidOperationException("Unknown type of data type [{0}].".format(type(data).__name__))
 
-    def touch(self, filename):
+    def touch(self, filename: str) -> None:
         """
         Create a new file or update the access and modification times of an existing file.
         Args:
             filename (str): The name of the file to touch.
-
-        This method behaves as the 'touch' command in Unix. It's equivalent to calling 'touch filename' in the shell.
         """
-        # cross-python touch(). It is vulnerable to races, but who cares?
-        with open(filename, "a"):
-            os.utime(filename, None)
+        assert type(filename) is str
+        assert filename != ""
+
+        pathlib.Path(filename).touch(exist_ok=True)
         return
 
     def read(
