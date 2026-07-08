@@ -26,12 +26,8 @@ from .os_ops import ConnectionParams, OsOperations, get_default_encoding
 from .raise_error import RaiseError
 from .helpers import Helpers
 
-try:
-    from shutil import which as find_executable
-    from shutil import rmtree
-except ImportError:
-    from distutils.spawn import find_executable
-    from distutils import rmtree
+from shutil import which as find_executable
+from shutil import rmtree
 
 CMD_TIMEOUT_SEC = 60
 
