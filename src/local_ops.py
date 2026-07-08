@@ -381,7 +381,9 @@ class LocalOperations(OsOperations):
         return __class__._quote_path(path)
 
     # Environment setup
-    def environ(self, var_name):
+    def environ(self, var_name: str) -> typing.Optional[str]:
+        assert type(var_name) is str
+        assert var_name != ""
         return os.environ.get(var_name)
 
     def cwd(self):

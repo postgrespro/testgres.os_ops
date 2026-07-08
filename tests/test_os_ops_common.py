@@ -3295,6 +3295,37 @@ print('b', file=sys.stderr)
         os_ops.rmdir(tmp_dir)
         return
 
+    def test_environ(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        v = os_ops.environ("PATH")
+        assert type(v) is str
+        assert v != ""
+        assert not v.endswith("\n")
+
+        v = os_ops.environ("DUMMY")
+        assert v is None
+
+        C_AAAAAA = "AAAAAAAAAAAAA"
+        v = os_ops.environ("DUMMY; echo \"{}\";".format(C_AAAAAA))
+        assert v is None
+
+        # Adding a real nightmare for argument escaping to the test:
+        # Spaces, dollar signs, single and double quotes, ampersands.
+        evil_var_name = "MY_VAR 'single' \"double\" $PATH && rm -rf / ;"
+
+        v = os_ops.environ(evil_var_name)
+        # printenv should honestly say that there is no such variable (exit_code 1)
+        # and return None without failing according to shell syntax.
+        assert v is None
+
+        return
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,
