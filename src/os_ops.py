@@ -135,8 +135,14 @@ class OsOperations:
         # Check if the file is executable
         raise NotImplementedError()
 
-    def set_env(self, var_name, var_val):
-        # Check if the directory is already in PATH
+    def set_env(
+        self,
+        var_name: str,
+        var_val: typing.Optional[str],
+    ) -> None:
+        assert type(var_name) is str
+        assert var_val is None or type(var_val) is str
+        assert var_name != ""
         raise NotImplementedError()
 
     def get_user(self):

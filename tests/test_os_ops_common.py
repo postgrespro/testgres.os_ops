@@ -3431,6 +3431,118 @@ print('b', file=sys.stderr)
 
         return
 
+    def test_set_env__persistence(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        var_name = "TEST_SET_ENV_MAGIC_VAR"
+        var_value = "Cokanum_Detected_123"
+
+        # Step 1: Set the variable
+        os_ops.set_env(var_name, var_value)
+
+        # Step 2: In a SEPARATE command, we try to read it using our new environ()
+        # The old remote_ops is guaranteed to return None and crash!
+        fetched_value = os_ops.environ(var_name)
+
+        assert fetched_value == var_value, "Env variable persistence failed! Got: {}".format(fetched_value)
+        logging.info("SUCCESS. Environment variable persistence verified across commands.")
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd1 = [printenv, var_name]
+
+        exec_r = os_ops.exec_command(
+            cmd1,
+            encoding="utf-8",
+        )
+        assert type(exec_r) is str
+        exec_r = exec_r.rstrip()
+        assert fetched_value == var_value
+
+        exec_r = os_ops.exec_command(
+            cmd1,
+            encoding="utf-8",
+            exec_env={
+                var_name: "ABC",
+            }
+        )
+        assert type(exec_r) is str
+        exec_r = exec_r.rstrip()
+        assert exec_r == "ABC"
+
+        exec_r = os_ops.exec_command(
+            cmd1,
+            encoding="utf-8",
+            exec_env={
+                var_name: None,
+            },
+            ignore_errors=True,
+            verbose=True,
+        )
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+        assert exec_r[0] == 1
+
+        # ----------------
+        x = os_ops.environ("PATH")
+
+        try:
+            os_ops.set_env("PATH", None)
+
+            cmd2 = [printenv, "PATH"]
+
+            exec_r = os_ops.exec_command(
+                cmd2,
+                encoding="utf-8",
+                ignore_errors=True,
+                verbose=True,
+            )
+            assert type(exec_r) is tuple
+            assert len(exec_r) == 3
+            assert exec_r[0] == 1
+        finally:
+            os_ops.set_env("PATH", x)
+            assert os_ops.environ("PATH") == x
+
+        return
+
+    def test_set_env__evil(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        # --- INJECTION TEST VIA VARIABLE VALUE ---
+        # We stuff a hellish mixture of quotes,
+        # ampersands, and destructive shell commands into the variable value.
+        evil_value = "clean_val' && echo 'HACKED' && rm -rf / ; \" double_q"
+        evil_var = "TEST_EVIL_EXPORT_VAR"
+
+        # Step 1: Store this crazy value in the state
+        os_ops.set_env(evil_var, evil_value)
+
+        # Step 2: Call any harmless command (e.g., pwd or printenv)
+        # If quoting inside exec_command fails, the shell will execute the "echo 'HACKED'" chunk
+        # or crash with a quoting syntax error.
+        try:
+            fetched_evil = os_ops.environ(evil_var)
+            # printenv should return the string EXACTLY, without distortion and code execution
+            assert fetched_evil == evil_value, f"Evil env corruption! Got: {fetched_evil}"
+            logging.info("SUCCESS. Remote export variable value is completely bulletproof against shell injections.")
+        finally:
+            # Be sure to clean up after yourself
+            os_ops.set_env(evil_var, None)
+        return
+
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(
         os_ops: OsOperations,

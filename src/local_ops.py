@@ -398,9 +398,19 @@ class LocalOperations(OsOperations):
         assert stat.S_IXUSR != 0
         return (os.stat(file).st_mode & stat.S_IXUSR) == stat.S_IXUSR
 
-    def set_env(self, var_name, var_val):
-        # Check if the directory is already in PATH
-        os.environ[var_name] = var_val
+    def set_env(
+        self,
+        var_name: str,
+        var_val: typing.Optional[str],
+    ) -> None:
+        assert type(var_name) is str
+        assert var_val is None or type(var_val) is str
+        assert var_name != ""
+
+        if var_val is None:
+            os.environ.pop(var_name, None)
+        else:
+            os.environ[var_name] = var_val
         return
 
     def get_name(self):

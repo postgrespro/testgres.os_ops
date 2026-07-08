@@ -13,6 +13,7 @@ import signal as os_signal
 import time
 import datetime
 import shlex
+import threading
 
 from .exceptions import ExecUtilException
 from .exceptions import InvalidOperationException
@@ -50,6 +51,8 @@ class PsUtilProcessProxy:
 class RemoteOperations(OsOperations):
     _C_EOL = "\n"
 
+    T_ENVS = typing.Dict[str, typing.Optional[str]]
+
     #
     # Target system is Linux only.
     #
@@ -61,6 +64,7 @@ class RemoteOperations(OsOperations):
     _ssh_key: typing.Optional[str]
     _username: typing.Optional[str]
     _ssh_cmd: typing.List[str]
+    _remote_env: T_ENVS
 
     def __init__(self, conn_params: ConnectionParams):
         if conn_params is None:
@@ -98,6 +102,9 @@ class RemoteOperations(OsOperations):
             self._ssh_cmd += [conn_params.username + "@" + self._host]
         else:
             self._ssh_cmd += [self._host]
+
+        self._remote_env = dict()
+        self._remote_env_guard = threading.Lock()
         return
 
     @property
@@ -155,7 +162,7 @@ class RemoteOperations(OsOperations):
         get_process=None,
         timeout=None,
         ignore_errors=False,
-        exec_env: typing.Optional[dict] = None,
+        exec_env: typing.Optional[T_ENVS] = None,
         cwd: typing.Optional[str] = None
     ) -> OsOperations.T_EXEC_COMMAND_RESULT:
         """
@@ -187,7 +194,22 @@ class RemoteOperations(OsOperations):
             assert type(cwd) is str
             cmds.append(__class__._build_cmdline(["cd", cwd]))
 
-        cmds.append(__class__._build_cmdline(cmd, exec_env))
+        assert self._remote_env_guard is not None
+        assert type(self._remote_env) is dict
+
+        exec_env2: typing.Optional[__class__.T_ENVS] = None
+
+        with self._remote_env_guard:
+            if len(self._remote_env) > 0:
+                exec_env2 = self._remote_env.copy()
+                assert type(exec_env2) is dict
+
+        if exec_env2 is None:
+            exec_env2 = exec_env
+        elif exec_env is not None:
+            exec_env2.update(exec_env)
+
+        cmds.append(__class__._build_cmdline(cmd, exec_env2))
 
         assert len(cmds) >= 1
 
@@ -373,14 +395,24 @@ class RemoteOperations(OsOperations):
             out=output
         )
 
-    def set_env(self, var_name: str, var_val: str):
+    def set_env(
+        self,
+        var_name: str,
+        var_val: typing.Optional[str],
+    ) -> None:
         """
         Set the value of an environment variable.
         Args:
         - var_name (str): The name of the environment variable.
-        - var_val (str): The value to be set for the environment variable.
+        - var_val (str|None): The value to be set for the environment variable.
         """
-        return self.exec_command("export {}={}".format(var_name, var_val))
+        assert type(var_name) is str
+        assert var_val is None or type(var_val) is str
+        assert var_name != ""
+
+        with self._remote_env_guard:
+            self._remote_env[var_name] = var_val
+        return
 
     def get_name(self):
         cmd = 'python3 -c "import os; print(os.name)"'
