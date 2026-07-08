@@ -306,7 +306,7 @@ class RemoteOperations(OsOperations):
 
         RaiseError.UtilityExitedWithNonZeroCode(
             cmd=cmd,
-            exit_code=exit,
+            exit_code=exit_code,
             msg_arg=error,
             error=stderr,
             out=stdout,
