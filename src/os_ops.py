@@ -196,7 +196,9 @@ class OsOperations:
     def mkstemp(self, prefix=None):
         raise NotImplementedError()
 
-    def copytree(self, src, dst):
+    def copytree(self, src: str, dst: str) -> str:
+        assert type(src) is str
+        assert type(dst) is str
         raise NotImplementedError()
 
     # Work with files

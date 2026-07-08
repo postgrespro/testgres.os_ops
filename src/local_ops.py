@@ -504,8 +504,11 @@ class LocalOperations(OsOperations):
         os.close(fd)  # Close the file descriptor immediately after creating the file
         return filename
 
-    def copytree(self, src, dst):
-        return shutil.copytree(src, dst)
+    def copytree(self, src: str, dst: str) -> str:
+        assert type(src) is str
+        assert type(dst) is str
+        shutil.copytree(src, dst)
+        return dst
 
     # Work with files
     def write(
