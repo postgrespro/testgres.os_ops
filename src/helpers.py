@@ -16,7 +16,7 @@ class Helpers:
     _get_default_encoding_func = _make_get_default_encoding_func.__func__()
 
     @staticmethod
-    def GetDefaultEncoding():
+    def get_default_encoding():
         #
         #   Original idea/source was:
         #
@@ -40,7 +40,7 @@ class Helpers:
         return 'UTF-8'
 
     @staticmethod
-    def PrepareProcessInput(
+    def prepare_process_input(
         input: typing.Optional[typing.Union[str, bytes]],
         encoding: typing.Optional[str],
     ) -> typing.Optional[bytes]:
@@ -51,7 +51,7 @@ class Helpers:
 
         if type(input) is str:
             if encoding is None:
-                return input.encode(__class__.GetDefaultEncoding())
+                return input.encode(__class__.get_default_encoding())
 
             assert type(encoding) is str
             return input.encode(encoding)
