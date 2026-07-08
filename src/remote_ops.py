@@ -421,10 +421,7 @@ class RemoteOperations(OsOperations):
         return
 
     def get_name(self):
-        cmd = 'python3 -c "import os; print(os.name)"'
-        stdout = self.exec_command(cmd, encoding=get_default_encoding())
-        assert type(stdout) is str
-        return stdout.strip()
+        return "posix"
 
     # Work with dirs
     def makedirs(
@@ -606,14 +603,7 @@ class RemoteOperations(OsOperations):
 
     @property
     def pathsep(self) -> str:
-        os_name = self.get_name()
-        if os_name == "posix":
-            pathsep = ":"
-        elif os_name == "nt":
-            pathsep = ";"
-        else:
-            raise Exception("Unsupported operating system: {}".format(os_name))
-        return pathsep
+        return posixpath.pathsep
 
     def mkdtemp(self, prefix: typing.Optional[str] = None) -> str:
         """

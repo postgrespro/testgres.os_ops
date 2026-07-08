@@ -506,14 +506,7 @@ class LocalOperations(OsOperations):
 
     @property
     def pathsep(self) -> str:
-        os_name = self.get_name()
-        if os_name == "posix":
-            pathsep = ":"
-        elif os_name == "nt":
-            pathsep = ";"
-        else:
-            raise Exception("Unsupported operating system: {}".format(os_name))
-        return pathsep
+        return os.path.pathsep
 
     def mkdtemp(self, prefix: typing.Optional[str] = None) -> str:
         assert prefix is None or type(prefix) is str
