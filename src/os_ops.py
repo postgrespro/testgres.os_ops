@@ -119,6 +119,11 @@ class OsOperations:
         assert type(path) is str
         raise NotImplementedError()
 
+    def join_command_arguments(self, cmd: typing.Iterable[str]) -> str:
+        assert cmd is not None
+        assert type(cmd) is list
+        raise NotImplementedError()
+
     # Environment setup
     def environ(self, var_name: str) -> typing.Optional[str]:
         assert type(var_name) is str
