@@ -21,8 +21,6 @@ from .os_ops import OsOperations, ConnectionParams, get_default_encoding
 from .raise_error import RaiseError
 from .helpers import Helpers
 
-error_markers = [b'error', b'Permission denied', b'fatal', b'No such file or directory']
-
 
 class PsUtilProcessProxy:
     def __init__(self, ssh, pid):
