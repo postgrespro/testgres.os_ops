@@ -300,7 +300,7 @@ class RemoteOperations(OsOperations):
         assert type(var_name) is str
         assert var_name != ""
 
-        cmd = ["/usr/bin/printenv", var_name]
+        cmd = ["printenv", var_name]
 
         exec_r = self.exec_command(
             cmd,

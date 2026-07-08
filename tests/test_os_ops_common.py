@@ -3452,10 +3452,14 @@ print('b', file=sys.stderr)
         assert fetched_value == var_value, "Env variable persistence failed! Got: {}".format(fetched_value)
         logging.info("SUCCESS. Environment variable persistence verified across commands.")
 
-        cmd = ["printenv", var_name]
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd1 = [printenv, var_name]
 
         exec_r = os_ops.exec_command(
-            cmd,
+            cmd1,
             encoding="utf-8",
         )
         assert type(exec_r) is str
@@ -3463,7 +3467,7 @@ print('b', file=sys.stderr)
         assert fetched_value == var_value
 
         exec_r = os_ops.exec_command(
-            cmd,
+            cmd1,
             encoding="utf-8",
             exec_env={
                 var_name: "ABC",
@@ -3474,7 +3478,7 @@ print('b', file=sys.stderr)
         assert exec_r == "ABC"
 
         exec_r = os_ops.exec_command(
-            cmd,
+            cmd1,
             encoding="utf-8",
             exec_env={
                 var_name: None,
@@ -3491,7 +3495,18 @@ print('b', file=sys.stderr)
 
         try:
             os_ops.set_env("PATH", None)
-            assert os_ops.environ("PATH") is None
+
+            cmd2 = [printenv, "PATH"]
+
+            exec_r = os_ops.exec_command(
+                cmd2,
+                encoding="utf-8",
+                ignore_errors=True,
+                verbose=True,
+            )
+            assert type(exec_r) is tuple
+            assert len(exec_r) == 3
+            assert exec_r[0] == 1
         finally:
             os_ops.set_env("PATH", x)
             assert os_ops.environ("PATH") == x
