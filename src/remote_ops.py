@@ -269,16 +269,48 @@ class RemoteOperations(OsOperations):
         return __class__._quote_path(path)
 
     # Environment setup
-    def environ(self, var_name: str) -> str:
+    def environ(self, var_name: str) -> typing.Optional[str]:
         """
         Get the value of an environment variable.
         Args:
         - var_name (str): The name of the environment variable.
         """
-        cmd = "echo ${}".format(var_name)
-        stdout = self.exec_command(cmd, encoding=get_default_encoding())
+        assert type(var_name) is str
+        assert var_name != ""
+
+        cmd = ["printenv", var_name]
+
+        exec_r = self.exec_command(
+            cmd,
+            encoding=get_default_encoding(),
+            verbose=True,
+            ignore_errors=True,
+        )
+
+        assert type(exec_r) is tuple
+        assert len(exec_r) == 3
+
+        exit_code, stdout, stderr = exec_r
+
+        assert type(exit_code) is int
         assert type(stdout) is str
-        return stdout.strip()
+        assert type(stderr) is str
+
+        if exit_code == 0:
+            return __class__._strip_last_eol(stdout)
+
+        if exit_code == 1:
+            return None
+
+        error = "Failed to read environment variable {!r} value.".format(var_name)
+
+        RaiseError.UtilityExitedWithNonZeroCode(
+            cmd=cmd,
+            exit_code=exit,
+            msg_arg=error,
+            error=stderr,
+            out=stdout,
+        )
 
     def cwd(self):
         cmd = 'pwd'

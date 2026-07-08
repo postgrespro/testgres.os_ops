@@ -120,7 +120,9 @@ class OsOperations:
         raise NotImplementedError()
 
     # Environment setup
-    def environ(self, var_name):
+    def environ(self, var_name: str) -> typing.Optional[str]:
+        assert type(var_name) is str
+        assert var_name != ""
         raise NotImplementedError()
 
     def cwd(self):
