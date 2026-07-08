@@ -52,7 +52,7 @@ class RaiseError:
         assert type(data) is bytes
 
         try:
-            return data.decode(Helpers.GetDefaultEncoding())
+            return data.decode(Helpers.get_default_encoding())
         except UnicodeDecodeError:
             pass
 

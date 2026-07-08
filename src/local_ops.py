@@ -209,7 +209,7 @@ class LocalOperations(OsOperations):
 
         input_prepared = None
         if not get_process:
-            input_prepared = Helpers.PrepareProcessInput(input, encoding)  # throw
+            input_prepared = Helpers.prepare_process_input(input, encoding)  # throw
 
         assert input_prepared is None or type(input_prepared) is bytes
 
