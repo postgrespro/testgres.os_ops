@@ -3221,6 +3221,76 @@ print('b', file=sys.stderr)
 
         return
 
+    def test_join_command_arguments(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        def LOCAL__check(value, expected) -> bool:
+            logging.info("Source path: [{}]".format(value))
+            actual = os_ops.join_command_arguments(value)
+            if actual == expected:
+                logging.info("Result is OK: [{}].".format(
+                    actual,
+                ))
+            else:
+                logging.error("Result is BAD: [{}]. Expected: [{}].".format(
+                    actual,
+                    expected,
+                ))
+            logging.info("")
+            return False
+
+        logging.info("------------- test empty string")
+        LOCAL__check(["cmd", ""], "cmd ''")
+
+        logging.info("------------- test one char")
+        LOCAL__check(["cmd", "a"], "cmd a")
+
+        logging.info("------------- test path")
+        LOCAL__check(["cmd", "a/b/c"], "cmd a/b/c")
+
+        logging.info("------------- test single quote")
+        LOCAL__check(["cmd", "'"], "cmd ''\"'\"''")
+
+        logging.info("------------- test double quote")
+        LOCAL__check(["cmd", "\""], "cmd '\"'")
+
+        logging.info("------------- test tilde")
+        LOCAL__check(["cmd", "~"], "cmd ~")
+
+        logging.info("------------- test tilde and slash")
+        LOCAL__check(["cmd", "~/"], "cmd ~")
+
+        logging.info("------------- test tilde and slash and path")
+        LOCAL__check(["cmd", "~/abc"], "cmd ~/abc")
+
+        logging.info("------------- test tilde and slash and path_with_spaces")
+        LOCAL__check(["cmd", "~/a b c"], "cmd ~/'a b c'")
+
+        logging.info("------------- test tilde and slash and path_with_spaces_and_final_slash")
+        LOCAL__check(["cmd", "~/a b c/"], "cmd ~/'a b c/'")
+
+        logging.info("------------- test tilde and slash and path_with_dquote")
+        LOCAL__check(["cmd", "~/a\"b c/"], "cmd ~/'a\"b c/'")
+
+        logging.info("------------- test tilde_with_user")
+        LOCAL__check(["cmd", "~root"], "cmd ~root")
+
+        logging.info("------------- test tilde_with_user and slash")
+        LOCAL__check(["cmd", "~root/"], "cmd ~root")
+
+        logging.info("------------- test tilde_with_user and path")
+        LOCAL__check(["cmd", "~root/a b c d e f "], "cmd ~root/'a b c d e f '")
+
+        logging.info("------------- test tilde_with_user and path_and_final_slash")
+        LOCAL__check(["cmd", "~root/a b c d e f /"], "cmd ~root/'a b c d e f /'")
+
+        return
+
     def test_copytree__empty(
         self,
         os_ops_descr: OsOpsDescr,

@@ -381,6 +381,11 @@ class LocalOperations(OsOperations):
         assert type(path) is str
         return __class__._quote_path(path)
 
+    def join_command_arguments(self, cmd: typing.Iterable[str]) -> str:
+        assert cmd is not None
+        assert type(cmd) is list
+        return __class__._join_command_arguments(cmd)
+
     # Environment setup
     def environ(self, var_name: str) -> typing.Optional[str]:
         assert type(var_name) is str
@@ -859,3 +864,11 @@ class LocalOperations(OsOperations):
     def _quote_path2(path: str) -> str:
         assert type(path) is str
         return shlex.quote(path)
+
+    @staticmethod
+    def _join_command_arguments(cmd: typing.Iterable[str]) -> str:
+        assert type(cmd) is list
+        for item in cmd:
+            assert type(item) is str
+
+        return " ".join(__class__._quote_path(arg) for arg in cmd)
