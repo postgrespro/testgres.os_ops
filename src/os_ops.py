@@ -128,11 +128,16 @@ class OsOperations:
     def cwd(self):
         raise NotImplementedError()
 
-    def find_executable(self, executable):
+    def find_executable(self, executable: str) -> typing.Optional[str]:
+        assert type(executable) is str
+        assert executable != ""
         raise NotImplementedError()
 
-    def is_executable(self, file):
+    def is_executable(self, file: str) -> bool:
         # Check if the file is executable
+        assert type(file) is str
+        assert file != ""
+
         raise NotImplementedError()
 
     def set_env(
@@ -145,7 +150,7 @@ class OsOperations:
         assert var_name != ""
         raise NotImplementedError()
 
-    def get_user(self):
+    def get_user(self) -> typing.Optional[str]:
         return self.username
 
     def get_name(self):
@@ -161,7 +166,7 @@ class OsOperations:
         assert type(remove_existing) is bool
         raise NotImplementedError()
 
-    def makedir(self, path: str):
+    def makedir(self, path: str) -> None:
         assert type(path) is str
         raise NotImplementedError()
 
@@ -182,24 +187,28 @@ class OsOperations:
         assert delay >= 0
         raise NotImplementedError()
 
-    def rmdir(self, path: str):
+    def rmdir(self, path: str) -> None:
         assert type(path) is str
         raise NotImplementedError()
 
-    def listdir(self, path):
+    def listdir(self, path: str) -> typing.List[str]:
+        assert type(path) is str
         raise NotImplementedError()
 
-    def path_exists(self, path):
+    def path_exists(self, path: str) -> bool:
+        assert type(path) is str
         raise NotImplementedError()
 
     @property
-    def pathsep(self):
+    def pathsep(self) -> str:
         raise NotImplementedError()
 
-    def mkdtemp(self, prefix=None):
+    def mkdtemp(self, prefix: typing.Optional[str] = None) -> str:
+        assert prefix is None or type(prefix) is str
         raise NotImplementedError()
 
-    def mkstemp(self, prefix=None):
+    def mkstemp(self, prefix: typing.Optional[str] = None) -> str:
+        assert prefix is None or type(prefix) is str
         raise NotImplementedError()
 
     def copytree(self, src: str, dst: str) -> str:
@@ -235,16 +244,20 @@ class OsOperations:
         assert filename != ""
         raise NotImplementedError()
 
+    T_READ_RESULT = typing.Union[str, bytes]
+
     def read(
         self,
         filename: str,
         encoding: typing.Optional[str] = None,
         binary: bool = False,
-    ):
+    ) -> T_READ_RESULT:
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert type(binary) is bool
         raise NotImplementedError()
+
+    T_READLINES_RESULT = typing.Union[typing.List[str], typing.List[bytes]]
 
     def readlines(
         self,
@@ -252,7 +265,7 @@ class OsOperations:
         num_lines: int = 0,
         binary: bool = False,
         encoding: typing.Optional[str] = None,
-    ) -> typing.Union[typing.List[str], typing.List[bytes]]:
+    ) -> T_READLINES_RESULT:
         """
         Read lines from a local file.
         If num_lines is greater than 0, only the last num_lines lines will be read.
@@ -264,7 +277,7 @@ class OsOperations:
         assert num_lines >= 0
         raise NotImplementedError()
 
-    def read_binary(self, filename, offset):
+    def read_binary(self, filename: str, offset: int) -> bytes:
         assert type(filename) is str
         assert type(offset) is int
         assert offset >= 0
@@ -291,17 +304,17 @@ class OsOperations:
         raise NotImplementedError()
 
     # Processes control
-    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
+    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals
         raise NotImplementedError()
 
-    def get_pid(self):
+    def get_pid(self) -> int:
         # Get current process id
         raise NotImplementedError()
 
-    def get_process_children(self, pid: int):
+    def get_process_children(self, pid: int) -> typing.List:
         assert type(pid) is int
         raise NotImplementedError()
 

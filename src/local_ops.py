@@ -390,11 +390,16 @@ class LocalOperations(OsOperations):
     def cwd(self):
         return os.getcwd()
 
-    def find_executable(self, executable):
+    def find_executable(self, executable: str) -> typing.Optional[str]:
+        assert type(executable) is str
+        assert executable != ""
         return find_executable(executable)
 
-    def is_executable(self, file):
+    def is_executable(self, file: str) -> bool:
         # Check if the file is executable
+        assert type(file) is str
+        assert file != ""
+
         assert stat.S_IXUSR != 0
         return (os.stat(file).st_mode & stat.S_IXUSR) == stat.S_IXUSR
 
@@ -431,7 +436,7 @@ class LocalOperations(OsOperations):
         os.makedirs(path, exist_ok=True)
         return
 
-    def makedir(self, path: str):
+    def makedir(self, path: str) -> None:
         assert type(path) is str
         os.mkdir(path)
         return
@@ -485,19 +490,21 @@ class LocalOperations(OsOperations):
             # OK!
             return True
 
-    def rmdir(self, path: str):
+    def rmdir(self, path: str) -> None:
         assert type(path) is str
         os.rmdir(path)
         return
 
-    def listdir(self, path):
+    def listdir(self, path: str) -> typing.List[str]:
+        assert type(path) is str
         return os.listdir(path)
 
-    def path_exists(self, path):
+    def path_exists(self, path: str) -> bool:
+        assert type(path) is str
         return os.path.exists(path)
 
     @property
-    def pathsep(self):
+    def pathsep(self) -> str:
         os_name = self.get_name()
         if os_name == "posix":
             pathsep = ":"
@@ -507,10 +514,13 @@ class LocalOperations(OsOperations):
             raise Exception("Unsupported operating system: {}".format(os_name))
         return pathsep
 
-    def mkdtemp(self, prefix=None):
-        return tempfile.mkdtemp(prefix='{}'.format(prefix))
+    def mkdtemp(self, prefix: typing.Optional[str] = None) -> str:
+        assert prefix is None or type(prefix) is str
+        return tempfile.mkdtemp(prefix=prefix)
 
-    def mkstemp(self, prefix=None):
+    def mkstemp(self, prefix: typing.Optional[str] = None) -> str:
+        assert prefix is None or type(prefix) is str
+
         fd, filename = tempfile.mkstemp(prefix=prefix)
         os.close(fd)  # Close the file descriptor immediately after creating the file
         return filename
@@ -606,7 +616,7 @@ class LocalOperations(OsOperations):
         filename: str,
         encoding: typing.Optional[str] = None,
         binary: bool = False,
-    ):
+    ) -> OsOperations.T_READ_RESULT:
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert type(binary) is bool
@@ -623,7 +633,7 @@ class LocalOperations(OsOperations):
 
         return self._read__text_with_encoding(filename, encoding or get_default_encoding())
 
-    def _read__text_with_encoding(self, filename, encoding):
+    def _read__text_with_encoding(self, filename: str, encoding: str) -> str:
         assert type(filename) is str
         assert type(encoding) is str
         with open(filename, mode='r', encoding=encoding) as file:  # open in a text mode
@@ -631,7 +641,7 @@ class LocalOperations(OsOperations):
             assert type(content) is str
             return content
 
-    def _read__binary(self, filename):
+    def _read__binary(self, filename: str) -> bytes:
         assert type(filename) is str
         with open(filename, 'rb') as file:  # open in a binary mode
             content = file.read()
@@ -644,7 +654,7 @@ class LocalOperations(OsOperations):
         num_lines: int = 0,
         binary: bool = False,
         encoding: typing.Optional[str] = None,
-    ) -> typing.Union[typing.List[str], typing.List[bytes]]:
+    ) -> OsOperations.T_READLINES_RESULT:
         """
         Read lines from a local file.
         If num_lines is greater than 0, only the last num_lines lines will be read.
@@ -692,7 +702,7 @@ class LocalOperations(OsOperations):
                     )  # Adjust buffer size
         return
 
-    def read_binary(self, filename, offset):
+    def read_binary(self, filename: str, offset: int) -> bytes:
         assert type(filename) is str
         assert type(offset) is int
 
@@ -728,18 +738,18 @@ class LocalOperations(OsOperations):
         return
 
     # Processes control
-    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
+    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals
         os.kill(pid, signal)
         return
 
-    def get_pid(self):
+    def get_pid(self) -> int:
         # Get current process id
         return os.getpid()
 
-    def get_process_children(self, pid: int):
+    def get_process_children(self, pid: int) -> typing.List:
         assert type(pid) is int
         return psutil.Process(pid).children()
 

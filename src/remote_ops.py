@@ -340,7 +340,10 @@ class RemoteOperations(OsOperations):
         assert type(stdout) is str
         return stdout.rstrip()
 
-    def find_executable(self, executable):
+    def find_executable(self, executable: str) -> typing.Optional[str]:
+        assert type(executable) is str
+        assert executable != ""
+
         search_paths = self.environ("PATH")
         if not search_paths:
             return None
@@ -353,7 +356,7 @@ class RemoteOperations(OsOperations):
 
         return None
 
-    def is_executable(self, file):
+    def is_executable(self, file: str) -> bool:
         # Check if the file is executable
         assert type(file) is str
         assert file != ""
@@ -462,7 +465,7 @@ class RemoteOperations(OsOperations):
         )
         return
 
-    def makedir(self, path: str):
+    def makedir(self, path: str) -> None:
         assert type(path) is str
         cmd = "mkdir " + __class__._quote_path(path)
         self.exec_command(cmd, encoding=get_default_encoding())
@@ -539,13 +542,13 @@ class RemoteOperations(OsOperations):
             # OK!
             return True
 
-    def rmdir(self, path: str):
+    def rmdir(self, path: str) -> None:
         assert type(path) is str
         cmd = "rmdir " + __class__._quote_path(path)
         self.exec_command(cmd, encoding=get_default_encoding())
         return
 
-    def listdir(self, path):
+    def listdir(self, path: str) -> typing.List[str]:
         """
         List all files and directories in a directory.
         Args:
@@ -559,7 +562,7 @@ class RemoteOperations(OsOperations):
         assert type(result) is list
         return result
 
-    def path_exists(self, path):
+    def path_exists(self, path: str) -> bool:
         assert type(path) is str
 
         command = "test -e " + __class__._quote_path(path)
@@ -599,7 +602,7 @@ class RemoteOperations(OsOperations):
         )
 
     @property
-    def pathsep(self):
+    def pathsep(self) -> str:
         os_name = self.get_name()
         if os_name == "posix":
             pathsep = ":"
@@ -609,12 +612,14 @@ class RemoteOperations(OsOperations):
             raise Exception("Unsupported operating system: {}".format(os_name))
         return pathsep
 
-    def mkdtemp(self, prefix=None):
+    def mkdtemp(self, prefix: typing.Optional[str] = None) -> str:
         """
         Creates a temporary directory in the remote server.
         Args:
         - prefix (str): The prefix of the temporary directory name.
         """
+        assert prefix is None or type(prefix) is str
+
         if prefix:
             command_p = [
                 "mktemp",
@@ -652,12 +657,14 @@ class RemoteOperations(OsOperations):
         temp_dir = exec_output.strip()
         return temp_dir
 
-    def mkstemp(self, prefix=None):
+    def mkstemp(self, prefix: typing.Optional[str] = None) -> str:
         """
         Creates a temporary file in the remote server.
         Args:
         - prefix (str): The prefix of the temporary directory name.
         """
+        assert prefix is None or type(prefix) is str
+
         if prefix:
             command_p = [
                 "mktemp",
@@ -819,7 +826,7 @@ class RemoteOperations(OsOperations):
         filename: str,
         encoding: typing.Optional[str] = None,
         binary: bool = False,
-    ):
+    ) -> OsOperations.T_READ_RESULT:
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert type(binary) is bool
@@ -836,7 +843,7 @@ class RemoteOperations(OsOperations):
 
         return self._read__text_with_encoding(filename, encoding or get_default_encoding())
 
-    def _read__text_with_encoding(self, filename, encoding):
+    def _read__text_with_encoding(self, filename: str, encoding: str) -> str:
         assert type(filename) is str
         assert type(encoding) is str
         content = self._read__binary(filename)
@@ -847,7 +854,7 @@ class RemoteOperations(OsOperations):
         assert type(content_s) is str
         return content_s
 
-    def _read__binary(self, filename):
+    def _read__binary(self, filename: str) -> bytes:
         assert type(filename) is str
         cmd = "cat " + __class__._quote_path(filename)
         content = self.exec_command(cmd)
@@ -860,7 +867,7 @@ class RemoteOperations(OsOperations):
         num_lines: int = 0,
         binary: bool = False,
         encoding: typing.Optional[str] = None,
-    ) -> typing.Union[typing.List[str], typing.List[bytes]]:
+    ) -> OsOperations.T_READLINES_RESULT:
         assert type(num_lines) is int
         assert type(filename) is str
         assert type(binary) is bool
@@ -904,7 +911,7 @@ class RemoteOperations(OsOperations):
         assert type(lines) is list
         return lines
 
-    def read_binary(self, filename, offset):
+    def read_binary(self, filename: str, offset: int) -> bytes:
         assert type(filename) is str
         assert type(offset) is int
 
@@ -966,21 +973,22 @@ class RemoteOperations(OsOperations):
         return
 
     # Processes control
-    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]):
+    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals
         assert int(signal) == signal
         cmd = "kill -{} {}".format(int(signal), pid)
-        return self.exec_command(cmd, encoding=get_default_encoding())
+        self.exec_command(cmd, encoding=get_default_encoding())
+        return
 
-    def get_pid(self):
+    def get_pid(self) -> int:
         # Get current process id
         x = self.exec_command("echo $$", encoding=get_default_encoding())
         assert type(x) is str
         return int(x)
 
-    def get_process_children(self, pid: int):
+    def get_process_children(self, pid: int) -> typing.List:
         assert type(pid) is int
 
         exec_r = self.exec_command(
