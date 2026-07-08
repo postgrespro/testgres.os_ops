@@ -765,7 +765,7 @@ class RemoteOperations(OsOperations):
 
         raise InvalidOperationException("Unknown type of data type [{0}].".format(type(data).__name__))
 
-    def touch(self, filename):
+    def touch(self, filename: str) -> None:
         """
         Create a new file or update the access and modification times of an existing file on the remote server.
 

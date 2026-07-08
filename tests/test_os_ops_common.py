@@ -1562,25 +1562,47 @@ class TestOsOpsCommon:
     def test_touch(
         self,
         os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
     ):
         """
         Test touch for creating a new file or updating access and modification times of an existing file.
         """
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        filename = os_ops.mkstemp()
+        tmpdir = os_ops.mkdtemp()
 
-        # TODO: this test does not check the result of 'touch' command!
+        filename = os_ops.build_path(tmpdir, name_with_surprize.value)
 
         os_ops.touch(filename)
 
+        assert os_ops.path_exists(filename)
         assert os_ops.isfile(filename)
 
+        stat1 = os_ops.get_file_stat(filename)
+        assert type(stat1) is dict
+
+        time.sleep(1.1)
+
+        os_ops.touch(filename)
+
+        stat2 = os_ops.get_file_stat(filename)
+        assert type(stat2) is dict
+
+        mtime1 = stat1[os_ops.C_FILE_STAT_PROP__MTIME]
+        mtime2 = stat2[os_ops.C_FILE_STAT_PROP__MTIME]
+
+        assert type(mtime1) is datetime.datetime
+        assert type(mtime2) is datetime.datetime
+
+        assert mtime1 < mtime2
+
         os_ops.remove_file(filename)
+        os_ops.rmdir(tmpdir)
         return
 
     def test_is_port_free__true(
