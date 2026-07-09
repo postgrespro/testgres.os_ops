@@ -59,3 +59,27 @@ class Helpers:
         # It is expected!
         assert type(input) is bytes
         return input
+
+    # OLD NAMES [DEPRECATED SINCE OS_OPS 3.1.0] -------------------------
+
+    @staticmethod
+    def GetDefaultEncoding():
+        #
+        # Dependencies:
+        #  - testgres.utils.execute_utility2 < 1.15
+        #
+        return __class__.get_default_encoding()
+
+    @staticmethod
+    def PrepareProcessInput(
+        input: typing.Optional[typing.Union[str, bytes]],
+        encoding: typing.Optional[str],
+    ) -> typing.Optional[bytes]:
+        #
+        # Dependencies:
+        #  - no information
+        #
+        return __class__.prepare_process_input(
+            input,
+            encoding,
+        )
