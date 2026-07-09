@@ -429,7 +429,7 @@ class LocalOperations(OsOperations):
         self._set_env(var_name, default_val)
         return
 
-    def get_name(self):
+    def get_name(self) -> str:
         return os.name
 
     # Work with dirs
