@@ -101,6 +101,22 @@ class TestOsOpsCommon:
         assert type(request.param).__name__ == "tagNameWithSurprize"
         return request.param
 
+    sm_false_true: typing.List[bool] = [False, True]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id="test_clone" if x else "test_orig",
+            )
+            for x in sm_false_true
+        ]
+    )
+    def use_clone(self, request: pytest.FixtureRequest) -> bool:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param) is bool
+        return request.param
+
     def test_prop__remote(self, os_ops_descr: OsOpsDescr):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
@@ -191,17 +207,34 @@ class TestOsOpsCommon:
         assert p in {"win32", "linux"}
         return
 
-    def test_create_clone(self, os_ops_descr: OsOpsDescr):
+    def test_create_clone(
+        self,
+        os_ops_descr: OsOpsDescr,
+        use_clone: bool,
+    ):
         assert type(os_ops_descr) is OsOpsDescr
-        assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(use_clone) is bool
 
-        os_ops = os_ops_descr.os_ops
+        os_ops = __class__.helper__get_os_ops(use_clone, os_ops_descr)
         assert isinstance(os_ops, OsOperations)
 
         clone = os_ops.create_clone()
         assert clone is not None
         assert clone is not os_ops
         assert type(clone) is type(os_ops)
+
+        assert clone.remote == os_ops.remote
+        assert clone.username == os_ops.username
+        assert clone.ssh_key == os_ops.ssh_key
+        assert clone.host == os_ops.host
+        assert clone.port == os_ops.port
+
+        assert clone.get_name() == os_ops.get_name()
+        assert clone.get_platform() == os_ops.get_platform()
+
+        assert clone.environ("PATH") == os_ops.environ("PATH")
+        assert clone.environ("DUMMY-4231") == os_ops.environ("DUMMY-4231")
+
         return
 
     def test_exec_command_success(self, os_ops_descr: OsOpsDescr):
@@ -3620,6 +3653,43 @@ print('b', file=sys.stderr)
             # Be sure to clean up after yourself
             os_ops.set_env(evil_var, None)
         return
+
+    @staticmethod
+    def helper__get_os_ops(
+        use_clone: bool,
+        os_ops_descr: OsOpsDescr,
+    ) -> OsOperations:
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        if (use_clone):
+            os_ops = __class__.helper__create_clone_and_formal_check_it(
+                os_ops_descr.os_ops,
+            )
+        else:
+            os_ops = os_ops_descr.os_ops
+
+        assert isinstance(os_ops, OsOperations)
+        return os_ops
+
+    @staticmethod
+    def helper__create_clone_and_formal_check_it(
+        os_ops: OsOperations,
+    ) -> OsOperations:
+        assert isinstance(os_ops, OsOperations)
+
+        clone = os_ops.create_clone()
+        assert clone is not None
+        assert type(clone) is type(os_ops)
+
+        # it is safe
+        assert clone.remote == os_ops.remote
+        assert clone.username == os_ops.username
+        assert clone.ssh_key == os_ops.ssh_key
+        assert clone.host == os_ops.host
+        assert clone.port == os_ops.port
+
+        return clone
 
     @staticmethod
     def helper__bug_check__unknown_os_ops_type(

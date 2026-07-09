@@ -70,6 +70,8 @@ class RemoteOperations(OsOperations):
 
         super().__init__()
 
+        self._remote_env_guard = threading.Lock()
+
         if conn_params is __class__.sm_dummy_conn_params:
             return
 
@@ -102,7 +104,6 @@ class RemoteOperations(OsOperations):
             self._ssh_cmd += [self._host]
 
         self._remote_env = dict()
-        self._remote_env_guard = threading.Lock()
         return
 
     @property
@@ -134,14 +135,23 @@ class RemoteOperations(OsOperations):
 
     def create_clone(self) -> RemoteOperations:
         assert type(self._ssh_cmd) is list
+        assert type(self._remote_env) is dict
+        assert self._remote_env_guard is not None
 
         clone = __class__(__class__.sm_dummy_conn_params)
+        assert clone._remote_env_guard is not None
+
         clone.conn_params = copy.copy(self.conn_params)
         clone._host = self._host
         clone._port = self._port
         clone._ssh_key = self._ssh_key
         clone._ssh_cmd = copy.copy(self._ssh_cmd)
         clone._username = self._username
+
+        with self._remote_env_guard:
+            clone._remote_env = self._remote_env.copy()
+            assert type(clone._remote_env) is dict
+
         return clone
 
     def exec_command(

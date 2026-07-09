@@ -107,6 +107,7 @@ class LocalOperations(OsOperations):
         clone = __class__(__class__.sm_dummy_conn_params)
         clone.conn_params = copy.copy(self.conn_params)
         clone._host = self._host
+        clone._port = self._port
         clone._ssh_key = self._ssh_key
         clone._username = self._username
         return clone
