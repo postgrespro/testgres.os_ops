@@ -3412,6 +3412,10 @@ print('b', file=sys.stderr)
 
         dst_a = os_ops.build_path(cwd, dst)
 
+        logging.info("src  : [{}]".format(src))
+        logging.info("dst  : [{}]".format(dst))
+        logging.info("dst_a: [{}]".format(dst_a))
+
         os_ops.makedir(src)
 
         src_file1 = os_ops.build_path(src, "file1.dat")
@@ -3435,6 +3439,10 @@ print('b', file=sys.stderr)
         dst_dir1_file2 = os_ops.build_path(dst_dir1, "file2")
         assert os_ops.path_exists(dst_dir1_file2)
         assert os_ops.read(dst_dir1_file2, binary=False) == "cba"
+
+        os_ops.rmdirs(dst)
+        assert not os_ops.path_exists(dst)
+        assert not os_ops.path_exists(dst_a)
 
         os_ops.rmdirs(tmpdir)
         assert not os_ops.path_exists(tmpdir)
