@@ -155,6 +155,16 @@ class OsOperations:
         assert var_name != ""
         raise NotImplementedError()
 
+    def reset_env(
+        self,
+        var_name: str,
+        default_val: typing.Optional[str],
+    ) -> None:
+        assert type(var_name) is str
+        assert default_val is None or type(default_val) is str
+        assert var_name != ""
+        raise NotImplementedError()
+
     def get_user(self) -> typing.Optional[str]:
         return self.username
 

@@ -414,10 +414,19 @@ class LocalOperations(OsOperations):
         assert var_val is None or type(var_val) is str
         assert var_name != ""
 
-        if var_val is None:
-            os.environ.pop(var_name, None)
-        else:
-            os.environ[var_name] = var_val
+        self._set_env(var_name, var_val)
+        return
+
+    def reset_env(
+        self,
+        var_name: str,
+        default_val: typing.Optional[str],
+    ) -> None:
+        assert type(var_name) is str
+        assert default_val is None or type(default_val) is str
+        assert var_name != ""
+
+        self._set_env(var_name, default_val)
         return
 
     def get_name(self):
@@ -872,3 +881,18 @@ class LocalOperations(OsOperations):
             assert type(item) is str
 
         return " ".join(__class__._quote_path(arg) for arg in cmd)
+
+    def _set_env(
+        self,
+        var_name: str,
+        var_val: typing.Optional[str],
+    ) -> None:
+        assert type(var_name) is str
+        assert var_val is None or type(var_val) is str
+        assert var_name != ""
+
+        if var_val is None:
+            os.environ.pop(var_name, None)
+        else:
+            os.environ[var_name] = var_val
+        return
