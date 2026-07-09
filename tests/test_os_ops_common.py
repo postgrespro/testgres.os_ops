@@ -23,6 +23,8 @@ import signal as os_signal
 import dataclasses
 import random
 import datetime
+import threading
+import queue
 
 from src.exceptions import InvalidOperationException
 from src.exceptions import ExecUtilException
@@ -3652,6 +3654,128 @@ print('b', file=sys.stderr)
         finally:
             # Be sure to clean up after yourself
             os_ops.set_env(evil_var, None)
+        return
+
+    def test_set_env__thread_safety(
+        self,
+        os_ops_descr: OsOpsDescr,
+        use_clone: bool,
+    ):
+        """
+        Test thread safety and data isolation of set_env and environ methods
+        when executed concurrently from multiple threads.
+        """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(use_clone) is bool
+
+        os_ops = __class__.helper__get_os_ops(use_clone, os_ops_descr)
+        assert isinstance(os_ops, OsOperations)
+
+        C_NUM_THREADS = 2
+
+        if OsOpsHelpers.is_localhost(os_ops):
+            C_NUM_ITERATIONS = 2000
+        else:
+            C_NUM_ITERATIONS = 200
+
+        # Queue for collecting exceptions from background threads
+        exceptions_queue = queue.Queue()
+
+        # The function that each thread will run
+        def thread_worker(var_name: str, var_value: str, iterations: int):
+            try:
+                for _ in range(iterations):
+                    # 1. The thread writes ITS own isolated variable
+                    os_ops.set_env(var_name, var_value)
+
+                    # 2. The thread reads ITS own variable
+                    fetched = os_ops.environ(var_name)
+
+                    # We check that someone else's thread hasn't overwritten our data
+                    assert fetched == var_value, \
+                        "Thread isolation broken! Expected {!r}, got {!r}.".format(
+                            var_value,
+                            fetched,
+                        )
+
+                    # 3. Clean up after yourself
+                    os_ops.set_env(var_name, None)
+                    assert os_ops.environ(var_name) is None
+
+            except Exception as e:
+                # If something goes wrong, we pass the error to the main test thread
+                exceptions_queue.put(e)
+            return
+
+        total_error_count = 0
+
+        threads: typing.List[typing.Optional[threading.Thread]] = [None] * C_NUM_THREADS
+        assert len(threads) == C_NUM_THREADS
+
+        for i in range(C_NUM_THREADS):
+            thread_name = "THREAD_{}_MAGIC_VAR".format(i)
+            thread_val = "Value_From_Thread_{}".format(i)
+
+            assert threads[i] is None
+
+            threads[i] = threading.Thread(
+                target=thread_worker,
+                args=(thread_name, thread_val, C_NUM_ITERATIONS),
+            )
+            continue
+
+        logging.info("Start threads...")
+        cActiveThreads = 0
+
+        try:
+            while cActiveThreads < C_NUM_THREADS:
+                logging.info("Start thread [{}] ...".format(cActiveThreads))
+
+                thread = threads[cActiveThreads]
+                assert thread is not None
+                assert isinstance(thread, threading.Thread)
+                thread.start()
+                cActiveThreads += 1
+                continue
+        except Exception as e:
+            logging.error("Failed to start thread [{}]. Exception ({}): {}.".format(
+                cActiveThreads,
+                type(e).__name__,
+                e,
+            ))
+
+        logging.info("Wait for finish of threads...")
+        cStoppedThread = 0
+
+        while cStoppedThread < cActiveThreads:
+            try:
+                logging.info("Wait for thread [{}] ...".format(cStoppedThread))
+                thread = threads[cStoppedThread]
+                assert thread is not None
+                assert isinstance(thread, threading.Thread)
+                thread.join()
+            except Exception as e:
+                logging.error("Failed to stop thread [{}]. Exception ({}): {}.".format(
+                    cStoppedThread,
+                    type(e).__name__,
+                    e,
+                ))
+            cStoppedThread += 1
+            continue
+
+        logging.info("Check errors queue...")
+
+        # We check if any of the internal threads have crashed.
+        while not exceptions_queue.empty():
+            total_error_count += 1
+            err_msg = exceptions_queue.get()
+            logging.error(err_msg)
+            continue
+
+        if total_error_count == 0:
+            logging.info("SUCCESS. Concurrent thread safety and environment isolation verified successfully.")
+        else:
+            logging.info("Total number of errors: {}".format(total_error_count))
         return
 
     @staticmethod
