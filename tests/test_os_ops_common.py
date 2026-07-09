@@ -220,22 +220,37 @@ class TestOsOpsCommon:
         os_ops = __class__.helper__get_os_ops(use_clone, os_ops_descr)
         assert isinstance(os_ops, OsOperations)
 
-        clone = os_ops.create_clone()
-        assert clone is not None
-        assert clone is not os_ops
-        assert type(clone) is type(os_ops)
+        env1_name = "env1_" + uuid.uuid4().bytes.hex()
+        env1_val = "abc"
+        env2_name = "env1_" + uuid.uuid4().bytes.hex()
 
-        assert clone.remote == os_ops.remote
-        assert clone.username == os_ops.username
-        assert clone.ssh_key == os_ops.ssh_key
-        assert clone.host == os_ops.host
-        assert clone.port == os_ops.port
+        os_ops.set_env(env1_name, env1_val)
 
-        assert clone.get_name() == os_ops.get_name()
-        assert clone.get_platform() == os_ops.get_platform()
+        try:
+            clone = os_ops.create_clone()
+            assert clone is not None
+            assert clone is not os_ops
+            assert type(clone) is type(os_ops)
 
-        assert clone.environ("PATH") == os_ops.environ("PATH")
-        assert clone.environ("DUMMY-4231") == os_ops.environ("DUMMY-4231")
+            assert clone.remote == os_ops.remote
+            assert clone.username == os_ops.username
+            assert clone.ssh_key == os_ops.ssh_key
+            assert clone.host == os_ops.host
+            assert clone.port == os_ops.port
+
+            assert clone.get_name() == os_ops.get_name()
+            assert clone.get_platform() == os_ops.get_platform()
+
+            assert clone.environ("PATH") == os_ops.environ("PATH")
+
+            v1_orig = os_ops.environ(env1_name)
+            v1_clone = clone.environ(env1_name)
+            assert v1_orig == env1_val
+            assert v1_orig == v1_clone
+
+            assert clone.environ(env2_name) == os_ops.environ(env2_name)
+        finally:
+            os_ops.reset_env(env1_name, None)
 
         return
 
@@ -3547,61 +3562,70 @@ print('b', file=sys.stderr)
     def test_set_env__persistence(
         self,
         os_ops_descr: OsOpsDescr,
+        use_clone: bool,
     ):
         assert type(os_ops_descr) is OsOpsDescr
-        os_ops = os_ops_descr.os_ops
+        assert type(use_clone) is bool
+
+        os_ops = __class__.helper__get_os_ops(use_clone, os_ops_descr)
         assert isinstance(os_ops, OsOperations)
 
         var_name = "TEST_SET_ENV_MAGIC_VAR"
-        var_value = "Cokanum_Detected_123"
 
-        # Step 1: Set the variable
-        os_ops.set_env(var_name, var_value)
+        assert os_ops.environ(var_name) is None
 
-        # Step 2: In a SEPARATE command, we try to read it using our new environ()
-        # The old remote_ops is guaranteed to return None and crash!
-        fetched_value = os_ops.environ(var_name)
+        try:
+            var_value = "Cokanum_Detected_123"
 
-        assert fetched_value == var_value, "Env variable persistence failed! Got: {}".format(fetched_value)
-        logging.info("SUCCESS. Environment variable persistence verified across commands.")
+            # Step 1: Set the variable
+            os_ops.set_env(var_name, var_value)
 
-        printenv = os_ops.find_executable("printenv")
-        assert type(printenv) is str
-        assert printenv != ""
+            # Step 2: In a SEPARATE command, we try to read it using our new environ()
+            # The old remote_ops is guaranteed to return None and crash!
+            fetched_value = os_ops.environ(var_name)
 
-        cmd1 = [printenv, var_name]
+            assert fetched_value == var_value, "Env variable persistence failed! Got: {}".format(fetched_value)
+            logging.info("SUCCESS. Environment variable persistence verified across commands.")
 
-        exec_r = os_ops.exec_command(
-            cmd1,
-            encoding="utf-8",
-        )
-        assert type(exec_r) is str
-        exec_r = exec_r.rstrip()
-        assert fetched_value == var_value
+            printenv = os_ops.find_executable("printenv")
+            assert type(printenv) is str
+            assert printenv != ""
 
-        exec_r = os_ops.exec_command(
-            cmd1,
-            encoding="utf-8",
-            exec_env={
-                var_name: "ABC",
-            }
-        )
-        assert type(exec_r) is str
-        exec_r = exec_r.rstrip()
-        assert exec_r == "ABC"
+            cmd1 = [printenv, var_name]
 
-        exec_r = os_ops.exec_command(
-            cmd1,
-            encoding="utf-8",
-            exec_env={
-                var_name: None,
-            },
-            ignore_errors=True,
-            verbose=True,
-        )
-        assert type(exec_r) is tuple
-        assert len(exec_r) == 3
-        assert exec_r[0] == 1
+            exec_r = os_ops.exec_command(
+                cmd1,
+                encoding="utf-8",
+            )
+            assert type(exec_r) is str
+            exec_r = exec_r.rstrip()
+            assert fetched_value == var_value
+
+            exec_r = os_ops.exec_command(
+                cmd1,
+                encoding="utf-8",
+                exec_env={
+                    var_name: "ABC",
+                }
+            )
+            assert type(exec_r) is str
+            exec_r = exec_r.rstrip()
+            assert exec_r == "ABC"
+
+            exec_r = os_ops.exec_command(
+                cmd1,
+                encoding="utf-8",
+                exec_env={
+                    var_name: None,
+                },
+                ignore_errors=True,
+                verbose=True,
+            )
+            assert type(exec_r) is tuple
+            assert len(exec_r) == 3
+            assert exec_r[0] == 1
+        finally:
+            os_ops.reset_env(var_name, None)
 
         # ----------------
         x = os_ops.environ("PATH")
@@ -3621,9 +3645,39 @@ print('b', file=sys.stderr)
             assert len(exec_r) == 3
             assert exec_r[0] == 1
         finally:
-            os_ops.set_env("PATH", x)
+            os_ops.reset_env("PATH", x)
             assert os_ops.environ("PATH") == x
 
+        return
+
+    def test_reset_env(
+        self,
+        os_ops_descr: OsOpsDescr,
+        use_clone: bool,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert type(use_clone) is bool
+
+        os_ops = __class__.helper__get_os_ops(use_clone, os_ops_descr)
+        assert isinstance(os_ops, OsOperations)
+
+        C_VAR_NAME = "PATH"
+
+        clone = __class__.helper__create_clone_and_formal_check_it(os_ops)
+
+        origin = os_ops.environ(C_VAR_NAME)
+        assert origin is not None
+        assert type(origin) is str
+        newvalue = origin + os_ops.pathsep + "aaaa"
+
+        os_ops.set_env(C_VAR_NAME, newvalue)
+
+        assert os_ops.environ(C_VAR_NAME) == newvalue
+
+        os_ops.reset_env(C_VAR_NAME, origin)
+
+        assert os_ops.environ(C_VAR_NAME) == origin
+        assert clone.environ(C_VAR_NAME) == origin
         return
 
     def test_set_env__evil(
@@ -3699,7 +3753,7 @@ print('b', file=sys.stderr)
                         )
 
                     # 3. Clean up after yourself
-                    os_ops.set_env(var_name, None)
+                    os_ops.reset_env(var_name, None)
                     assert os_ops.environ(var_name) is None
 
             except Exception as e:

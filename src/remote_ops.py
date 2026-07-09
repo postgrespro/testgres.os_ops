@@ -430,6 +430,23 @@ class RemoteOperations(OsOperations):
             self._remote_env[var_name] = var_val
         return
 
+    def reset_env(
+        self,
+        var_name: str,
+        default_val: typing.Optional[str],
+    ) -> None:
+        assert type(var_name) is str
+        assert default_val is None or type(default_val) is str
+        assert var_name != ""
+
+        assert self._remote_env_guard is not None
+        assert type(self._remote_env) is dict
+
+        with self._remote_env_guard:
+            self._remote_env.pop(var_name, None)
+
+        return
+
     def get_name(self):
         return "posix"
 
