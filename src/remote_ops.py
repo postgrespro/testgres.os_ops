@@ -447,7 +447,7 @@ class RemoteOperations(OsOperations):
 
         return
 
-    def get_name(self):
+    def get_name(self) -> str:
         return "posix"
 
     # Work with dirs

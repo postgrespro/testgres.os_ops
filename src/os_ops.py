@@ -168,7 +168,7 @@ class OsOperations:
     def get_user(self) -> typing.Optional[str]:
         return self.username
 
-    def get_name(self):
+    def get_name(self) -> str:
         raise NotImplementedError()
 
     # Work with dirs
