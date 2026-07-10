@@ -5,7 +5,7 @@
 
 # testgres - os_ops
 
-Subsystem of testgres to work with OS.
+Subsystem of [testgres](https://github.com/postgrespro/testgres) to work with OS.
 
 ## Authors
 
