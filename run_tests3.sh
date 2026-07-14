@@ -8,11 +8,11 @@ ${PYTHON_BINARY} -m venv "${VENV_PATH}"
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 source "${VENV_PATH}/bin/activate"
 pip install --upgrade pip setuptools wheel
-${PYTHON_BINARY} -m pip install -r tests/requirements.txt
+pip install -r tests/requirements.txt
 
 export -p
 
 # run builtin tests
-${PYTHON_BINARY} -m pytest -l -vvv -n 4
+pytest -l -vvv -n 4
 
 set +eux
