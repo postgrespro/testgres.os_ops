@@ -15,6 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+RUN sed -i 's/#MaxStartups 10:30:100/MaxStartups 2000:30:2000/' /etc/ssh/sshd_config && \
+    sed -i 's/#MaxSessions 10/MaxSessions 500/' /etc/ssh/sshd_config && \
+    sed -i 's/#MaxAuthTries 6/MaxAuthTries 20/' /etc/ssh/sshd_config
+
 # --------------------------------------------- base2_with_python-3
 FROM base1 AS base2_with_python-3
 
@@ -51,7 +55,16 @@ ENV LANG=C.UTF-8
 
 RUN chmod 700 /home/test/ && \
     mkdir -p /home/test/.ssh && \
-    chown -R test:test /home/test/.ssh
+    echo 'Host *' > /home/test/.ssh/config && \
+    echo '    ControlMaster auto' >> /home/test/.ssh/config && \
+    echo '    ControlPath /home/test/.ssh/master-%r@%h:%p' >> /home/test/.ssh/config && \
+    echo '    ControlPersist 30m' >> /home/test/.ssh/config && \
+    echo '    StrictHostKeyChecking no' >> /home/test/.ssh/config && \
+    echo '    UserKnownHostsFile /dev/null' >> /home/test/.ssh/config && \
+    echo '    GSSAPIAuthentication no' >> /home/test/.ssh/config && \
+    chown -R test:test /home/test/.ssh && \
+    chmod 700 /home/test/.ssh && \
+    chmod 600 /home/test/.ssh/config
 
 #
 # \"$@\"
@@ -77,11 +90,6 @@ if [ ! -f /home/test/.ssh/id_rsa ]; then \
     chmod 600 /home/test/.ssh/authorized_keys; \
 fi; \
 ls -la /home/test/.ssh/; \
-su test -c \"ssh-keyscan -H localhost >> /home/test/.ssh/known_hosts\"; \
-su test -c \"ssh-keyscan -H 127.0.0.1 >> /home/test/.ssh/known_hosts\"; \
-if [ -n \"${TEST_CFG__REMOTE_HOST:-}\" ]; then \
-    su test -c \"ssh-keyscan -H ${TEST_CFG__REMOTE_HOST} >> /home/test/.ssh/known_hosts\"; \
-fi; \
 if [ -n \"${TEST_CFG__REMOTE_SSH_KEY:-}\" ]; then \
     cp \"${TEST_CFG__REMOTE_SSH_KEY}\" \"${TEST_CFG__REMOTE_SSH_KEY}_ci\"; \
     export TEST_CFG__REMOTE_SSH_KEY=\"${TEST_CFG__REMOTE_SSH_KEY}_ci\"; \

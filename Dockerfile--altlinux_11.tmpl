@@ -16,6 +16,10 @@ RUN apt-get update && apt-get install -y \
     procps \
     && apt-get clean
 
+RUN sed -i 's/#MaxStartups 10:30:100/MaxStartups 2000:30:2000/' /etc/openssh/sshd_config && \
+    sed -i 's/#MaxSessions 10/MaxSessions 500/' /etc/openssh/sshd_config && \
+    sed -i 's/#MaxAuthTries 6/MaxAuthTries 20/' /etc/openssh/sshd_config
+
 # --------------------------------------------- base2_with_python-3
 FROM base1 AS base2_with_python-3
 
@@ -37,13 +41,6 @@ RUN adduser test -G wheel
 # It enables execution of "sudo service ssh start" without password
 RUN echo "test ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-#
-# Altlinux 10 and 11 too slowly create a new SSH connection (x6).
-#
-# AI: SPEED UP SSH 6 TIMES (REMOVE REVERSE DNS LOOKUP TIMEOUTS)
-#
-RUN echo "UseDNS no" >> /etc/openssh/sshd_config
-
 COPY --chown=test:test . /home/test/testgres
 WORKDIR /home/test/testgres
 
@@ -51,7 +48,16 @@ ENV LANG=C.UTF-8
 
 RUN chmod 700 /home/test/ && \
     mkdir -p /home/test/.ssh && \
-    chown -R test:test /home/test/.ssh
+    echo 'Host *' > /home/test/.ssh/config && \
+    echo '    ControlMaster auto' >> /home/test/.ssh/config && \
+    echo '    ControlPath /home/test/.ssh/master-%r@%h:%p' >> /home/test/.ssh/config && \
+    echo '    ControlPersist 30m' >> /home/test/.ssh/config && \
+    echo '    StrictHostKeyChecking no' >> /home/test/.ssh/config && \
+    echo '    UserKnownHostsFile /dev/null' >> /home/test/.ssh/config && \
+    echo '    GSSAPIAuthentication no' >> /home/test/.ssh/config && \
+    chown -R test:test /home/test/.ssh && \
+    chmod 700 /home/test/.ssh && \
+    chmod 600 /home/test/.ssh/config
 
 #
 # \"$@\"
@@ -61,7 +67,7 @@ RUN chmod 700 /home/test/ && \
 ENTRYPOINT ["sh", "-c", " \
     set -eux; \
     echo 'SYSTEM START: PREPARING SSH'; \
-    /usr/sbin/sshd; \
+    (ulimit -n 1024 && /usr/sbin/sshd); \
     ls -la /home/test/.ssh/; \
     \"$@\" \
 ", "DUMMY-DUMMY-DUMMY"]
@@ -77,11 +83,6 @@ if [ ! -f /home/test/.ssh/id_rsa ]; then \
     chmod 600 /home/test/.ssh/authorized_keys; \
 fi; \
 ls -la /home/test/.ssh/; \
-su -c \"ssh-keyscan -H localhost >> /home/test/.ssh/known_hosts\" test; \
-su -c \"ssh-keyscan -H 127.0.0.1 >> /home/test/.ssh/known_hosts\" test; \
-if [ -n \"${TEST_CFG__REMOTE_HOST:-}\" ]; then \
-    su -c \"ssh-keyscan -H ${TEST_CFG__REMOTE_HOST} >> /home/test/.ssh/known_hosts\" test; \
-fi; \
 if [ -n \"${TEST_CFG__REMOTE_SSH_KEY:-}\" ]; then \
     cp \"${TEST_CFG__REMOTE_SSH_KEY}\" \"${TEST_CFG__REMOTE_SSH_KEY}_ci\"; \
     export TEST_CFG__REMOTE_SSH_KEY=\"${TEST_CFG__REMOTE_SSH_KEY}_ci\"; \

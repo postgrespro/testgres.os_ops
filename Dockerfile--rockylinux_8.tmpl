@@ -15,7 +15,7 @@ RUN dnf install -y 'dnf-command(config-manager)' && \
     dnf config-manager --set-enabled powertools
 
 # Combine the installation of system utilities, SSH into one layer
-RUN dnf install -y \
+RUN dnf install -y --setopt=retries=10 --setopt=max_parallel_downloads=10 \
     sudo \
     curl \
     ca-certificates \
@@ -29,10 +29,14 @@ RUN dnf install -y \
     iproute \
     && dnf clean all
 
+RUN sed -i 's/#MaxStartups 10:30:100/MaxStartups 2000:30:2000/' /etc/ssh/sshd_config && \
+    sed -i 's/#MaxSessions 10/MaxSessions 500/' /etc/ssh/sshd_config && \
+    sed -i 's/#MaxAuthTries 6/MaxAuthTries 20/' /etc/ssh/sshd_config
+
 # --------------------------------------------- base2_with_python-3
 FROM base1 AS base2_with_python-3
 
-RUN dnf install -y \
+RUN dnf install -y --setopt=retries=10 --setopt=max_parallel_downloads=10 \
     python39 \
     python39-devel \
     && dnf clean all
