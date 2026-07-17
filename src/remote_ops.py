@@ -931,15 +931,26 @@ class RemoteOperations(OsOperations):
         assert type(lines) is list
         return lines
 
-    def read_binary(self, filename: str, offset: int) -> bytes:
+    def read_binary(
+        self,
+        filename: str,
+        offset: int,
+        size: typing.Optional[int] = None,
+    ) -> bytes:
         assert type(filename) is str
         assert type(offset) is int
+        assert size is None or type(size) is int
 
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
+        if size is not None and size < 0:
+            raise ValueError("Negative 'size' is not supported.")
 
         filename_q = __class__._quote_path(filename)
         cmd_p = ["tail", "-c", "+{}".format(offset + 1), filename_q]
+
+        if size is not None:
+            cmd_p.append("| head -c {}".format(size))
 
         cmd = " ".join(cmd_p)
 

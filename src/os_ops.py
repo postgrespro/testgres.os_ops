@@ -292,10 +292,17 @@ class OsOperations:
         assert num_lines >= 0
         raise NotImplementedError()
 
-    def read_binary(self, filename: str, offset: int) -> bytes:
+    def read_binary(
+        self,
+        filename: str,
+        offset: int,
+        size: typing.Optional[int] = None,
+    ) -> bytes:
         assert type(filename) is str
         assert type(offset) is int
+        assert size is None or type(size) is int
         assert offset >= 0
+        assert size is None or size >= 0
         raise NotImplementedError()
 
     def isfile(self, filename: str) -> bool:
