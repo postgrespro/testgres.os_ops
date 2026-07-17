@@ -1250,6 +1250,42 @@ class TestOsOpsCommon:
         assert type(response5) is bytes
         assert len(response5) == 0
 
+        response6 = os_ops.read_binary(filename, 0, 1)
+        assert type(response6) is bytes
+        assert len(response6) == 1
+        assert response6 == response0[:1]
+
+        r = os_ops.read_binary(filename, 10, 7)
+        assert type(r) is bytes
+        assert len(r) == 7
+        assert r == response0[10:17]
+
+        r = os_ops.read_binary(filename, 10, len(response0))
+        assert type(r) is bytes
+        assert len(r) == len(response0) - 10
+        assert r == response0[10:]
+
+        r = os_ops.read_binary(filename, 10, 2 * len(response0))
+        assert type(r) is bytes
+        assert len(r) == len(response0) - 10
+        assert r == response0[10:]
+
+        r = os_ops.read_binary(filename, len(response0) - 1, 2 * len(response0))
+        assert type(r) is bytes
+        assert len(r) == 1
+        assert r == response0[-1:]
+        assert r[0] == response0[-1]
+
+        r = os_ops.read_binary(filename, len(response0), 1)
+        assert type(r) is bytes
+        assert len(r) == 0
+        assert r == b''
+
+        r = os_ops.read_binary(filename, len(response0) + 1, 1)
+        assert type(r) is bytes
+        assert len(r) == 0
+        assert r == b''
+
         os_ops.remove_file(filename)
         return
 
@@ -1274,6 +1310,31 @@ class TestOsOpsCommon:
                 ValueError,
                 match=re.escape("Negative 'offset' is not supported.")):
             os_ops.read_binary(filename, -1)
+
+        os_ops.remove_file(filename)
+        return
+
+    def test_read_binary__spec__negative_size(
+        self,
+        os_ops_descr: OsOpsDescr,
+        name_with_surprize: tagNameWithSurprize,
+    ):
+        """
+        Test OsOperations::read_binary with negative size.
+        """
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(name_with_surprize) is __class__.tagNameWithSurprize
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        filename = os_ops.mkstemp(name_with_surprize.value)
+
+        with pytest.raises(
+                ValueError,
+                match=re.escape("Negative 'size' is not supported.")):
+            os_ops.read_binary(filename, 0, size=-1)
 
         os_ops.remove_file(filename)
         return

@@ -706,16 +706,24 @@ class LocalOperations(OsOperations):
                     )  # Adjust buffer size
         return
 
-    def read_binary(self, filename: str, offset: int) -> bytes:
+    def read_binary(
+        self,
+        filename: str,
+        offset: int,
+        size: typing.Optional[int] = None,
+    ) -> bytes:
         assert type(filename) is str
         assert type(offset) is int
+        assert size is None or type(size) is int
 
         if offset < 0:
             raise ValueError("Negative 'offset' is not supported.")
+        if size is not None and size < 0:
+            raise ValueError("Negative 'size' is not supported.")
 
         with open(filename, 'rb') as file:  # open in a binary mode
             file.seek(offset, os.SEEK_SET)
-            r = file.read()
+            r = file.read(size)
             assert type(r) is bytes
             return r
 
