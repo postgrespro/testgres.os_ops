@@ -40,6 +40,10 @@ RUN /usr/libexec/openssh/sshd-keygen rsa && \
 # --------------------------------------------- base2_with_python-3
 FROM base1 AS base2_with_python-3
 
+# STEP 1: Fix the root cause (unstable mirrors). Switch to the official CDN.
+RUN sed -i 's/mirrorlist=/ #mirrorlist=/g' /etc/yum.repos.d/rocky*.repo && \
+    sed -i 's/#baseurl=http:\/\/dl.rockylinux.org/baseurl=https:\/\/dl.rockylinux.org/g' /etc/yum.repos.d/rocky*.repo
+
 # Rocky 9/10 installs python3.9 or higher (depending on the repository)
 RUN dnf install -y --setopt=retries=10 --setopt=max_parallel_downloads=10 --allowerasing \
     python3 \
