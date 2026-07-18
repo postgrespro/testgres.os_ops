@@ -34,6 +34,7 @@ ENV PYTHON_BINARY=python3
 FROM base2_with_python-${PYTHON_VERSION} AS final
 
 EXPOSE 22
+
 RUN ssh-keygen -A
 
 RUN useradd -m test

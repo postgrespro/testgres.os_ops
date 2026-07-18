@@ -224,6 +224,7 @@ jobs:
           ${{ env.DOCKER_HIGHLOAD_FLAGS }} \
           --network ${{ env.RUN_CFG__NETWORK_NAME }} \
           --name ${{ env.RUN_CFG__MACHINE1_NAME }} \
+          --cap-add=NET_ADMIN \
           -v ${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}:/home/test/testgres/logs \
           -v ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}:/home/test/testgres/id_ed25519_test:ro \
           -e TEST_CFG__REMOTE_HOST="${{ env.RUN_CFG__MACHINE2_NAME }}" \
