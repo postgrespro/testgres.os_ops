@@ -6,6 +6,34 @@ import typing
 
 class RaiseError:
     @staticmethod
+    def MethodIsNotImplemented(
+        class_type: type,
+        method_name: str,
+    ) -> typing.NoReturn:
+        assert type(class_type) is type
+        assert type(method_name) is str
+
+        err_msg = "Method {}::{} is not implemented.".format(
+            class_type.__name__,
+            method_name,
+        )
+        raise NotImplementedError(err_msg)
+
+    @staticmethod
+    def PropertyIsNotImplemented(
+        class_type: type,
+        property_name: str,
+    ) -> typing.NoReturn:
+        assert type(class_type) is type
+        assert type(property_name) is str
+
+        err_msg = "Property {}::{} is not implemented.".format(
+            class_type.__name__,
+            property_name,
+        )
+        raise NotImplementedError(err_msg)
+
+    @staticmethod
     def UtilityExitedWithNonZeroCode(cmd, exit_code, msg_arg, error, out) -> typing.NoReturn:
         assert type(exit_code) is int
 
