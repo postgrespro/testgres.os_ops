@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .raise_error import RaiseError
+
 import locale
 import typing
 import signal as os_signal
@@ -43,29 +45,29 @@ class OsOperations:
     # I think, we have to remove it at all in the future.
     @property
     def remote(self) -> bool:
-        raise NotImplementedError()
+        RaiseError.PropertyIsNotImplemented(__class__, "get_remote")
 
     @property
     def host(self) -> str:
-        raise NotImplementedError()
+        RaiseError.PropertyIsNotImplemented(__class__, "get_host")
 
     @property
     def port(self) -> typing.Optional[int]:
-        raise NotImplementedError()
+        RaiseError.PropertyIsNotImplemented(__class__, "get_port")
 
     @property
     def ssh_key(self) -> typing.Optional[str]:
-        raise NotImplementedError()
+        RaiseError.PropertyIsNotImplemented(__class__, "get_ssh_key")
 
     @property
     def username(self) -> typing.Optional[str]:
-        raise NotImplementedError()
+        RaiseError.PropertyIsNotImplemented(__class__, "get_username")
 
     def get_platform(self) -> str:
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_platform")
 
     def create_clone(self) -> OsOperations:
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "create_clone")
 
     # Command execution
     T_CMD = typing.Union[str, typing.List[str]]
@@ -105,45 +107,44 @@ class OsOperations:
         assert type(ignore_errors) is bool
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is dict
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "exec_command")
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
         assert parts is not None
         assert type(a) is str
         assert type(parts) is tuple
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "build_path")
 
     def quote_path(self, path: str) -> str:
         assert path is not None
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "quote_path")
 
     def join_command_arguments(self, cmd: typing.Iterable[str]) -> str:
         assert cmd is not None
         assert type(cmd) is list
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "join_command_arguments")
 
     # Environment setup
     def environ(self, var_name: str) -> typing.Optional[str]:
         assert type(var_name) is str
         assert var_name != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "environ")
 
     def cwd(self):
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "cwd")
 
     def find_executable(self, executable: str) -> typing.Optional[str]:
         assert type(executable) is str
         assert executable != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "find_executable")
 
     def is_executable(self, file: str) -> bool:
         # Check if the file is executable
         assert type(file) is str
         assert file != ""
-
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "is_executable")
 
     def set_env(
         self,
@@ -153,7 +154,7 @@ class OsOperations:
         assert type(var_name) is str
         assert var_val is None or type(var_val) is str
         assert var_name != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "set_env")
 
     def reset_env(
         self,
@@ -163,13 +164,13 @@ class OsOperations:
         assert type(var_name) is str
         assert default_val is None or type(default_val) is str
         assert var_name != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "reset_env")
 
     def get_user(self) -> typing.Optional[str]:
-        return self.username
+        RaiseError.MethodIsNotImplemented(__class__, "get_user")
 
     def get_name(self) -> str:
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_name")
 
     # Work with dirs
     def makedirs(
@@ -179,11 +180,11 @@ class OsOperations:
     ) -> None:
         assert type(path) is str
         assert type(remove_existing) is bool
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "makedirs")
 
     def makedir(self, path: str) -> None:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "makedir")
 
     T_DELAY = typing.Union[int, float]
 
@@ -200,36 +201,36 @@ class OsOperations:
         assert type(delay) is int or type(delay) is float
         assert attempts > 0
         assert delay >= 0
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "rmdirs")
 
     def rmdir(self, path: str) -> None:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "rmdir")
 
     def listdir(self, path: str) -> typing.List[str]:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "listdir")
 
     def path_exists(self, path: str) -> bool:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "path_exists")
 
     @property
     def pathsep(self) -> str:
-        raise NotImplementedError()
+        RaiseError.PropertyIsNotImplemented(__class__, "get_pathsep")
 
     def mkdtemp(self, prefix: typing.Optional[str] = None) -> str:
         assert prefix is None or type(prefix) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "mkdtemp")
 
     def mkstemp(self, prefix: typing.Optional[str] = None) -> str:
         assert prefix is None or type(prefix) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "mkstemp")
 
     def copytree(self, src: str, dst: str) -> str:
         assert type(src) is str
         assert type(dst) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "copytree")
 
     # Work with files
     T_WRITE_DATA = typing.Union[str, bytes, typing.List[typing.Union[str, bytes]]]
@@ -251,13 +252,12 @@ class OsOperations:
         assert type(binary) is bool
         assert type(read_and_write) is bool
         assert encoding is None or type(encoding) is str
-
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "write")
 
     def touch(self, filename: str) -> None:
         assert type(filename) is str
         assert filename != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "touch")
 
     T_READ_RESULT = typing.Union[str, bytes]
 
@@ -270,7 +270,7 @@ class OsOperations:
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert type(binary) is bool
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "read")
 
     T_READLINES_RESULT = typing.Union[typing.List[str], typing.List[bytes]]
 
@@ -290,7 +290,7 @@ class OsOperations:
         assert type(binary) is bool
         assert encoding is None or type(encoding) is str
         assert num_lines >= 0
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "readlines")
 
     def read_binary(
         self,
@@ -303,65 +303,65 @@ class OsOperations:
         assert size is None or type(size) is int
         assert offset >= 0
         assert size is None or size >= 0
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "read_binary")
 
     def isfile(self, filename: str) -> bool:
         assert type(filename) is str
         assert filename != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "isfile")
 
     def isdir(self, dirname: str) -> bool:
         assert type(dirname) is str
         assert dirname != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "isdir")
 
     def get_file_size(self, filename: str) -> int:
         assert type(filename) is str
         assert filename != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_file_size")
 
     def remove_file(self, filename: str) -> None:
         assert type(filename) is str
         assert filename != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "remove_file")
 
     # Processes control
     def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "kill")
 
     def get_pid(self) -> int:
         # Get current process id
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_pid")
 
     def get_process_children(self, pid: int) -> typing.List:
         assert type(pid) is int
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_process_children")
 
     def is_port_free(self, number: int):
         assert type(number) is int
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "is_port_free")
 
     def get_tempdir(self) -> str:
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_tempdir")
 
     def get_dirname(self, path: str) -> str:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_dirname")
 
     def is_abs_path(self, path: str) -> bool:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "is_abs_path")
 
     def get_path_basename(self, path: str) -> str:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_path_basename")
 
     def get_abs_path(self, path: str) -> str:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_abs_path")
 
     # file size: int
     C_FILE_STAT_PROP__SIZE = "size"
@@ -374,17 +374,17 @@ class OsOperations:
     def get_file_stat(self, filename: str) -> T_FILE_STAT:
         assert type(filename) is str
         assert filename != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_file_stat")
 
     def get_path_normpath(self, path: str) -> str:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_path_normpath")
 
     def get_path_normcase(self, path: str) -> str:
         assert type(path) is str
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "get_path_normcase")
 
     def create_file(self, filename: str) -> None:
         assert type(filename) is str
         assert filename != ""
-        raise NotImplementedError()
+        RaiseError.MethodIsNotImplemented(__class__, "create_file")
