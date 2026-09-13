@@ -221,7 +221,7 @@ class RemoteOperations(OsOperations):
 
         assert len(cmds) >= 1
 
-        cmdline = ";".join(cmds)
+        cmdline = " && ".join(cmds)
         assert type(cmdline) is str
         assert cmdline != ""
 
@@ -1263,7 +1263,7 @@ class RemoteOperations(OsOperations):
 
         cmd_items.append(__class__._ensure_cmdline(cmd))
 
-        cmdline = ';'.join(cmd_items)
+        cmdline = ' && '.join(cmd_items)
         assert type(cmdline) is str
         return cmdline
 
