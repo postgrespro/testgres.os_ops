@@ -132,7 +132,7 @@ class OsOperations:
         assert var_name != ""
         RaiseError.MethodIsNotImplemented(__class__, "environ")
 
-    def cwd(self):
+    def cwd(self) -> str:
         RaiseError.MethodIsNotImplemented(__class__, "cwd")
 
     def find_executable(self, executable: str) -> typing.Optional[str]:
