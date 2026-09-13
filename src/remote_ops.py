@@ -347,7 +347,7 @@ class RemoteOperations(OsOperations):
             out=stdout,
         )
 
-    def cwd(self):
+    def cwd(self) -> str:
         cmd = 'pwd'
         stdout = self.exec_command(cmd, encoding=get_default_encoding())
         assert type(stdout) is str
