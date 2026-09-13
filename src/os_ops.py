@@ -106,7 +106,7 @@ class OsOperations:
         assert type(get_process) is bool
         assert type(ignore_errors) is bool
         assert exec_env is None or type(exec_env) is dict
-        assert cwd is None or type(cwd) is dict
+        assert cwd is None or type(cwd) is str
         RaiseError.MethodIsNotImplemented(__class__, "exec_command")
 
     def build_path(self, a: str, *parts: str) -> str:
