@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from .types import T_OS_SIGNAL
+from .types import T_OS_TIMEOUT
+from .types import T_OS_IO
+from .types import T_OS_IO_ID
 from .raise_error import RaiseError
 
 import locale
@@ -35,6 +39,48 @@ def get_default_encoding():
     if not hasattr(locale, 'getencoding'):
         locale.getencoding = locale.getpreferredencoding
     return locale.getencoding() or 'UTF-8'
+
+
+class OsProcessController:
+    def __enter__(self) -> OsProcessController:
+        RaiseError.PropertyIsNotImplemented(__class__, "__enter__")
+
+    def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
+        RaiseError.PropertyIsNotImplemented(__class__, "__exit__")
+
+    @property
+    def pid(self) -> int:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_pid")
+
+    @property
+    def stdin(self) -> typing.Optional[T_OS_IO]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_stdin")
+
+    @property
+    def stdout(self) -> typing.Optional[T_OS_IO]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_stdout")
+
+    @property
+    def stderr(self) -> typing.Optional[T_OS_IO]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_stderr")
+
+    @property
+    def returncode(self) -> typing.Optional[int]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_returncode")
+
+    def send_signal(self, sig: T_OS_SIGNAL) -> None:
+        assert type(sig) in [int, os_signal.Signals]
+        RaiseError.MethodIsNotImplemented(__class__, "send_signal")
+
+    def kill(self) -> None:
+        RaiseError.MethodIsNotImplemented(__class__, "kill")
+
+    def terminate(self) -> None:
+        RaiseError.MethodIsNotImplemented(__class__, "terminate")
+
+    def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
+        assert timeout is None or type(timeout) in [int, float]
+        RaiseError.MethodIsNotImplemented(__class__, "wait")
 
 
 class OsOperations:
@@ -108,6 +154,31 @@ class OsOperations:
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
         RaiseError.MethodIsNotImplemented(__class__, "exec_command")
+
+    T_EXEC_ENV = typing.Dict[str, typing.Optional[str]]
+
+    def popen(
+        self,
+        cmd: T_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None
+    ) -> OsProcessController:
+        assert type(cmd) is str or type(cmd) is list
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert stdin is None or type(stdin) is int or isinstance(stdin, typing.IO)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, typing.IO)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, typing.IO)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+        RaiseError.MethodIsNotImplemented(__class__, "popen")
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
@@ -326,7 +397,7 @@ class OsOperations:
         RaiseError.MethodIsNotImplemented(__class__, "remove_file")
 
     # Processes control
-    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
+    def kill(self, pid: int, signal: T_OS_SIGNAL) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals

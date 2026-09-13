@@ -16,8 +16,14 @@ import shlex
 import threading
 
 from .exceptions import ExecUtilException
+from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
 from .os_ops import OsOperations, ConnectionParams, get_default_encoding
+from .os_ops import OsProcessController
+from .os_ops import T_OS_SIGNAL
+from .os_ops import T_OS_TIMEOUT
+from .os_ops import T_OS_IO
+from .os_ops import T_OS_IO_ID
 from .raise_error import RaiseError
 from .helpers import Helpers
 
@@ -44,6 +50,97 @@ class PsUtilProcessProxy:
         cmdline = output.strip()
         # TODO: This code work wrong if command line contains quoted values. Yes?
         return cmdline.split()
+
+
+class RemoteProcessController(OsProcessController):
+    _remote_ops: RemoteOperations
+    _local_process: typing.Optional[subprocess.Popen]
+    _remote_pid: typing.Optional[int]
+
+    def __init__(
+        self,
+        remote_ops: RemoteOperations
+    ):
+        assert isinstance(remote_ops, RemoteOperations)
+        self._remote_ops = remote_ops
+        self._local_process = None
+        self._remote_pid = None
+        return
+
+    def __enter__(self) -> OsProcessController:
+        assert type(self._local_process) is subprocess.Popen
+        self._local_process.__enter__()
+        return self
+
+    def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.__exit__(exc_type, value, traceback)
+
+    @property
+    def pid(self) -> int:
+        assert type(self._remote_pid) is int
+        return self._remote_pid
+
+    @property
+    def stdin(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stdin
+
+    @property
+    def stdout(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stdout
+
+    @property
+    def stderr(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stderr
+
+    @property
+    def returncode(self) -> typing.Optional[int]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.poll()
+
+    def send_signal(self, sig: T_OS_SIGNAL) -> None:
+        assert type(sig) in [int, os_signal.Signals]
+        assert type(self._local_process) is subprocess.Popen
+        assert type(self._remote_pid) is int
+
+        try:
+            self._remote_ops.kill(self._remote_pid, sig)
+        finally:
+            self._local_process.poll()
+        return
+
+    def kill(self) -> None:
+        assert type(self._local_process) is subprocess.Popen
+        self.send_signal(os_signal.SIGKILL)
+        return
+
+    def terminate(self) -> None:
+        assert type(self._local_process) is subprocess.Popen
+
+        if self.returncode is not None:
+            return
+
+        self.send_signal(os_signal.SIGTERM)
+        return
+
+    def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(self._local_process) is subprocess.Popen
+
+        try:
+            return self._local_process.wait(timeout)
+        except subprocess.TimeoutExpired as e:
+            # Transforming a "foreign" exception into one native to the Testgres architecture
+            raise ExecTimeoutException(
+                cmd=e.cmd,
+                timeout=e.timeout,
+                output=e.output,
+                error=e.stderr,
+                source="RemoteProcessController::wait",
+            ) from e
 
 
 class RemoteOperations(OsOperations):
@@ -285,6 +382,194 @@ class RemoteOperations(OsOperations):
             return run_r
 
         return run_r[1]
+
+    def popen(
+        self,
+        cmd: OsOperations.T_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell=False,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[dict] = None,
+        cwd: typing.Optional[str] = None
+    ) -> OsProcessController:
+        assert type(cmd) is str or type(cmd) is list
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+
+        result = RemoteProcessController(self)
+
+        # 1. Create a temporary file on the remote machine
+        pid_file = self.mkstemp(prefix="testgres_pid_")
+        assert type(pid_file) is str and pid_file != ""
+
+        try:
+            cmds = []
+            cmds.append("trap '' HUP")
+
+            if cwd is not None:
+                cmds.append(__class__._build_cmdline(["cd", cwd]))
+
+            assert self._remote_env_guard is not None
+            assert type(self._remote_env) is dict
+
+            exec_env2: typing.Optional[__class__.T_ENVS] = None
+            with self._remote_env_guard:
+                if len(self._remote_env) > 0:
+                    exec_env2 = self._remote_env.copy()
+
+            if exec_env2 is None:
+                exec_env2 = exec_env
+            elif exec_env is not None:
+                exec_env2.update(exec_env)
+
+            # Construct the final command, recording the PID and replacing the process via exec
+            cmd2 = "exec " + __class__._ensure_cmdline(cmd)
+
+            target_cmdline = __class__._build_cmdline(cmd2, exec_env2)
+
+            # Escape the file path for bash
+            q_pid_file = __class__._quote_path(pid_file)
+
+            # A robust Bash handshake script:
+            # 1. Write the current shell's PID to a file.
+            # 2. Loop while checking only for the file's existence.
+            # 3. If the counter 'i' exceeds 500, it's a timeout; exit with code 1.
+            # 4. Otherwise, sleep for 0.01s and increment the counter.
+            # 5. Once the Python process successfully deletes the file, execute the target command.
+            ping_pong_script_s = (
+                f"printf \"%s!\" \"$$\" > {q_pid_file} && "
+                f"i=0 && "
+                f"while [ -f {q_pid_file} ]; do "
+                f"if [ $i -ge 500 ]; then "
+                f"printf \"testgres error: popen handshake timeout expired\\n\" >&2; "
+                f"exit 1; "
+                f"fi; "
+                f"sleep 0.01; i=$((i+1)); "
+                f"done && "
+                f"{target_cmdline}"
+            )
+
+            ping_pong_script2 = [
+                "sh",
+                "-c",
+                ping_pong_script_s,
+            ]
+
+            ping_pong_script2_s = self._join_command_arguments(
+                ping_pong_script2
+            )
+
+            # Run script within isolated env to get a true return codes of kill/terminate
+            cmds.append("(" + ping_pong_script2_s + ")")
+
+            cmdline = " && ".join(cmds)
+
+            assert type(self._ssh_cmd) is list
+            assert len(self._ssh_cmd) > 0
+            ssh_cmd = self._ssh_cmd + [cmdline]
+
+            if encoding is not None and text is None:
+                text = True
+
+            # 2. Run a local SSH client in the background
+            result._local_process = subprocess.Popen(
+                ssh_cmd,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                text=text,
+                encoding=encoding,
+                shell=False,
+            )
+            assert result._local_process is not None
+            assert type(result._local_process) is subprocess.Popen
+
+            # 3. Wait for the PID file to appear and be populated on the remote side.
+
+            # A short wait loop (up to 5 seconds; 0.05s is usually sufficient)
+            start_time = time.time()
+            nPass = 0
+            while True:
+                if result._remote_pid is not None:
+                    break
+
+                if time.time() - start_time < 5.0:
+                    pass
+                elif nPass < 10:
+                    pass
+                else:
+                    # If the PID could not be read, something went seriously wrong
+                    # (e.g., the SSH connection dropped).
+                    raise RuntimeError("Failed to retrieve remote process PID via temporary file.")
+
+                nPass += 1
+
+                if nPass > 1:
+                    time.sleep(0.05)
+
+                # Reading the file contents
+                pid_bytes = self.read_binary(pid_file, offset=0, size=32)
+                assert type(pid_bytes) is bytes
+                result._remote_pid = __class__._parse_pid_resp_data(
+                    pid_bytes,
+                )
+                continue
+
+        except BaseException:
+            p = result._local_process
+            result._local_process = None
+            if p is not None:
+                with p:
+                    p.kill()
+            raise
+        finally:
+            # 4. Delete the temporary file; we no longer need it.
+            try:
+                self.remove_file(pid_file)
+            except BaseException:
+                p = result._local_process
+                result._local_process = None
+                if p is not None:
+                    with p:
+                        p.kill()
+                raise
+
+        assert type(result._local_process) is subprocess.Popen
+        assert type(result._remote_pid) is int
+
+        # 5. Putting back our brand-new control controller
+        return result
+
+    @staticmethod
+    def _parse_pid_resp_data(data: bytes) -> typing.Optional[int]:
+        assert type(data) is bytes
+
+        i = 0
+        c = len(data)
+
+        while True:
+            if i == c:
+                return None
+
+            b = data[i]
+            assert type(b) is int
+
+            if (b >= ord('0') and b <= ord('9')):
+                i += 1
+                continue
+
+            if b == ord('!') and i > 0 and (i + 1) == c:
+                return int(data[:i])
+
+            raise RuntimeError("[BUG CHECK] Bad data in pid responsed file: {!r}.".format(
+                data,
+            ))
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
@@ -1004,7 +1289,7 @@ class RemoteOperations(OsOperations):
         return
 
     # Processes control
-    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
+    def kill(self, pid: int, signal: T_OS_SIGNAL) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals

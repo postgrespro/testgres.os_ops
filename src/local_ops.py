@@ -21,8 +21,14 @@ import datetime
 import pathlib
 
 from .exceptions import ExecUtilException
+from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
 from .os_ops import ConnectionParams, OsOperations, get_default_encoding
+from .os_ops import OsProcessController
+from .os_ops import T_OS_SIGNAL
+from .os_ops import T_OS_TIMEOUT
+from .os_ops import T_OS_IO
+from .os_ops import T_OS_IO_ID
 from .raise_error import RaiseError
 from .helpers import Helpers
 
@@ -30,6 +36,80 @@ from shutil import which as find_executable
 from shutil import rmtree
 
 CMD_TIMEOUT_SEC = 60
+
+
+class LocalProcessController(OsProcessController):
+    _local_process: typing.Optional[subprocess.Popen]
+
+    def __init__(self):
+        self._local_process = None
+        return
+
+    def __enter__(self) -> OsProcessController:
+        assert type(self._local_process) is subprocess.Popen
+        self._local_process.__enter__()
+        return self
+
+    def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.__exit__(exc_type, value, traceback)
+
+    @property
+    def pid(self) -> int:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.pid
+
+    @property
+    def stdin(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stdin
+
+    @property
+    def stdout(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stdout
+
+    @property
+    def stderr(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stderr
+
+    @property
+    def returncode(self) -> typing.Optional[int]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.poll()
+
+    def send_signal(self, sig: T_OS_SIGNAL) -> None:
+        assert type(sig) in [int, os_signal.Signals]
+        assert type(self._local_process) is subprocess.Popen
+        self._local_process.send_signal(sig)
+        return
+
+    def kill(self) -> None:
+        assert type(self._local_process) is subprocess.Popen
+        self.send_signal(os_signal.SIGKILL)
+        return
+
+    def terminate(self) -> None:
+        assert type(self._local_process) is subprocess.Popen
+        self.send_signal(os_signal.SIGTERM)
+        return
+
+    def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(self._local_process) is subprocess.Popen
+
+        try:
+            return self._local_process.wait(timeout)
+        except subprocess.TimeoutExpired as e:
+            # Transforming a "foreign" exception into one native to the Testgres architecture
+            raise ExecTimeoutException(
+                cmd=e.cmd,
+                timeout=e.timeout,
+                output=e.output,
+                error=e.stderr,
+                source="LocalProcessController::wait",
+            ) from e
 
 
 class LocalOperations(OsOperations):
@@ -366,6 +446,66 @@ class LocalOperations(OsOperations):
 
         return run_r[1]
 
+    def popen(
+        self,
+        cmd: OsOperations.T_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell=False,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[dict] = None,
+        cwd: typing.Optional[str] = None
+    ) -> OsProcessController:
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+
+        extParams: typing.Dict[str, typing.Any] = dict()
+
+        if exec_env is None:
+            pass
+        elif len(exec_env) == 0:
+            pass
+        else:
+            env = os.environ.copy()
+            assert type(env) is dict
+            for v in exec_env.items():
+                assert type(v) is tuple
+                assert len(v) == 2
+                assert type(v[0]) is str
+                assert v[0] != ""
+
+                if v[1] is None:
+                    env.pop(v[0], None)
+                else:
+                    assert type(v[1]) is str
+                    env[v[0]] = v[1]
+
+            extParams["env"] = env
+
+        if encoding is not None and text is None:
+            text = True
+
+        result = LocalProcessController()
+
+        result._local_process = subprocess.Popen(
+            cmd,
+            shell=shell,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            text=text,
+            encoding=encoding,
+            cwd=cwd,
+            **extParams,
+        )
+        assert type(result._local_process) is subprocess.Popen
+        return result
+
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
         assert parts is not None
@@ -389,7 +529,7 @@ class LocalOperations(OsOperations):
         assert var_name != ""
         return os.environ.get(var_name)
 
-    def cwd(self):
+    def cwd(self) -> str:
         return os.getcwd()
 
     def find_executable(self, executable: str) -> typing.Optional[str]:

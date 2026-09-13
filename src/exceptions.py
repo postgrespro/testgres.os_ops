@@ -1,7 +1,10 @@
 # coding: utf-8
 
+from .types import T_OS_TIMEOUT
+
 from testgres.common.exceptions import TestgresException
 from testgres.common.exceptions import InvalidOperationException
+
 import six
 import typing
 
@@ -120,15 +123,106 @@ class ExecUtilException(TestgresException):
     @staticmethod
     def convert_and_join(msg_list):
         # Convert each byte element in the list to str
-        str_list = [six.text_type(item, 'utf-8') if isinstance(item, bytes) else six.text_type(item) for item in
-                    msg_list]
+        str_list = [
+            six.text_type(item, 'utf-8') if isinstance(item, bytes) else six.text_type(item)
+            for item in msg_list
+        ]
 
         # Join the list into a single string with the specified delimiter
         return six.text_type('\n').join(str_list)
+
+
+class ExecTimeoutException(TestgresException):
+    _cmd: T_CMD
+    _timeout: T_OS_TIMEOUT
+    _output: typing.Optional[T_OUT_DATA]
+    _error: typing.Optional[T_ERR_DATA]
+    _source: typing.Optional[str]
+
+    def __init__(
+        self,
+        cmd: T_CMD,
+        timeout: T_OS_TIMEOUT,
+        output: typing.Optional[T_OUT_DATA] = None,
+        error: typing.Optional[T_ERR_DATA] = None,
+        source: typing.Optional[str] = None
+    ):
+        assert type(cmd) in [str, list]
+        assert type(timeout) in [int, float]
+        assert output is None or type(output) in [str, bytes]
+        assert error is None or type(error) in [str, bytes]
+        assert source is None or type(source) is str
+
+        super().__init__()
+
+        self._cmd = cmd
+        self._timeout = timeout
+        self._output = output
+        self._error = error
+        self._source = source
+        return
+
+    @property
+    def message(self) -> str:
+        # Construct a clear log message, similar to the standard subprocess module
+        r = "Command '{}' timed out after {} second(s).".format(
+            self._cmd,
+            self._timeout,
+        )
+        assert type(r) is str
+        return r
+
+    @property
+    def source(self) -> typing.Optional[str]:
+        return self._source
+
+    @property
+    def cmd(self) -> T_CMD:
+        return self._cmd
+
+    @property
+    def timeout(self) -> T_OS_TIMEOUT:
+        return self._timeout
+
+    @property
+    def output(self) -> typing.Optional[T_OUT_DATA]:
+        return self._output
+
+    @property
+    def error(self) -> typing.Optional[T_ERR_DATA]:
+        return self._error
+
+    def __repr__(self) -> str:
+        args = []
+
+        if self._cmd is not None:
+            args.append(("cmd", self._cmd))
+
+        if self._timeout is not None:
+            args.append(("timeout", self._timeout))
+
+        if self._output is not None:
+            args.append(("output", self._output))
+
+        if self._error is not None:
+            args.append(("error", self._error))
+
+        if self._source is not None:
+            args.append(("source", self._source))
+
+        result = "{}(".format(type(self).__name__)
+        sep = ""
+        for a in args:
+            result += sep + a[0] + "=" + repr(a[1])
+            sep = ", "
+            continue
+        result += ")"
+        return result
 
 
 __all__ = [
     "TestgresException",
     "InvalidOperationException",
     "ExecUtilException",
+    "ExecTimeoutException",
 ]
