@@ -4516,12 +4516,19 @@ print('b', file=sys.stderr)
         del controller
         return
 
-    def test_popen_garbage_collection(self, os_ops_descr: OsOpsDescr):
+    def test_popen_garbage_collection(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
         RunConditions.skip_if_windows()
+
         os_ops = os_ops_descr.os_ops
 
         if type(os_ops).__name__ == "LocalOperations":
-            pytest.skip("It is not requred")
+            pytest.skip("It is not required")
 
         # Перехватываем системные предупреждения (ResourceWarning)
         with warnings.catch_warnings(record=True) as caught_warnings:
