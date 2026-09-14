@@ -388,7 +388,7 @@ class RemoteOperations(OsOperations):
         cmd: OsOperations.T_CMD,
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
-        shell=False,
+        shell: bool = False,
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
