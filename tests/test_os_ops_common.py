@@ -4579,6 +4579,269 @@ print('b', file=sys.stderr)
         logging.info(f"Leaked transport process reaped by __del__ with exit code: {rc}")
         return
 
+    def test_popen_set_env(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "AAA": "abcdefg",
+        }
+
+        cmd = ["sh", "-c", "printf \"%s!\" \"$AAA\""]
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+        )
+
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            assert controller.wait() == 0
+
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+
+            assert s == "abcdefg!"
+
+        return
+
+    def test_popen_set_env_via_os_ops(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        os_ops.set_env("AAA", "12345")
+
+        cmd = ["sh", "-c", "printf \"%s!\" \"$AAA\""]
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+        )
+
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            assert controller.wait() == 0
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert s == "12345!"
+
+        return
+
+    def test_popen_unset_env(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = [printenv, "PATH"]
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            assert controller.wait() == 0
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert s != ""
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "PATH": None,
+        }
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            r = controller.wait()
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert controller.stderr is not None
+            s = controller.stderr.read()
+            assert s == ""
+            assert r == 1
+
+        return
+
+    def test_popen_unset_env_of_os_ops(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        os_ops.set_env("AAA", "abcdef")
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = [printenv, "AAA"]
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            assert controller.wait() == 0
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert s == "abcdef\n"
+            assert controller.stderr is not None
+            s = controller.stderr.read()
+            assert s == ""
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "AAA": None,
+        }
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            r = controller.wait()
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert s == ""
+            assert controller.stderr is not None
+            s = controller.stderr.read()
+            assert s == ""
+            assert r == 1
+
+        return
+
+    def test_popen_replace_env_of_os_ops(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        os_ops.set_env("AAA", "abcdef")
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = [printenv, "AAA"]
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            assert controller.wait() == 0
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert s == "abcdef\n"
+            assert controller.stderr is not None
+            s = controller.stderr.read()
+            assert s == ""
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "AAA": "xyz",
+        }
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            r = controller.wait()
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert s == "xyz\n"
+            assert controller.stderr is not None
+            s = controller.stderr.read()
+            assert s == ""
+            assert r == 0
+
+        return
+
+    def test_popen_cwd(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = ["pwd"]
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+            cwd="/etc",
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            assert controller.wait() == 0
+            assert controller.stdout is not None
+            s = controller.stdout.read()
+            assert s == "/etc\n"
+            assert controller.stderr is not None
+            s = controller.stderr.read()
+            assert s == ""
+
     @staticmethod
     def helper__get_os_ops(
         use_clone: bool,
