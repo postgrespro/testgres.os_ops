@@ -493,13 +493,13 @@ class RemoteOperations(OsOperations):
             # 3. Wait for the PID file to appear and be populated on the remote side.
 
             # A short wait loop (up to 5 seconds; 0.05s is usually sufficient)
-            start_time = time.time()
+            start_time = time.monotonic()
             nPass = 0
             while True:
                 if result._remote_pid is not None:
                     break
 
-                if time.time() - start_time < 5.0:
+                if time.monotonic() - start_time < 5.0:
                     pass
                 elif nPass < 10:
                     pass
