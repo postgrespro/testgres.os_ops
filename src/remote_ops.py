@@ -14,6 +14,7 @@ import time
 import datetime
 import shlex
 import threading
+import warnings
 
 from .exceptions import ExecUtilException
 from .exceptions import ExecTimeoutException
@@ -58,9 +59,9 @@ class RemoteProcessController(OsProcessController):
     _remote_ops: RemoteOperations
     _remote_cmd: OsOperations.T_CMD
     _remote_rc_file: typing.Optional[str]
-    _local_process: typing.Optional[subprocess.Popen]
     _remote_pid: typing.Optional[int]
     _remote_rc: typing.Optional[int]
+    _local_process: typing.Optional[subprocess.Popen]
 
     def __init__(
         self,
@@ -71,9 +72,11 @@ class RemoteProcessController(OsProcessController):
         self._remote_ops = remote_ops
         self._remote_cmd = remote_cmd
         self._remote_rc_file = None
-        self._local_process = None
         self._remote_pid = None
         self._remote_rc = None
+
+        # IT IS LAST STATEMENT !
+        self._local_process = None
         return
 
     def __enter__(self) -> OsProcessController:
@@ -105,6 +108,50 @@ class RemoteProcessController(OsProcessController):
         self._remote_ops.remove_file(self._remote_rc_file)
 
         return self._local_process.__exit__(exc_type, value, traceback)
+
+    def __del__(self, _warn=warnings.warn):
+        assert isinstance(_warn, typing.Callable)
+
+        # 1. If the process hasn't even managed to initialize, we do nothing.
+        if not getattr(self, "_local_process", None):
+            return
+
+        if self._local_process is None:
+            return
+
+        # 2. If the process is still active (we did not wait for it to complete)
+        if self._remote_rc is None:
+            # Issue a system warning, just like the standard subprocess module does.
+            if type(self._remote_pid) is int:
+                _warn(
+                    f"Remote process {self._remote_pid} is still running inside RemoteProcessController",
+                    ResourceWarning,
+                    source=self
+                )
+
+            # Issue a system warning, just like the standard subprocess module does.
+            try:
+                if self._local_process.stdin:
+                    self._local_process.stdin.close()
+                if self._local_process.stdout:
+                    self._local_process.stdout.close()
+                if self._local_process.stderr:
+                    self._local_process.stderr.close()
+            except Exception:
+                pass
+
+            # 4. Terminate the local SSH transport.
+            # We do NOT invoke a remote remove_file or kill over the network here,
+            # as the destructor must execute immediately.
+            # However, killing the local SSH client will close the socket,
+            # and the remote shell will eventually close on its own (due to HUP or wait completion).
+            try:
+                self._local_process.kill()
+                # Implementing a fast, non-blocking wait for a local process
+                self._local_process.wait(timeout=0.1)
+            except Exception:
+                pass
+        return
 
     @property
     def pid(self) -> int:

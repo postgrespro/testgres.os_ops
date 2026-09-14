@@ -28,6 +28,8 @@ import random
 import datetime
 import threading
 import queue
+import gc
+import warnings
 
 from src.exceptions import InvalidOperationException
 from src.exceptions import ExecUtilException
@@ -4490,6 +4492,84 @@ print('b', file=sys.stderr)
                 duration,
             ))
 
+        return
+
+    def test_popen_del(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "printf \"%s!\" \"$$\""]
+
+        controller = os_ops.popen(
+            cmd,
+            encoding="utf-8",
+        )
+
+        del controller
+        return
+
+    def test_popen_garbage_collection(self, os_ops_descr: OsOpsDescr):
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        if type(os_ops).__name__ == "LocalOperations":
+            pytest.skip("It is not requred")
+
+        # Перехватываем системные предупреждения (ResourceWarning)
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            # Включаем отображение ResourceWarning (по умолчанию в Python они могут быть скрыты)
+            warnings.simplefilter("always", ResourceWarning)
+
+            # 1. Запускаем бесконечный процесс и умышленно НЕ используем контекстный менеджер
+            # Переменная 'controller' держит единственную ссылку на объект
+            cmd = ["sleep", "100"]
+            controller = os_ops.popen(cmd)
+            assert isinstance(controller, OsProcessController)
+
+            # Запоминаем локальный процесс транспорта, чтобы проверить его смерть в конце
+            if type(controller).__name__ == "LocalProcessController":
+                local_p = controller._local_process
+            elif type(controller).__name__ == "RemoteProcessController":
+                local_p = controller._local_process
+            else:
+                raise RuntimeError("Unknown controller type: {}.".format(
+                    type(controller).__name__
+                ))
+
+            assert local_p is not None
+
+            # 2. Уничтожаем ЕДИНСТВЕННУЮ ссылку на контроллер (имитируем неаккуратность разработчика)
+            del controller
+
+            # 3. Принудительно запускаем сборщик мусора Python, чтобы он очистил память
+            # и вызвал наш __del__ прямо здесь
+            gc.collect()
+
+            # 4. Проверяем, что деструктор честно предупредил нас об утечке
+            assert len(caught_warnings) >= 1, "__del__ did not trigger any ResourceWarning!"
+
+            # Ищем наше кастомное предупреждение в списке пойманных
+            has_our_warning = any(
+                "is still running inside" in str(w.message) or "is still running" in str(w.message)
+                for w in caught_warnings
+            )
+            assert has_our_warning is True, "Our specific process leak warning was not found"
+
+        # 5. Проверяем, что деструктор отработал как санитар:
+        # Локальный процесс SSH-клиента или sleep должен быть принудительно убит,
+        # чтобы дескрипторы не утекли в систему.
+        # Ожидаем завершения с коротким таймаутом (деструктор должен был сделать kill)
+        rc = local_p.wait(timeout=1.0)
+        assert rc is not None
+        logging.info(f"Leaked transport process reaped by __del__ with exit code: {rc}")
         return
 
     @staticmethod
