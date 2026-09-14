@@ -4008,6 +4008,8 @@ print('b', file=sys.stderr)
             encoding=popen_data.param_encoding,
         )
         assert isinstance(controller, OsProcessController)
+        assert controller.args == cmd
+        assert controller.args is not cmd
 
         with controller:
             returncode = controller.wait()
@@ -4047,6 +4049,8 @@ print('b', file=sys.stderr)
             encoding=popen_data.param_encoding,
         )
         assert isinstance(controller, OsProcessController)
+        assert controller.args == cmd
+        assert controller.args is not cmd
 
         with controller:
             returncode = controller.wait()
@@ -4455,6 +4459,14 @@ print('b', file=sys.stderr)
         )
 
         assert isinstance(controller, OsProcessController)
+        assert controller.args == fx_data_wait_timeout.cmd
+        assert type(controller.args) is type(fx_data_wait_timeout.cmd)
+        # it must be a copy
+        if type(controller.args) is str:
+            pass
+        else:
+            assert controller.args is not fx_data_wait_timeout.cmd
+            pass
 
         with controller:
             try:

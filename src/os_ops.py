@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .types import T_CMD
 from .types import T_OS_SIGNAL
 from .types import T_OS_TIMEOUT
 from .types import T_OS_IO
@@ -47,6 +48,10 @@ class OsProcessController:
 
     def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
         RaiseError.PropertyIsNotImplemented(__class__, "__exit__")
+
+    @property
+    def args(self) -> T_CMD:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_args")
 
     @property
     def pid(self) -> int:
@@ -116,7 +121,7 @@ class OsOperations:
         RaiseError.MethodIsNotImplemented(__class__, "create_clone")
 
     # Command execution
-    T_CMD = typing.Union[str, typing.List[str]]
+    T_CMD = T_CMD
     T_EXEC_COMMAND_RESULT = typing.Union[
         subprocess.Popen,
         str,

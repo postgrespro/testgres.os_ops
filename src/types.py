@@ -2,6 +2,8 @@ import typing
 import signal as os_signal
 
 
+T_CMD = typing.Union[str, typing.List[str]]
+
 T_OS_SIGNAL = typing.Union[int, os_signal.Signals]
 T_OS_TIMEOUT = typing.Union[int, float]
 T_OS_IO = typing.IO[typing.Any]

@@ -25,6 +25,7 @@ from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
 from .os_ops import ConnectionParams, OsOperations, get_default_encoding
 from .os_ops import OsProcessController
+from .os_ops import T_CMD
 from .os_ops import T_OS_SIGNAL
 from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
@@ -39,9 +40,18 @@ CMD_TIMEOUT_SEC = 60
 
 
 class LocalProcessController(OsProcessController):
+    _cmd: T_CMD
     _local_process: typing.Optional[subprocess.Popen]
 
-    def __init__(self):
+    def __init__(
+        self,
+        cmd: T_CMD,
+    ):
+        assert type(cmd) is str or type(cmd) is list
+
+        self._cmd = copy.copy(cmd)
+        assert type(self._cmd) is type(cmd)
+
         self._local_process = None
         return
 
@@ -53,6 +63,11 @@ class LocalProcessController(OsProcessController):
     def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
         assert type(self._local_process) is subprocess.Popen
         return self._local_process.__exit__(exc_type, value, traceback)
+
+    @property
+    def args(self) -> T_CMD:
+        assert type(self._cmd) is str or type(self._cmd) is list
+        return self._cmd
 
     @property
     def pid(self) -> int:
@@ -490,7 +505,7 @@ class LocalOperations(OsOperations):
         if encoding is not None and text is None:
             text = True
 
-        result = LocalProcessController()
+        result = LocalProcessController(cmd)
 
         result._local_process = subprocess.Popen(
             cmd,
