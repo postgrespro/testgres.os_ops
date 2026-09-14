@@ -4293,22 +4293,26 @@ print('b', file=sys.stderr)
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        cmd = ["sh", "-c", "exit 123"]
+        for rc in range(256):
+            logging.info("test result code {}".format(rc))
 
-        controller = os_ops.popen(cmd)
-        assert isinstance(controller, OsProcessController)
+            cmd = ["sh", "-c", "exit {}".format(rc)]
 
-        with controller:
-            returncode = controller.wait()
-            assert returncode == 123
-            assert controller.stderr is not None
-            v = controller.stderr.read()
-            assert len(v) == 0
+            controller = os_ops.popen(cmd)
+            assert isinstance(controller, OsProcessController)
 
-            assert controller.stdout is not None
-            v = controller.stdout.read()
-            assert len(v) == 0
-            pass
+            with controller:
+                returncode = controller.wait()
+                assert returncode == rc
+                assert controller.stderr is not None
+                v = controller.stderr.read()
+                assert len(v) == 0
+
+                assert controller.stdout is not None
+                v = controller.stdout.read()
+                assert len(v) == 0
+                pass
+            continue
 
         return
 
@@ -4386,39 +4390,105 @@ print('b', file=sys.stderr)
             pass
         return
 
+    @dataclasses.dataclass
+    class tagPOpenWaitTestData:
+        cmd: OsOperations.T_CMD
+
+        def gen_sign(self) -> str:
+            return type(self.cmd).__name__ + ":" + repr(self.cmd)
+
+    sm_POpenWaitTestDatas: typing.List[tagPOpenWaitTestData] = [
+        tagPOpenWaitTestData(
+            cmd="sleep 100",
+        ),
+        tagPOpenWaitTestData(
+            cmd="sh -c \"sleep 100\"",
+        ),
+        tagPOpenWaitTestData(
+            cmd=["sleep", "100"],
+        ),
+        tagPOpenWaitTestData(
+            cmd=["sh", "-c", "sleep 100"],
+        ),
+        tagPOpenWaitTestData(
+            cmd=["bash", "-c", "sleep 100"],
+        ),
+    ]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id=x.gen_sign(),
+            )
+            for x in sm_POpenWaitTestDatas
+        ]
+    )
+    def fx_data_wait_timeout(self, request: pytest.FixtureRequest) -> tagPOpenWaitTestData:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param).__name__ == "tagPOpenWaitTestData"
+        return request.param
+
     def test_popen_wait_timeout(
         self,
         os_ops_descr: OsOpsDescr,
+        fx_data_wait_timeout: tagPOpenWaitTestData,
     ):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(fx_data_wait_timeout) is __class__.tagPOpenWaitTestData
 
         RunConditions.skip_if_windows()
 
         os_ops = os_ops_descr.os_ops
         assert isinstance(os_ops, OsOperations)
 
-        cmd = ["sleep", "100"]
+        logging.info("cmd={}".format(
+            fx_data_wait_timeout.cmd,
+        ))
 
-        controller = os_ops.popen(cmd)
+        controller = os_ops.popen(
+            fx_data_wait_timeout.cmd,
+            shell=type(fx_data_wait_timeout.cmd) is str
+        )
+
         assert isinstance(controller, OsProcessController)
 
         with controller:
             try:
+                logging.info("controller.pid={}".format(
+                    controller.pid,
+                ))
+
                 with pytest.raises(expected_exception=ExecTimeoutException) as x:
                     controller.wait(1)
 
                 assert type(x.value) is ExecTimeoutException
-                assert type(x.value.cmd) is list
+                assert type(x.value.cmd) is type(fx_data_wait_timeout.cmd)
+                assert x.value.cmd == fx_data_wait_timeout.cmd
                 assert x.value.timeout == 1
                 assert x.value.output is None
                 assert x.value.error is None
                 assert x.value.source == type(controller).__name__ + "::wait"
-
                 pass
             finally:
+                logging.info("kill")
                 controller.kill()
             pass
+            logging.info("EXIT1")
+            exit1_ts = time.monotonic()
+
+        logging.info("EXIT2")
+        exit2_ts = time.monotonic()
+
+        assert exit1_ts <= exit2_ts
+
+        duration = exit2_ts - exit1_ts
+
+        if 15 < duration:
+            raise RuntimeError("Test stops too long - {} second(s).".format(
+                duration,
+            ))
 
         return
 

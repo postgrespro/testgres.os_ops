@@ -53,18 +53,27 @@ class PsUtilProcessProxy:
 
 
 class RemoteProcessController(OsProcessController):
+    _C_MAX_RESP_RC_FILE_SIZE = 32
+
     _remote_ops: RemoteOperations
+    _remote_cmd: OsOperations.T_CMD
+    _remote_rc_file: typing.Optional[str]
     _local_process: typing.Optional[subprocess.Popen]
     _remote_pid: typing.Optional[int]
+    _remote_rc: typing.Optional[int]
 
     def __init__(
         self,
-        remote_ops: RemoteOperations
+        remote_ops: RemoteOperations,
+        remote_cmd: OsOperations.T_CMD,
     ):
         assert isinstance(remote_ops, RemoteOperations)
         self._remote_ops = remote_ops
+        self._remote_cmd = remote_cmd
+        self._remote_rc_file = None
         self._local_process = None
         self._remote_pid = None
+        self._remote_rc = None
         return
 
     def __enter__(self) -> OsProcessController:
@@ -74,6 +83,27 @@ class RemoteProcessController(OsProcessController):
 
     def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
         assert type(self._local_process) is subprocess.Popen
+        assert type(self._remote_rc_file) is str
+        assert self._remote_cmd is not None
+
+        self.wait()
+
+        try:
+            self._local_process.kill()
+        except BaseException as e:
+            msg_lines = []
+
+            msg_lines.append("RemoteProcessController::__exit__ catches an exception ({}): {}".format(
+                type(e).__name__,
+                e,
+            ))
+            msg_lines.append("Remote command is {}".format(
+                self._remote_cmd,
+            ))
+            logging.debug("\n".join(msg_lines))
+
+        self._remote_ops.remove_file(self._remote_rc_file)
+
         return self._local_process.__exit__(exc_type, value, traceback)
 
     @property
@@ -99,17 +129,23 @@ class RemoteProcessController(OsProcessController):
     @property
     def returncode(self) -> typing.Optional[int]:
         assert type(self._local_process) is subprocess.Popen
-        return self._local_process.poll()
+
+        rc: typing.Optional[int] = None
+
+        try:
+            rc = self.wait(0)
+        except ExecTimeoutException:
+            pass
+
+        assert rc is None or type(rc) is int
+        return rc
 
     def send_signal(self, sig: T_OS_SIGNAL) -> None:
         assert type(sig) in [int, os_signal.Signals]
         assert type(self._local_process) is subprocess.Popen
         assert type(self._remote_pid) is int
 
-        try:
-            self._remote_ops.kill(self._remote_pid, sig)
-        finally:
-            self._local_process.poll()
+        self._remote_ops.kill(self._remote_pid, sig)
         return
 
     def kill(self) -> None:
@@ -120,7 +156,7 @@ class RemoteProcessController(OsProcessController):
     def terminate(self) -> None:
         assert type(self._local_process) is subprocess.Popen
 
-        if self.returncode is not None:
+        if self._remote_rc is not None:
             return
 
         self.send_signal(os_signal.SIGTERM)
@@ -128,22 +164,49 @@ class RemoteProcessController(OsProcessController):
 
     def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
         assert timeout is None or type(timeout) in [int, float]
-        assert type(self._local_process) is subprocess.Popen
+        assert type(self._remote_rc_file) is str
 
-        try:
-            return self._local_process.wait(timeout)
-        except subprocess.TimeoutExpired as e:
-            # Transforming a "foreign" exception into one native to the Testgres architecture
-            raise ExecTimeoutException(
-                cmd=e.cmd,
-                timeout=e.timeout,
-                output=e.output,
-                error=e.stderr,
-                source="RemoteProcessController::wait",
-            ) from e
+        if self._remote_rc is not None:
+            return self._remote_rc
+
+        start_time = time.monotonic()
+        nPass = 0
+        while True:
+            nPass += 1
+
+            # Читаем файл с кодом возврата
+            rc_bytes = self._remote_ops.read_binary(
+                self._remote_rc_file,
+                offset=0,
+                size=__class__._C_MAX_RESP_RC_FILE_SIZE,
+            )
+
+            if len(rc_bytes) == __class__._C_MAX_RESP_RC_FILE_SIZE:
+                raise RuntimeError("Responce rc-file [{}] is too long.".format(
+                    self._remote_rc_file,
+                ))
+
+            self._remote_rc = self._remote_ops._parse_resp_data(rc_bytes)
+
+            if self._remote_rc is not None:
+                break
+
+            if timeout is not None and (time.monotonic() - start_time) >= timeout:
+                raise ExecTimeoutException(
+                    self._remote_cmd,
+                    timeout=timeout,
+                    source="RemoteProcessController::wait",
+                )
+
+            time.sleep(0.05)
+            continue
+
+        assert type(self._remote_rc) is int
+        return self._remote_rc
 
 
 class RemoteOperations(OsOperations):
+    _C_MAX_RESP_PID_FILE_SIZE = 32
     _C_EOL = "\n"
 
     T_ENVS = typing.Dict[str, typing.Optional[str]]
@@ -402,13 +465,19 @@ class RemoteOperations(OsOperations):
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
-        result = RemoteProcessController(self)
+        result = RemoteProcessController(
+            self,
+            cmd,
+        )
 
         # 1. Create a temporary file on the remote machine
         pid_file = self.mkstemp(prefix="testgres_pid_")
         assert type(pid_file) is str and pid_file != ""
 
         try:
+            result._remote_rc_file = self.mkstemp(prefix="testgres_rc_")
+            assert type(result._remote_rc_file) is str and result._remote_rc_file != ""
+
             cmds = []
             cmds.append("trap '' HUP")
 
@@ -435,6 +504,8 @@ class RemoteOperations(OsOperations):
 
             # Escape the file path for bash
             q_pid_file = __class__._quote_path(pid_file)
+
+            q_rc_file = __class__._quote_path(result._remote_rc_file)
 
             # A robust Bash handshake script:
             # 1. Write the current shell's PID to a file.
@@ -466,7 +537,12 @@ class RemoteOperations(OsOperations):
             )
 
             # Run script within isolated env to get a true return codes of kill/terminate
-            cmds.append("(" + ping_pong_script2_s + ")")
+            final_script_s = (
+                f"({ping_pong_script2_s}); "
+                f"printf \"%s!\" \"$?\" > {q_rc_file};"
+            )
+
+            cmds.append("(" + final_script_s + ")")
 
             cmdline = " && ".join(cmds)
 
@@ -514,9 +590,19 @@ class RemoteOperations(OsOperations):
                     time.sleep(0.05)
 
                 # Reading the file contents
-                pid_bytes = self.read_binary(pid_file, offset=0, size=32)
+                pid_bytes = self.read_binary(
+                    pid_file,
+                    offset=0,
+                    size=__class__._C_MAX_RESP_PID_FILE_SIZE,
+                )
                 assert type(pid_bytes) is bytes
-                result._remote_pid = __class__._parse_pid_resp_data(
+
+                if len(pid_bytes) == __class__._C_MAX_RESP_PID_FILE_SIZE:
+                    raise RuntimeError("Responce pid-file [{}] is too long.".format(
+                        pid_file,
+                    ))
+
+                result._remote_pid = __class__._parse_resp_data(
                     pid_bytes,
                 )
                 continue
@@ -547,7 +633,7 @@ class RemoteOperations(OsOperations):
         return result
 
     @staticmethod
-    def _parse_pid_resp_data(data: bytes) -> typing.Optional[int]:
+    def _parse_resp_data(data: bytes) -> typing.Optional[int]:
         assert type(data) is bytes
 
         i = 0
