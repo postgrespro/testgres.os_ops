@@ -4342,8 +4342,7 @@ print('b', file=sys.stderr)
             if type(os_ops).__name__ == "LocalOperations":
                 assert rc == -15
             elif type(os_ops).__name__ == "RemoteOperations":
-                # Alpine returns 255
-                assert rc in [143, 255]
+                assert rc == 143
             else:
                 raise RuntimeError("Unknown os_ops type: {}".format(
                     type(os_ops).__name__,
@@ -4379,8 +4378,7 @@ print('b', file=sys.stderr)
             if type(os_ops).__name__ == "LocalOperations":
                 assert rc == -9
             elif type(os_ops).__name__ == "RemoteOperations":
-                # Alpine returns 255
-                assert rc in [137, 255]
+                assert rc == 137
             else:
                 raise RuntimeError("Unknown os_ops type: {}".format(
                     type(os_ops).__name__,
