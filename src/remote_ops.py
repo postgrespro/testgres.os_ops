@@ -29,6 +29,7 @@ from .os_ops import T_OS_IO
 from .os_ops import T_OS_IO_ID
 from .raise_error import RaiseError
 from .helpers import Helpers
+from .static_config import OsOperationStaticConfig
 
 
 class PsUtilProcessProxy:
@@ -585,6 +586,14 @@ class RemoteOperations(OsOperations):
 
             q_rc_file = __class__._quote_path(result._remote_rc_file)
 
+            handshake_timeout = OsOperationStaticConfig.remote_ops__popen__handshake_timeout
+            assert type(handshake_timeout) is float
+            assert handshake_timeout > 0
+
+            # Поскольку sleep у нас 0.01с, количество итераций — это таймаут * 100
+            handshake_max_iterations = int(handshake_timeout * 100)
+            assert handshake_max_iterations > 0
+
             # A robust Bash handshake script:
             # 1. Write the current shell's PID to a file.
             # 2. Loop while checking only for the file's existence.
@@ -595,7 +604,7 @@ class RemoteOperations(OsOperations):
                 f"printf \"%s!\" \"$$\" > {q_pid_file} && "
                 f"i=0 && "
                 f"while [ -f {q_pid_file} ]; do "
-                f"if [ $i -ge 500 ]; then "
+                f"if [ $i -ge {handshake_max_iterations} ]; then "
                 f"printf \"testgres error: popen handshake timeout expired\\n\" >&2; "
                 f"exit 1; "
                 f"fi; "
@@ -653,7 +662,7 @@ class RemoteOperations(OsOperations):
                 if result._remote_pid is not None:
                     break
 
-                if time.monotonic() - start_time < 5.0:
+                if time.monotonic() - start_time < handshake_timeout:
                     pass
                 elif nPass < 10:
                     pass
