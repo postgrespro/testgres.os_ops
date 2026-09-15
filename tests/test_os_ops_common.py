@@ -4288,7 +4288,7 @@ print('b', file=sys.stderr)
                 data,
             ))
 
-    def test_popen_returncode(
+    def test_popen_returncode_stopped(
         self,
         os_ops_descr: OsOpsDescr,
     ):
