@@ -6040,6 +6040,8 @@ print('b', file=sys.stderr)
 
         assert isinstance(result, OsCommandResult)
         assert result.returncode == 1
+        assert type(result.stdout) is str
+        assert type(result.stderr) is str
         assert result.stdout.strip() == "normal_out"
         assert result.stderr.strip() == "error_err"
         return
