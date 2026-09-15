@@ -541,6 +541,9 @@ class RemoteOperations(OsOperations):
         assert text is None or type(text) is bool
         assert encoding is None or type(encoding) is str
         assert type(shell) is bool
+        assert stdin is None or type(stdin) is int or isinstance(stdin, io.IOBase)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, io.IOBase)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, io.IOBase)
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
 
