@@ -3989,7 +3989,7 @@ print('b', file=sys.stderr)
         assert isinstance(request, pytest.FixtureRequest)
         return request.param
 
-    def test_popen_stdout(
+    def test_popen_controller_stdout(
         self,
         os_ops_descr: OsOpsDescr,
         popen_data: tagPOpenTestData,
@@ -4030,7 +4030,7 @@ print('b', file=sys.stderr)
 
         return
 
-    def test_popen_stderr(
+    def test_popen_controller_stderr(
         self,
         os_ops_descr: OsOpsDescr,
         popen_data: tagPOpenTestData,
@@ -4071,7 +4071,7 @@ print('b', file=sys.stderr)
 
         return
 
-    def test_popen_stdin(
+    def test_popen_controller_stdin(
         self,
         os_ops_descr: OsOpsDescr,
         popen_data: tagPOpenTestData,
@@ -4174,7 +4174,7 @@ print('b', file=sys.stderr)
         assert type(request.param).__name__ == "tagPOpenTestData2"
         return request.param
 
-    def test_popen_stderr_and_stdout(
+    def test_popen_controller_stderr_and_stdout(
         self,
         os_ops_descr: OsOpsDescr,
         popen_data2: tagPOpenTestData2,
