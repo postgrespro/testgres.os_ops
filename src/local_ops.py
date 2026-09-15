@@ -94,6 +94,29 @@ class LocalProcessController(OsProcessController):
         assert type(self._local_process) is subprocess.Popen
         return self._local_process.poll()
 
+    def communicate(
+        self,
+        input=None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None,
+    ) -> OsProcessController.T_COMMUNICATE_RESULT:
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(self._local_process) is subprocess.Popen
+
+        try:
+            return self._local_process.communicate(
+                input=input,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired as e:
+            # Transforming a "foreign" exception into one native to the Testgres architecture
+            raise ExecTimeoutException(
+                cmd=self._cmd,
+                timeout=e.timeout,
+                output=e.output,
+                error=e.stderr,
+                source="LocalProcessController::communicate",
+            ) from e
+
     def send_signal(self, sig: T_OS_SIGNAL) -> None:
         assert type(sig) in [int, os_signal.Signals]
         assert type(self._local_process) is subprocess.Popen

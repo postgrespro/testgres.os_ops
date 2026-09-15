@@ -73,6 +73,19 @@ class OsProcessController:
     def returncode(self) -> typing.Optional[int]:
         RaiseError.PropertyIsNotImplemented(__class__, "get_returncode")
 
+    T_COMMUNICATE_RESULT = typing.Union[
+        typing.Tuple[bytes, bytes],
+        typing.Tuple[str, str],
+    ]
+
+    def communicate(
+        self,
+        input=None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None
+    ) -> T_COMMUNICATE_RESULT:
+        assert timeout is not None or type(timeout) in [int, float]
+        RaiseError.MethodIsNotImplemented(__class__, "communicate")
+
     def send_signal(self, sig: T_OS_SIGNAL) -> None:
         assert type(sig) in [int, os_signal.Signals]
         RaiseError.MethodIsNotImplemented(__class__, "send_signal")

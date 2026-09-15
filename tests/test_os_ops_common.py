@@ -4855,6 +4855,165 @@ print('b', file=sys.stderr)
             s = controller.stderr.read()
             assert s == ""
 
+    def test_popen_communicate_timeout(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_data_wait_timeout: tagPOpenWaitTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(fx_data_wait_timeout) is __class__.tagPOpenWaitTestData
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        logging.info("cmd={}".format(
+            fx_data_wait_timeout.cmd,
+        ))
+
+        controller = os_ops.popen(
+            fx_data_wait_timeout.cmd,
+            shell=type(fx_data_wait_timeout.cmd) is str
+        )
+
+        assert isinstance(controller, OsProcessController)
+        assert controller.args == fx_data_wait_timeout.cmd
+        assert type(controller.args) is type(fx_data_wait_timeout.cmd)
+        # it must be a copy
+        if type(controller.args) is str:
+            pass
+        else:
+            assert controller.args is not fx_data_wait_timeout.cmd
+            pass
+
+        with controller:
+            try:
+                logging.info("controller.pid={}".format(
+                    controller.pid,
+                ))
+
+                with pytest.raises(expected_exception=ExecTimeoutException) as x:
+                    controller.communicate(timeout=1)
+
+                assert type(x.value) is ExecTimeoutException
+                assert type(x.value.cmd) is type(fx_data_wait_timeout.cmd)
+                assert x.value.cmd == fx_data_wait_timeout.cmd
+                assert x.value.timeout == 1
+                assert x.value.output is None
+                assert x.value.error is None
+                assert x.value.source == type(controller).__name__ + "::communicate"
+                pass
+            finally:
+                logging.info("kill")
+                controller.kill()
+            pass
+            logging.info("EXIT1")
+            exit1_ts = time.monotonic()
+
+        logging.info("EXIT2")
+        exit2_ts = time.monotonic()
+
+        assert exit1_ts <= exit2_ts
+
+        duration = exit2_ts - exit1_ts
+
+        if 15 < duration:
+            raise RuntimeError("Test stops too long - {} second(s).".format(
+                duration,
+            ))
+
+        return
+
+    def test_popen_communicate(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data2: tagPOpenTestData2,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "echo hello1 && echo hello2 >&2"]
+
+        controller = os_ops.popen(
+            cmd,
+            text=popen_data2.param_text,
+            encoding=popen_data2.param_encoding,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            r = controller.communicate()
+            assert type(r) is tuple
+            assert len(r) == 2
+
+            v1 = r[0]
+            assert v1 is not None
+            assert type(v1) is type(popen_data2.expected_result1)
+            assert len(v1) > 0
+            logging.info("stdout: {!r}".format(v1))
+            assert v1 == popen_data2.expected_result1
+
+            v2 = r[1]
+            assert v2 is not None
+            assert type(v2) is type(popen_data2.expected_result2)
+            assert len(v2) > 0
+            logging.info("stderr: {!r}".format(v2))
+            assert v2 == popen_data2.expected_result2
+            pass
+
+        return
+
+    def test_popen_communicate_with_input(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data2: tagPOpenTestData2,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat && echo hello2 >&2"]
+
+        controller = os_ops.popen(
+            cmd,
+            text=popen_data2.param_text,
+            encoding=popen_data2.param_encoding,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            r = controller.communicate(input=popen_data2.expected_result1)
+            assert type(r) is tuple
+            assert len(r) == 2
+
+            v1 = r[0]
+            assert v1 is not None
+            assert type(v1) is type(popen_data2.expected_result1)
+            assert len(v1) > 0
+            logging.info("stdout: {!r}".format(v1))
+            assert v1 == popen_data2.expected_result1
+
+            v2 = r[1]
+            assert v2 is not None
+            assert type(v2) is type(popen_data2.expected_result2)
+            assert len(v2) > 0
+            logging.info("stderr: {!r}".format(v2))
+            assert v2 == popen_data2.expected_result2
+            pass
+
+        return
+
     @staticmethod
     def helper__get_os_ops(
         use_clone: bool,
