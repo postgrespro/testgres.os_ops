@@ -4270,6 +4270,63 @@ print('b', file=sys.stderr)
 
         return
 
+    def test_popen_stderr_and_stdout__streams(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data2: tagPOpenTestData2,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "echo hello1 && echo hello2 >&2"]
+
+        # Configure the file opening mode (text or binary) based on the data matrix
+        file_mode = "w+t" if popen_data2.param_text or popen_data2.param_encoding else "w+b"
+
+        def LOCAL_f():
+            return tempfile.TemporaryFile(
+                mode=file_mode,
+                encoding=popen_data2.param_encoding,
+            )
+
+        with (
+            LOCAL_f() as tmp_stderr,
+            LOCAL_f() as tmp_stdout,
+            os_ops.popen(
+                cmd,
+                text=popen_data2.param_text,
+                encoding=popen_data2.param_encoding,
+                stdout=tmp_stdout,
+                stderr=tmp_stderr,
+            ) as controller
+        ):
+            assert isinstance(controller, OsProcessController)
+            assert controller.wait() == 0
+            assert controller.returncode == 0
+            assert controller.stdout is None
+            assert controller.stderr is None
+
+            tmp_stdout.seek(0)
+            v1 = tmp_stdout.read()
+            assert type(v1) is type(popen_data2.expected_result1)
+            assert len(v1) > 0
+            logging.info("stdout: {!r}".format(v1))
+            assert v1 == popen_data2.expected_result1
+
+            tmp_stderr.seek(0)
+            v2 = tmp_stderr.read()
+            assert type(v2) is type(popen_data2.expected_result2)
+            assert len(v2) > 0
+            logging.info("stderr: {!r}".format(v2))
+            assert v2 == popen_data2.expected_result2
+
+        return
+
     def test_popen_pid(
         self,
         os_ops_descr: OsOpsDescr,
