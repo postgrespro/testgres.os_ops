@@ -4140,15 +4140,17 @@ print('b', file=sys.stderr)
             f.seek(0)
             return f
 
-        with (
-            LOCAL_f(popen_data.expected_result) as tmp_stdin,
-            os_ops.popen(
-                cmd,
-                text=popen_data.param_text,
-                encoding=popen_data.param_encoding,
-                stdin=tmp_stdin,
-            ) as controller,
-        ):
+        # Yes, it it is not good. I know.
+        tmp_stdin = LOCAL_f(popen_data.expected_result)
+
+        controller = os_ops.popen(
+            cmd,
+            text=popen_data.param_text,
+            encoding=popen_data.param_encoding,
+            stdin=tmp_stdin,
+        )
+
+        with tmp_stdin, controller:
             assert isinstance(controller, OsProcessController)
 
             returncode = controller.wait()
@@ -4294,17 +4296,18 @@ print('b', file=sys.stderr)
                 encoding=popen_data2.param_encoding,
             )
 
-        with (
-            LOCAL_f() as tmp_stderr,
-            LOCAL_f() as tmp_stdout,
-            os_ops.popen(
-                cmd,
-                text=popen_data2.param_text,
-                encoding=popen_data2.param_encoding,
-                stdout=tmp_stdout,
-                stderr=tmp_stderr,
-            ) as controller
-        ):
+        # Yes, it it is not good. I know.
+        tmp_stderr = LOCAL_f()
+        tmp_stdout = LOCAL_f()
+        controller = os_ops.popen(
+            cmd,
+            text=popen_data2.param_text,
+            encoding=popen_data2.param_encoding,
+            stdout=tmp_stdout,
+            stderr=tmp_stderr,
+        )
+
+        with tmp_stderr, tmp_stdout, controller:
             assert isinstance(controller, OsProcessController)
             assert controller.wait() == 0
             assert controller.returncode == 0
