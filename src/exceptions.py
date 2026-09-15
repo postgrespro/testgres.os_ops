@@ -1,5 +1,6 @@
 # coding: utf-8
 
+from .types import T_OS_CMD
 from .types import T_OS_TIMEOUT
 
 from testgres.common.exceptions import TestgresException
@@ -9,14 +10,15 @@ import six
 import typing
 
 
-T_CMD = typing.Union[str, list]
+# [2026-09-15] deprecated
+T_CMD = T_OS_CMD
 T_OUT_DATA = typing.Union[str, bytes]
 T_ERR_DATA = typing.Union[str, bytes]
 
 
 class ExecUtilException(TestgresException):
     _description: typing.Optional[str]
-    _command: typing.Optional[T_CMD]
+    _command: typing.Optional[T_OS_CMD]
     _exit_code: typing.Optional[int]
     _out: typing.Optional[T_OUT_DATA]
     _error: typing.Optional[T_ERR_DATA]
@@ -24,7 +26,7 @@ class ExecUtilException(TestgresException):
     def __init__(
         self,
         message: typing.Optional[str] = None,
-        command: typing.Optional[T_CMD] = None,
+        command: typing.Optional[T_OS_CMD] = None,
         exit_code: typing.Optional[int] = None,
         out: typing.Optional[T_OUT_DATA] = None,
         error: typing.Optional[T_ERR_DATA] = None,
@@ -74,7 +76,7 @@ class ExecUtilException(TestgresException):
         return self._description
 
     @property
-    def command(self) -> typing.Optional[T_CMD]:
+    def command(self) -> typing.Optional[T_OS_CMD]:
         assert self._command is None or type(self._command) in [str, list]
         return self._command
 
@@ -133,7 +135,7 @@ class ExecUtilException(TestgresException):
 
 
 class ExecTimeoutException(TestgresException):
-    _cmd: T_CMD
+    _cmd: T_OS_CMD
     _timeout: T_OS_TIMEOUT
     _output: typing.Optional[T_OUT_DATA]
     _error: typing.Optional[T_ERR_DATA]
@@ -141,7 +143,7 @@ class ExecTimeoutException(TestgresException):
 
     def __init__(
         self,
-        cmd: T_CMD,
+        cmd: T_OS_CMD,
         timeout: T_OS_TIMEOUT,
         output: typing.Optional[T_OUT_DATA] = None,
         error: typing.Optional[T_ERR_DATA] = None,
@@ -177,7 +179,7 @@ class ExecTimeoutException(TestgresException):
         return self._source
 
     @property
-    def cmd(self) -> T_CMD:
+    def cmd(self) -> T_OS_CMD:
         return self._cmd
 
     @property
