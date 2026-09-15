@@ -9,6 +9,7 @@ from tests.helpers.local_check import LocalCheck
 from tests.helpers.local_check import OsOpsHelpers
 
 from src.os_ops import OsProcessController
+from src.os_ops import OsCommandResult
 from src.exceptions import ExecTimeoutException
 
 import os
@@ -30,6 +31,7 @@ import threading
 import queue
 import gc
 import warnings
+import tempfile
 
 from src.exceptions import InvalidOperationException
 from src.exceptions import ExecUtilException
@@ -5211,6 +5213,764 @@ print('b', file=sys.stderr)
                 duration,
             ))
 
+        return
+
+    def test_run_success(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "python3 --version"]
+
+        exec_r = os_ops.run(cmd)
+        assert type(exec_r) is OsCommandResult
+        assert type(exec_r.stdout) is bytes
+        assert type(exec_r.stderr) is bytes
+        assert b'Python 3.' in exec_r.stdout
+        assert exec_r.stderr == b''
+        return
+
+    def test_run_failure(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        cmd = ["sh", "-c", "nonexistent_command"]
+
+        while True:
+            try:
+                os_ops.run(cmd)
+            except ExecUtilException as e:
+                assert type(e.exit_code) is int
+                assert e.exit_code == 127
+
+                assert type(e.message) is str
+                assert type(e.error) is bytes
+
+                assert e.message.startswith("Utility exited with non-zero code (127). Error:")
+                assert "nonexistent_command" in e.message
+                assert "not found" in e.message
+                assert b"nonexistent_command" in e.error
+                assert b"not found" in e.error
+                break
+            raise Exception("We wait an exception!")
+        return
+
+    def test_run_stdout(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data: tagPOpenTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "echo hello"]
+
+        exec_r = os_ops.run(
+            cmd,
+            text=popen_data.param_text,
+            encoding=popen_data.param_encoding,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        v = exec_r.stdout
+        assert type(v) is type(popen_data.expected_result)
+        assert len(v) > 0
+        logging.info("stdout: {!r}".format(v))
+        assert v == popen_data.expected_result
+
+        assert exec_r.stderr is not None
+        x = exec_r.stderr
+        assert len(x) == 0
+
+        return
+
+    def test_run_stdout_stream(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data: tagPOpenTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        # Author: Mark G <mark@google.com>
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        cmd = ["sh", "-c", "echo hello"]
+
+        # Configure the file opening mode (text or binary) based on the data matrix
+        file_mode = "w+t" if popen_data.param_text or popen_data.param_encoding else "w+b"
+
+        # Create a temporary file where the utility will write its stdout
+        with tempfile.TemporaryFile(mode=file_mode, encoding=popen_data.param_encoding) as tmp_stdout:
+
+            exec_r = os_ops.run(
+                cmd,
+                text=popen_data.param_text,
+                encoding=popen_data.param_encoding,
+                # Forwarding our stream for writing!
+                stdout=tmp_stdout,
+            )
+            assert isinstance(exec_r, OsCommandResult)
+            assert exec_r.returncode == 0
+            assert exec_r.stdout is None
+            assert exec_r.stderr is not None
+            assert len(exec_r.stderr) == 0
+
+            # By design, since stdout is redirected to a file,
+            # communicate() returns an empty placeholder (None, "" or b"")
+            # Let's verify that the result structure is empty here:
+            assert not exec_r.stdout, f"Expected empty result.stdout, but got: {exec_r.stdout!r}"
+
+            # Now we verify that the data has been physically written to our stream:
+            tmp_stdout.seek(0)
+            file_content = tmp_stdout.read()
+
+            assert type(file_content) is type(popen_data.expected_result)
+            assert file_content == popen_data.expected_result
+            logging.info("stdout stream content: {!r}".format(file_content))
+
+        return
+
+    def test_run_stderr(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data: tagPOpenTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "echo hello >&2"]
+
+        exec_r = os_ops.run(
+            cmd,
+            text=popen_data.param_text,
+            encoding=popen_data.param_encoding,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stderr is not None
+        v = exec_r.stderr
+        assert type(v) is type(popen_data.expected_result)
+        assert len(v) > 0
+        logging.info("stderr: {!r}".format(v))
+        assert v == popen_data.expected_result
+
+        assert exec_r.stdout is not None
+        x = exec_r.stdout
+        assert len(x) == 0
+
+        return
+
+    def test_run_stderr_stream(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data: tagPOpenTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        # Author: Mark G <mark@google.com>
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        cmd = ["sh", "-c", "echo hello >&2"]
+
+        # Configure the file opening mode (text or binary) based on the data matrix
+        file_mode = "w+t" if popen_data.param_text or popen_data.param_encoding else "w+b"
+
+        # Create a temporary file where the utility will write its stdout
+        with tempfile.TemporaryFile(mode=file_mode, encoding=popen_data.param_encoding) as tmp_stderr:
+
+            exec_r = os_ops.run(
+                cmd,
+                text=popen_data.param_text,
+                encoding=popen_data.param_encoding,
+                # Forwarding our stream for writing!
+                stderr=tmp_stderr,
+            )
+            assert isinstance(exec_r, OsCommandResult)
+            assert exec_r.returncode == 0
+            assert exec_r.stderr is None
+            assert exec_r.stdout is not None
+            assert len(exec_r.stdout) == 0
+
+            assert not exec_r.stdout, f"Expected empty result.stdout, but got: {exec_r.stdout!r}"
+
+            tmp_stderr.seek(0)
+            file_content = tmp_stderr.read()
+
+            assert type(file_content) is type(popen_data.expected_result)
+            assert file_content == popen_data.expected_result
+            logging.info("stdout stream content: {!r}".format(file_content))
+
+        return
+
+    def test_run_stderr_and_stdout(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data2: tagPOpenTestData2,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "echo hello1 && echo hello2 >&2"]
+
+        exec_r = os_ops.run(
+            cmd,
+            text=popen_data2.param_text,
+            encoding=popen_data2.param_encoding,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+
+        assert exec_r.stdout is not None
+        v1 = exec_r.stdout
+        assert type(v1) is type(popen_data2.expected_result1)
+        assert len(v1) > 0
+        logging.info("stdout: {!r}".format(v1))
+        assert v1 == popen_data2.expected_result1
+
+        assert exec_r.stderr is not None
+        v2 = exec_r.stderr
+        assert type(v2) is type(popen_data2.expected_result2)
+        assert len(v2) > 0
+        logging.info("stderr: {!r}".format(v2))
+        assert v2 == popen_data2.expected_result2
+
+        return
+
+    def test_run_stderr_and_stdout__streams(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data2: tagPOpenTestData2,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "echo hello1 && echo hello2 >&2"]
+
+        # Configure the file opening mode (text or binary) based on the data matrix
+        file_mode = "w+t" if popen_data2.param_text or popen_data2.param_encoding else "w+b"
+
+        def LOCAL_f():
+            return tempfile.TemporaryFile(
+                mode=file_mode,
+                encoding=popen_data2.param_encoding,
+            )
+
+        with LOCAL_f() as tmp_stderr, LOCAL_f() as tmp_stdout:
+            exec_r = os_ops.run(
+                cmd,
+                text=popen_data2.param_text,
+                encoding=popen_data2.param_encoding,
+                stdout=tmp_stdout,
+                stderr=tmp_stderr,
+            )
+            assert type(exec_r) is OsCommandResult
+
+            assert exec_r.returncode == 0
+            assert exec_r.stdout is None
+            assert exec_r.stderr is None
+
+            tmp_stdout.seek(0)
+            v1 = tmp_stdout.read()
+            assert type(v1) is type(popen_data2.expected_result1)
+            assert len(v1) > 0
+            logging.info("stdout: {!r}".format(v1))
+            assert v1 == popen_data2.expected_result1
+
+            tmp_stderr.seek(0)
+            v2 = tmp_stderr.read()
+            assert type(v2) is type(popen_data2.expected_result2)
+            assert len(v2) > 0
+            logging.info("stderr: {!r}".format(v2))
+            assert v2 == popen_data2.expected_result2
+
+        return
+
+    def test_run_input(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data: tagPOpenTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        exec_r = os_ops.run(
+            cmd,
+            text=popen_data.param_text,
+            encoding=popen_data.param_encoding,
+            input=popen_data.expected_result,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        v = exec_r.stdout
+        assert type(v) is type(popen_data.expected_result)
+        assert len(v) > 0
+        logging.info("stdout: {!r}".format(v))
+        assert v == popen_data.expected_result
+
+        assert exec_r.stderr is not None
+        x = exec_r.stderr
+        assert len(x) == 0
+        pass
+
+        return
+
+    def test_run_cwd(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = ["pwd"]
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+            cwd="/etc",
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        assert exec_r.stdout == "/etc\n"
+        assert exec_r.stderr is not None
+        assert exec_r.stderr == ""
+        return
+
+    def test_run_set_env(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "AAA": "abcdefg",
+        }
+
+        cmd = ["sh", "-c", "printf \"%s!\" \"$AAA\""]
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+        )
+
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        assert exec_r.stdout == "abcdefg!"
+        return
+
+    def test_run_set_env_via_os_ops(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        os_ops.set_env("AAA", "12345")
+
+        cmd = ["sh", "-c", "printf \"%s!\" \"$AAA\""]
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+        )
+
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        assert exec_r.stdout == "12345!"
+        return
+
+    def test_run_unset_env(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = [printenv, "PATH"]
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        assert exec_r.stdout != ""
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "PATH": None,
+        }
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+            check=False,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 1
+        assert exec_r.stdout == ""
+        assert exec_r.stderr == ""
+        return
+
+    def test_run_unset_env_of_os_ops(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        os_ops.set_env("AAA", "abcdef")
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = [printenv, "AAA"]
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        s = exec_r.stdout
+        assert s == "abcdef\n"
+        assert exec_r.stderr is not None
+        s = exec_r.stderr
+        assert s == ""
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "AAA": None,
+        }
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+            check=False,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        r = exec_r.returncode
+        assert exec_r.stdout is not None
+        s = exec_r.stdout
+        assert s == ""
+        assert exec_r.stderr is not None
+        s = exec_r.stderr
+        assert s == ""
+        assert r == 1
+
+        return
+
+    def test_run_replace_env_of_os_ops(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+
+        os_ops.set_env("AAA", "abcdef")
+
+        printenv = os_ops.find_executable("printenv")
+        assert type(printenv) is str
+        assert printenv != ""
+
+        cmd = [printenv, "AAA"]
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+        )
+        assert type(exec_r) is OsCommandResult
+
+        assert exec_r.returncode == 0
+        assert exec_r.stdout is not None
+        s = exec_r.stdout
+        assert s == "abcdef\n"
+        assert exec_r.stderr is not None
+        s = exec_r.stderr
+        assert s == ""
+
+        envs: OsOperations.T_EXEC_ENV = {
+            "AAA": "xyz",
+        }
+
+        exec_r = os_ops.run(
+            cmd,
+            encoding="utf-8",
+            exec_env=envs,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        r = exec_r.returncode
+        assert exec_r.stdout is not None
+        s = exec_r.stdout
+        assert s == "xyz\n"
+        assert exec_r.stderr is not None
+        s = exec_r.stderr
+        assert s == ""
+        assert r == 0
+
+        return
+
+    def test_run_timeout(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_data_wait_timeout: tagPOpenWaitTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(fx_data_wait_timeout) is __class__.tagPOpenWaitTestData
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        logging.info("cmd={}".format(
+            fx_data_wait_timeout.cmd,
+        ))
+
+        start_ts = time.monotonic()
+
+        with pytest.raises(expected_exception=ExecTimeoutException) as x:
+            os_ops.run(
+                fx_data_wait_timeout.cmd,
+                shell=type(fx_data_wait_timeout.cmd) is str,
+                timeout=1,
+            )
+
+        stop_ts = time.monotonic()
+
+        assert type(x.value) is ExecTimeoutException
+        assert type(x.value.cmd) is type(fx_data_wait_timeout.cmd)
+        assert x.value.cmd == fx_data_wait_timeout.cmd
+        assert x.value.timeout == 1
+        assert x.value.output is None
+        assert x.value.error is None
+
+        if type(os_ops).__name__ == "LocalOperations":
+            assert x.value.source == "LocalProcessController::communicate"
+        elif type(os_ops).__name__ == "RemoteOperations":
+            assert x.value.source == "RemoteProcessController::communicate"
+        else:
+            raise RuntimeError("Unknown os_ops type {}".format(
+                type(os_ops).__name__,
+            ))
+
+        assert start_ts <= stop_ts
+        duration = stop_ts - start_ts
+        assert duration <= 10  # OK?
+
+        return
+
+    def test_run_large_input_output(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        # Author: Mark G <mark@google.com>
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        # Generate a 256 KB test string (deliberately larger than the 64 KB pipe buffer)
+        # If we used a simple wait() instead of communicate(), this volume of data would cause a deadlock.
+        chunk = "A" * 1024 + "\n"
+        large_text = chunk * 256  # 256 Килобайт текста
+
+        # Run `cat` in text mode. It should ingest the entire input and spit it back out.
+        cmd = ["cat"]
+
+        start_ts = time.monotonic()
+
+        result = os_ops.run(
+            cmd=cmd,
+            text=True,
+            encoding="utf-8",
+            input=large_text,
+            # With a margin for network transmission in RemoteOperations
+            timeout=30.0,
+        )
+
+        duration = time.monotonic() - start_ts
+        logging.info(f"Processed 256KB via run() in {duration:.4f} seconds.")
+
+        # Strict result checks
+        assert isinstance(result, OsCommandResult)
+        assert result.returncode == 0
+        assert type(result.stdout) is str
+        assert len(result.stdout) == len(large_text)
+        assert result.stdout == large_text
+        # cat should not write anything to stderr
+        assert result.stderr == ""
+        return
+
+    def test_run_check_exception(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        # Author: Mark G <mark@google.com>
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        # A command guaranteed to fail (exit code 1)
+        # and write messages to both streams
+        cmd = ["sh", "-c", "echo normal_out && echo error_err >&2 && exit 1"]
+
+        # 1. Check default behavior (check=True)
+        # Expect our strict framework exception
+        with pytest.raises(expected_exception=Exception) as x:
+            os_ops.run(cmd, text=True, encoding="utf-8", check=True)
+
+        # Verify that the correct exception was raised
+        assert x.type is ExecUtilException
+
+        # Verify that the exception contains the correct output streams
+        # Check the field names (error, out, exit_code) against your RaiseError
+        assert getattr(x.value, "exit_code", 1) == 1
+        assert getattr(x.value, "out", "").strip() == "normal_out"
+        assert getattr(x.value, "error", "").strip() == "error_err"
+
+        # 2. Test the negative scenario with validation disabled (check=False)
+        # The method must not fail; instead, it should return a valid result object.
+        result = os_ops.run(cmd, text=True, encoding="utf-8", check=False)
+
+        assert isinstance(result, OsCommandResult)
+        assert result.returncode == 1
+        assert result.stdout.strip() == "normal_out"
+        assert result.stderr.strip() == "error_err"
+        return
+
+    def test_run_stdin_stream(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        # Author: Mark G <mark@google.com>
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        expected_text = "hello from file stream stdin\n"
+
+        # 1. Create a local temporary file with data
+        # Use tempfile, which is guaranteed to clean itself up
+        with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as tmp_file:
+            tmp_file.write(expected_text)
+            # Reset the pointer to the beginning so the process can read the data
+            tmp_file.seek(0)
+
+            # Launch the cat utility.
+            # Instead of an input parameter, pass an active file descriptor to stdin.
+            cmd = ["cat"]
+
+            result = os_ops.run(
+                cmd=cmd,
+                text=True,
+                encoding="utf-8",
+                stdin=tmp_file,  # Forwarding the stream!
+                input=None,      # Explicitly test the scenario without input
+                check=True,
+            )
+
+        # 2. Strict checks
+        assert isinstance(result, OsCommandResult)
+        assert result.returncode == 0
+        assert type(result.stdout) is str
+        assert result.stdout == expected_text
+        assert result.stderr == ""
         return
 
     @staticmethod

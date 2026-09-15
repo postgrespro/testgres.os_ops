@@ -21,6 +21,7 @@ from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
 from .os_ops import OsOperations, ConnectionParams, get_default_encoding
 from .os_ops import OsProcessController
+from .os_ops import OsCommandResult
 from .os_ops import T_OS_CMD
 from .os_ops import T_OS_SIGNAL
 from .os_ops import T_OS_TIMEOUT
@@ -707,6 +708,83 @@ class RemoteOperations(OsOperations):
         assert type(result._remote_pid) is int
 
         # 5. Putting back our brand-new control controller
+        return result
+
+    def run(
+        self,
+        cmd: T_OS_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        input: typing.Optional[OsOperations.T_INPUT] = None,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None,
+        check: bool = True,
+    ) -> OsCommandResult:
+        assert type(cmd) in [str, list]
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert input is None or type(input) in [str, bytes] or isinstance(input, io.IOBase)
+        assert stdin is None or type(stdin) is int or isinstance(stdin, io.IOBase)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, io.IOBase)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, io.IOBase)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(check) is bool
+
+        controller = self.popen(
+            cmd=cmd,
+            text=text,
+            encoding=encoding,
+            shell=shell,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            exec_env=exec_env,
+            cwd=cwd,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            try:
+                communicate_r = controller.communicate(
+                    input=input,
+                    timeout=timeout,
+                )
+            except BaseException:
+                controller.kill()
+                raise
+
+            assert type(communicate_r) is tuple
+            assert len(communicate_r) == 2
+
+            rc = controller.returncode
+            assert type(rc) is int
+
+            result = OsCommandResult(
+                cmd=cmd,
+                returncode=rc,
+                stdout=communicate_r[0],
+                stderr=communicate_r[1],
+            )
+
+        if result.returncode == 0:
+            pass
+        elif check:
+            RaiseError.UtilityExitedWithNonZeroCode(
+                cmd=cmd,
+                exit_code=result.returncode,
+                msg_arg=None,
+                error=result.stderr,
+                out=result.stdout,
+            )
+
         return result
 
     @staticmethod

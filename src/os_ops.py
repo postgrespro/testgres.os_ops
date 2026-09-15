@@ -104,6 +104,32 @@ class OsProcessController:
         RaiseError.MethodIsNotImplemented(__class__, "wait")
 
 
+class OsCommandResult:
+    T_IO_RESULT = typing.Union[str, bytes]
+
+    cmd: T_OS_CMD
+    returncode: int
+    stdout: typing.Optional[T_IO_RESULT]
+    stderr: typing.Optional[T_IO_RESULT]
+
+    def __init__(
+        self,
+        cmd: T_OS_CMD,
+        returncode: int,
+        stdout: typing.Optional[T_IO_RESULT],
+        stderr: typing.Optional[T_IO_RESULT],
+    ):
+        assert type(cmd) in [str, list]
+        assert type(returncode) is int
+        assert stdout is None or type(stdout) in [str, bytes]
+        assert stderr is None or type(stderr) in [str, bytes]
+        self.cmd = cmd
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+        return
+
+
 class OsOperations:
     def __init__(self):
         pass
@@ -200,6 +226,37 @@ class OsOperations:
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
         RaiseError.MethodIsNotImplemented(__class__, "popen")
+
+    T_INPUT = typing.Union[str, bytes, typing.IO[typing.Any]]
+
+    def run(
+        self,
+        cmd: T_OS_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        input: typing.Optional[T_INPUT] = None,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None,
+        check: bool = True,
+    ) -> OsCommandResult:
+        assert type(cmd) in [str, list]
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert input is None or type(input) in [str, bytes] or isinstance(input, typing.IO)
+        assert stdin is None or type(stdin) is int or isinstance(stdin, typing.IO)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, typing.IO)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, typing.IO)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(check) is bool
+        RaiseError.MethodIsNotImplemented(__class__, "run")
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
