@@ -4146,7 +4146,7 @@ print('b', file=sys.stderr)
                 cmd,
                 text=popen_data.param_text,
                 encoding=popen_data.param_encoding,
-                stdin = tmp_stdin,
+                stdin=tmp_stdin,
             ) as controller,
         ):
             assert isinstance(controller, OsProcessController)
