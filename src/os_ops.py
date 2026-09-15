@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from .types import T_OS_CMD
+from .types import T_OS_SIGNAL
+from .types import T_OS_TIMEOUT
+from .types import T_OS_IO
+from .types import T_OS_IO_ID
 from .raise_error import RaiseError
 
 import locale
@@ -37,6 +42,94 @@ def get_default_encoding():
     return locale.getencoding() or 'UTF-8'
 
 
+class OsProcessController:
+    def __enter__(self) -> OsProcessController:
+        RaiseError.PropertyIsNotImplemented(__class__, "__enter__")
+
+    def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
+        RaiseError.PropertyIsNotImplemented(__class__, "__exit__")
+
+    @property
+    def args(self) -> T_OS_CMD:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_args")
+
+    @property
+    def pid(self) -> int:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_pid")
+
+    @property
+    def stdin(self) -> typing.Optional[T_OS_IO]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_stdin")
+
+    @property
+    def stdout(self) -> typing.Optional[T_OS_IO]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_stdout")
+
+    @property
+    def stderr(self) -> typing.Optional[T_OS_IO]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_stderr")
+
+    @property
+    def returncode(self) -> typing.Optional[int]:
+        RaiseError.PropertyIsNotImplemented(__class__, "get_returncode")
+
+    T_COMMUNICATE_RESULT = typing.Union[
+        typing.Tuple[bytes, bytes],
+        typing.Tuple[str, str],
+    ]
+
+    def communicate(
+        self,
+        input=None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None
+    ) -> T_COMMUNICATE_RESULT:
+        assert timeout is not None or type(timeout) in [int, float]
+        RaiseError.MethodIsNotImplemented(__class__, "communicate")
+
+    def send_signal(self, sig: T_OS_SIGNAL) -> None:
+        assert type(sig) in [int, os_signal.Signals]
+        RaiseError.MethodIsNotImplemented(__class__, "send_signal")
+
+    def kill(self) -> None:
+        RaiseError.MethodIsNotImplemented(__class__, "kill")
+
+    def terminate(self) -> None:
+        RaiseError.MethodIsNotImplemented(__class__, "terminate")
+
+    def poll(self) -> typing.Optional[int]:
+        RaiseError.MethodIsNotImplemented(__class__, "poll")
+
+    def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
+        assert timeout is None or type(timeout) in [int, float]
+        RaiseError.MethodIsNotImplemented(__class__, "wait")
+
+
+class OsCommandResult:
+    T_IO_RESULT = typing.Union[str, bytes]
+
+    cmd: T_OS_CMD
+    returncode: int
+    stdout: typing.Optional[T_IO_RESULT]
+    stderr: typing.Optional[T_IO_RESULT]
+
+    def __init__(
+        self,
+        cmd: T_OS_CMD,
+        returncode: int,
+        stdout: typing.Optional[T_IO_RESULT],
+        stderr: typing.Optional[T_IO_RESULT],
+    ):
+        assert type(cmd) in [str, list]
+        assert type(returncode) is int
+        assert stdout is None or type(stdout) in [str, bytes]
+        assert stderr is None or type(stderr) in [str, bytes]
+        self.cmd = cmd
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+        return
+
+
 class OsOperations:
     def __init__(self):
         pass
@@ -70,7 +163,7 @@ class OsOperations:
         RaiseError.MethodIsNotImplemented(__class__, "create_clone")
 
     # Command execution
-    T_CMD = typing.Union[str, typing.List[str]]
+    T_CMD = T_OS_CMD
     T_EXEC_COMMAND_RESULT = typing.Union[
         subprocess.Popen,
         str,
@@ -81,7 +174,7 @@ class OsOperations:
 
     def exec_command(
         self,
-        cmd: T_CMD,
+        cmd: T_OS_CMD,
         wait_exit=False,
         verbose=False,
         expect_error=False,
@@ -108,6 +201,62 @@ class OsOperations:
         assert exec_env is None or type(exec_env) is dict
         assert cwd is None or type(cwd) is str
         RaiseError.MethodIsNotImplemented(__class__, "exec_command")
+
+    T_EXEC_ENV = typing.Dict[str, typing.Optional[str]]
+
+    def popen(
+        self,
+        cmd: T_OS_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None
+    ) -> OsProcessController:
+        assert type(cmd) is str or type(cmd) is list
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert stdin is None or type(stdin) is int or isinstance(stdin, typing.IO)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, typing.IO)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, typing.IO)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+        RaiseError.MethodIsNotImplemented(__class__, "popen")
+
+    T_INPUT = typing.Union[str, bytes, typing.IO[typing.Any]]
+
+    def run(
+        self,
+        cmd: T_OS_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        input: typing.Optional[T_INPUT] = None,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None,
+        check: bool = True,
+    ) -> OsCommandResult:
+        assert type(cmd) in [str, list]
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert input is None or type(input) in [str, bytes] or isinstance(input, typing.IO)
+        assert stdin is None or type(stdin) is int or isinstance(stdin, typing.IO)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, typing.IO)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, typing.IO)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(check) is bool
+        RaiseError.MethodIsNotImplemented(__class__, "run")
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
@@ -326,7 +475,7 @@ class OsOperations:
         RaiseError.MethodIsNotImplemented(__class__, "remove_file")
 
     # Processes control
-    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
+    def kill(self, pid: int, signal: T_OS_SIGNAL) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals

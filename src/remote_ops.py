@@ -14,12 +14,22 @@ import time
 import datetime
 import shlex
 import threading
+import warnings
 
 from .exceptions import ExecUtilException
+from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
 from .os_ops import OsOperations, ConnectionParams, get_default_encoding
+from .os_ops import OsProcessController
+from .os_ops import OsCommandResult
+from .os_ops import T_OS_CMD
+from .os_ops import T_OS_SIGNAL
+from .os_ops import T_OS_TIMEOUT
+from .os_ops import T_OS_IO
+from .os_ops import T_OS_IO_ID
 from .raise_error import RaiseError
 from .helpers import Helpers
+from .static_config import OsOperationStaticConfig
 
 
 class PsUtilProcessProxy:
@@ -46,7 +56,236 @@ class PsUtilProcessProxy:
         return cmdline.split()
 
 
+class RemoteProcessController(OsProcessController):
+    _C_MAX_RESP_RC_FILE_SIZE = 32
+
+    _remote_ops: RemoteOperations
+    _remote_cmd: T_OS_CMD
+    _remote_rc_file: typing.Optional[str]
+    _remote_pid: typing.Optional[int]
+    _remote_rc: typing.Optional[int]
+    _local_process: typing.Optional[subprocess.Popen]
+
+    def __init__(
+        self,
+        remote_ops: RemoteOperations,
+        remote_cmd: T_OS_CMD,
+    ):
+        assert isinstance(remote_ops, RemoteOperations)
+        assert type(remote_cmd) is str or type(remote_cmd) is list
+
+        self._remote_ops = remote_ops
+        self._remote_cmd = copy.copy(remote_cmd)
+        self._remote_rc_file = None
+        self._remote_pid = None
+        self._remote_rc = None
+
+        # IT IS LAST STATEMENT !
+        self._local_process = None
+        return
+
+    def __enter__(self) -> OsProcessController:
+        assert type(self._local_process) is subprocess.Popen
+        self._local_process.__enter__()
+        return self
+
+    def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
+        assert type(self._local_process) is subprocess.Popen
+        assert type(self._remote_rc_file) is str
+        assert self._remote_cmd is not None
+
+        self.wait()
+
+        try:
+            self._local_process.kill()
+        except BaseException as e:
+            msg_lines = []
+
+            msg_lines.append("RemoteProcessController::__exit__ catches an exception ({}): {}".format(
+                type(e).__name__,
+                e,
+            ))
+            msg_lines.append("Remote command is {}".format(
+                self._remote_cmd,
+            ))
+            logging.debug("\n".join(msg_lines))
+
+        self._remote_ops.remove_file(self._remote_rc_file)
+
+        return self._local_process.__exit__(exc_type, value, traceback)
+
+    def __del__(self, _warn=warnings.warn):
+        assert isinstance(_warn, typing.Callable)
+
+        # 1. If the process hasn't even managed to initialize, we do nothing.
+        if not getattr(self, "_local_process", None):
+            return
+
+        if self._local_process is None:
+            return
+
+        # 2. If the process is still active (we did not wait for it to complete)
+        if self._remote_rc is None:
+            # Issue a system warning, just like the standard subprocess module does.
+            if type(self._remote_pid) is int:
+                _warn(
+                    f"Remote process {self._remote_pid} is still running inside RemoteProcessController",
+                    ResourceWarning,
+                    source=self
+                )
+
+            # Issue a system warning, just like the standard subprocess module does.
+            try:
+                if self._local_process.stdin:
+                    self._local_process.stdin.close()
+                if self._local_process.stdout:
+                    self._local_process.stdout.close()
+                if self._local_process.stderr:
+                    self._local_process.stderr.close()
+            except Exception:
+                pass
+
+            # 4. Terminate the local SSH transport.
+            # We do NOT invoke a remote remove_file or kill over the network here,
+            # as the destructor must execute immediately.
+            # However, killing the local SSH client will close the socket,
+            # and the remote shell will eventually close on its own (due to HUP or wait completion).
+            try:
+                self._local_process.kill()
+                # Implementing a fast, non-blocking wait for a local process
+                self._local_process.wait(timeout=0.1)
+            except Exception:
+                pass
+        return
+
+    @property
+    def pid(self) -> int:
+        assert type(self._remote_pid) is int
+        return self._remote_pid
+
+    @property
+    def args(self) -> T_OS_CMD:
+        assert type(self._remote_cmd) is str or type(self._remote_cmd) is list
+        return self._remote_cmd
+
+    @property
+    def stdin(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stdin
+
+    @property
+    def stdout(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stdout
+
+    @property
+    def stderr(self) -> typing.Optional[T_OS_IO]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.stderr
+
+    @property
+    def returncode(self) -> typing.Optional[int]:
+        return self._poll()
+
+    def communicate(
+        self,
+        input=None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None,
+    ) -> OsProcessController.T_COMMUNICATE_RESULT:
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(self._local_process) is subprocess.Popen
+
+        try:
+            return self._local_process.communicate(
+                input=input,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired as e:
+            # Transforming a "foreign" exception into one native to the Testgres architecture
+            raise ExecTimeoutException(
+                cmd=self._remote_cmd,
+                timeout=e.timeout,
+                output=e.output,
+                error=e.stderr,
+                source="RemoteProcessController::communicate",
+            ) from e
+
+    def send_signal(self, sig: T_OS_SIGNAL) -> None:
+        assert type(sig) in [int, os_signal.Signals]
+        assert type(self._local_process) is subprocess.Popen
+        assert type(self._remote_pid) is int
+
+        self._remote_ops.kill(self._remote_pid, sig)
+        return
+
+    def kill(self) -> None:
+        assert type(self._local_process) is subprocess.Popen
+        self.send_signal(os_signal.SIGKILL)
+        return
+
+    def terminate(self) -> None:
+        assert type(self._local_process) is subprocess.Popen
+
+        if self._remote_rc is not None:
+            return
+
+        self.send_signal(os_signal.SIGTERM)
+        return
+
+    def poll(self) -> typing.Optional[int]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._poll()
+
+    def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
+        assert timeout is None or type(timeout) in [int, float]
+
+        start_time = time.monotonic()
+        nPass = 0
+        while True:
+            nPass += 1
+
+            r = self._poll()
+
+            if r is not None:
+                assert type(r) is int
+                return r
+
+            if timeout is not None and (time.monotonic() - start_time) >= timeout:
+                raise ExecTimeoutException(
+                    self._remote_cmd,
+                    timeout=timeout,
+                    source="RemoteProcessController::wait",
+                )
+
+            time.sleep(0.05)
+            continue
+
+    def _poll(self) -> typing.Optional[int]:
+        assert type(self._remote_rc_file) is str
+
+        if self._remote_rc is not None:
+            return self._remote_rc
+
+        # Read the file containing the return code
+        rc_bytes = self._remote_ops.read_binary(
+            self._remote_rc_file,
+            offset=0,
+            size=__class__._C_MAX_RESP_RC_FILE_SIZE,
+        )
+
+        if len(rc_bytes) == __class__._C_MAX_RESP_RC_FILE_SIZE:
+            raise RuntimeError("Responce rc-file [{}] is too long.".format(
+                self._remote_rc_file,
+            ))
+
+        self._remote_rc = self._remote_ops._parse_resp_data(rc_bytes)
+
+        assert self._remote_rc is None or type(self._remote_rc) is int
+        return self._remote_rc
+
+
 class RemoteOperations(OsOperations):
+    _C_MAX_RESP_PID_FILE_SIZE = 32
     _C_EOL = "\n"
 
     T_ENVS = typing.Dict[str, typing.Optional[str]]
@@ -285,6 +524,305 @@ class RemoteOperations(OsOperations):
             return run_r
 
         return run_r[1]
+
+    def popen(
+        self,
+        cmd: OsOperations.T_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[dict] = None,
+        cwd: typing.Optional[str] = None
+    ) -> OsProcessController:
+        assert type(cmd) is str or type(cmd) is list
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert stdin is None or type(stdin) is int or isinstance(stdin, io.IOBase)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, io.IOBase)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, io.IOBase)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+
+        result = RemoteProcessController(
+            self,
+            cmd,
+        )
+
+        # 1. Create a temporary file on the remote machine
+        pid_file = self.mkstemp(prefix="testgres_pid_")
+        assert type(pid_file) is str and pid_file != ""
+
+        try:
+            result._remote_rc_file = self.mkstemp(prefix="testgres_rc_")
+            assert type(result._remote_rc_file) is str and result._remote_rc_file != ""
+
+            cmds = []
+            cmds.append("trap '' HUP")
+
+            if cwd is not None:
+                cmds.append(__class__._build_cmdline(["cd", cwd]))
+
+            assert self._remote_env_guard is not None
+            assert type(self._remote_env) is dict
+
+            exec_env2: typing.Optional[__class__.T_ENVS] = None
+            with self._remote_env_guard:
+                if len(self._remote_env) > 0:
+                    exec_env2 = self._remote_env.copy()
+
+            if exec_env2 is None:
+                exec_env2 = exec_env
+            elif exec_env is not None:
+                exec_env2.update(exec_env)
+
+            # Construct the final command, recording the PID and replacing the process via exec
+            cmd2 = "exec " + __class__._ensure_cmdline(cmd)
+
+            target_cmdline = __class__._build_cmdline(cmd2, exec_env2)
+
+            # Escape the file path for bash
+            q_pid_file = __class__._quote_path(pid_file)
+
+            q_rc_file = __class__._quote_path(result._remote_rc_file)
+
+            handshake_timeout = OsOperationStaticConfig.remote_ops__popen__handshake_timeout
+            assert type(handshake_timeout) is float
+            assert handshake_timeout > 0
+
+            # Поскольку sleep у нас 0.01с, количество итераций — это таймаут * 100
+            handshake_max_iterations = int(handshake_timeout * 100)
+            assert handshake_max_iterations > 0
+
+            # A robust Bash handshake script:
+            # 1. Write the current shell's PID to a file.
+            # 2. Loop while checking only for the file's existence.
+            # 3. If the counter 'i' exceeds 500, it's a timeout; exit with code 1.
+            # 4. Otherwise, sleep for 0.01s and increment the counter.
+            # 5. Once the Python process successfully deletes the file, execute the target command.
+            ping_pong_script_s = (
+                f"printf \"%s!\" \"$$\" > {q_pid_file} && "
+                f"i=0 && "
+                f"while [ -f {q_pid_file} ]; do "
+                f"if [ $i -ge {handshake_max_iterations} ]; then "
+                f"printf \"testgres error: popen handshake timeout expired\\n\" >&2; "
+                f"exit 1; "
+                f"fi; "
+                f"sleep 0.01; i=$((i+1)); "
+                f"done && "
+                f"{target_cmdline}"
+            )
+
+            ping_pong_script2 = [
+                "sh",
+                "-c",
+                ping_pong_script_s,
+            ]
+
+            ping_pong_script2_s = self._join_command_arguments(
+                ping_pong_script2
+            )
+
+            # Run script within isolated env to get a true return codes of kill/terminate
+            final_script_s = (
+                f"({ping_pong_script2_s}); "
+                f"printf \"%s!\" \"$?\" > {q_rc_file};"
+            )
+
+            cmds.append("(" + final_script_s + ")")
+
+            cmdline = " && ".join(cmds)
+
+            assert type(self._ssh_cmd) is list
+            assert len(self._ssh_cmd) > 0
+            ssh_cmd = self._ssh_cmd + [cmdline]
+
+            if encoding is not None and text is None:
+                text = True
+
+            # 2. Run a local SSH client in the background
+            result._local_process = subprocess.Popen(
+                ssh_cmd,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                text=text,
+                encoding=encoding,
+                shell=False,
+            )
+            assert result._local_process is not None
+            assert type(result._local_process) is subprocess.Popen
+
+            # 3. Wait for the PID file to appear and be populated on the remote side.
+
+            # A short wait loop (up to 5 seconds; 0.05s is usually sufficient)
+            start_time = time.monotonic()
+            nPass = 0
+            while True:
+                if result._remote_pid is not None:
+                    break
+
+                if time.monotonic() - start_time < handshake_timeout:
+                    pass
+                elif nPass < 10:
+                    pass
+                else:
+                    # If the PID could not be read, something went seriously wrong
+                    # (e.g., the SSH connection dropped).
+                    raise RuntimeError("Failed to retrieve remote process PID via temporary file.")
+
+                nPass += 1
+
+                if nPass > 1:
+                    time.sleep(0.05)
+
+                # Reading the file contents
+                pid_bytes = self.read_binary(
+                    pid_file,
+                    offset=0,
+                    size=__class__._C_MAX_RESP_PID_FILE_SIZE,
+                )
+                assert type(pid_bytes) is bytes
+
+                if len(pid_bytes) == __class__._C_MAX_RESP_PID_FILE_SIZE:
+                    raise RuntimeError("Responce pid-file [{}] is too long.".format(
+                        pid_file,
+                    ))
+
+                result._remote_pid = __class__._parse_resp_data(
+                    pid_bytes,
+                )
+                continue
+
+        except BaseException:
+            p = result._local_process
+            result._local_process = None
+            if p is not None:
+                with p:
+                    p.kill()
+            raise
+        finally:
+            # 4. Delete the temporary file; we no longer need it.
+            try:
+                self.remove_file(pid_file)
+            except BaseException:
+                p = result._local_process
+                result._local_process = None
+                if p is not None:
+                    with p:
+                        p.kill()
+                raise
+
+        assert type(result._local_process) is subprocess.Popen
+        assert type(result._remote_pid) is int
+
+        # 5. Putting back our brand-new control controller
+        return result
+
+    def run(
+        self,
+        cmd: T_OS_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        input: typing.Optional[OsOperations.T_INPUT] = None,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None,
+        timeout: typing.Optional[T_OS_TIMEOUT] = None,
+        check: bool = True,
+    ) -> OsCommandResult:
+        assert type(cmd) in [str, list]
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert input is None or type(input) in [str, bytes] or isinstance(input, io.IOBase)
+        assert stdin is None or type(stdin) is int or isinstance(stdin, io.IOBase)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, io.IOBase)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, io.IOBase)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+        assert timeout is None or type(timeout) in [int, float]
+        assert type(check) is bool
+
+        controller = self.popen(
+            cmd=cmd,
+            text=text,
+            encoding=encoding,
+            shell=shell,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            exec_env=exec_env,
+            cwd=cwd,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            try:
+                communicate_r = controller.communicate(
+                    input=input,
+                    timeout=timeout,
+                )
+            except BaseException:
+                controller.kill()
+                raise
+
+            assert type(communicate_r) is tuple
+            assert len(communicate_r) == 2
+
+            rc = controller.returncode
+            assert type(rc) is int
+
+            result = OsCommandResult(
+                cmd=cmd,
+                returncode=rc,
+                stdout=communicate_r[0],
+                stderr=communicate_r[1],
+            )
+
+        if result.returncode == 0:
+            pass
+        elif check:
+            RaiseError.UtilityExitedWithNonZeroCode(
+                cmd=cmd,
+                exit_code=result.returncode,
+                msg_arg=result.stderr,
+                error=result.stderr,
+                out=result.stdout,
+            )
+
+        return result
+
+    @staticmethod
+    def _parse_resp_data(data: bytes) -> typing.Optional[int]:
+        assert type(data) is bytes
+
+        i = 0
+        c = len(data)
+
+        while True:
+            if i == c:
+                return None
+
+            b = data[i]
+            assert type(b) is int
+
+            if (b >= ord('0') and b <= ord('9')):
+                i += 1
+                continue
+
+            if b == ord('!') and i > 0 and (i + 1) == c:
+                return int(data[:i])
+
+            raise RuntimeError("[BUG CHECK] Bad data in pid responsed file: {!r}.".format(
+                data,
+            ))
 
     def build_path(self, a: str, *parts: str) -> str:
         assert a is not None
@@ -1004,7 +1542,7 @@ class RemoteOperations(OsOperations):
         return
 
     # Processes control
-    def kill(self, pid: int, signal: typing.Union[int, os_signal.Signals]) -> None:
+    def kill(self, pid: int, signal: T_OS_SIGNAL) -> None:
         # Kill the process
         assert type(pid) is int
         assert type(signal) is int or type(signal) is os_signal.Signals
