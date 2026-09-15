@@ -167,7 +167,7 @@ class OsOperations:
         RaiseError.MethodIsNotImplemented(__class__, "reset_env")
 
     def get_user(self) -> typing.Optional[str]:
-        RaiseError.MethodIsNotImplemented(__class__, "get_user")
+        return self.username
 
     def get_name(self) -> str:
         RaiseError.MethodIsNotImplemented(__class__, "get_name")
