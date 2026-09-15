@@ -4309,6 +4309,104 @@ print('b', file=sys.stderr)
             assert isinstance(controller, OsProcessController)
 
             with controller:
+                controller.wait()
+                returncode = controller.returncode
+                assert returncode == rc
+                assert controller.stderr is not None
+                v = controller.stderr.read()
+                assert len(v) == 0
+
+                assert controller.stdout is not None
+                v = controller.stdout.read()
+                assert len(v) == 0
+                pass
+            continue
+
+        return
+
+    def test_popen_returncode_active(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_data_wait_timeout: tagPOpenWaitTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+        assert type(fx_data_wait_timeout) is __class__.tagPOpenWaitTestData
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        logging.info("cmd={}".format(
+            fx_data_wait_timeout.cmd,
+        ))
+
+        controller = os_ops.popen(
+            fx_data_wait_timeout.cmd,
+            shell=type(fx_data_wait_timeout.cmd) is str
+        )
+
+        assert isinstance(controller, OsProcessController)
+        assert controller.args == fx_data_wait_timeout.cmd
+        assert type(controller.args) is type(fx_data_wait_timeout.cmd)
+        # it must be a copy
+        if type(controller.args) is str:
+            pass
+        else:
+            assert controller.args is not fx_data_wait_timeout.cmd
+            pass
+
+        with controller:
+            try:
+                logging.info("controller.pid={}".format(
+                    controller.pid,
+                ))
+
+                assert controller.returncode is None
+                pass
+            finally:
+                logging.info("kill")
+                controller.kill()
+            pass
+            logging.info("EXIT1")
+            exit1_ts = time.monotonic()
+
+        logging.info("EXIT2")
+        exit2_ts = time.monotonic()
+
+        assert exit1_ts <= exit2_ts
+
+        duration = exit2_ts - exit1_ts
+
+        if 15 < duration:
+            raise RuntimeError("Test stops too long - {} second(s).".format(
+                duration,
+            ))
+
+        return
+
+    def test_popen_wait_returncode(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        for rc in range(256):
+            logging.info("test result code {}".format(rc))
+
+            cmd = ["sh", "-c", "exit {}".format(rc)]
+
+            controller = os_ops.popen(cmd)
+            assert isinstance(controller, OsProcessController)
+
+            with controller:
                 returncode = controller.wait()
                 assert returncode == rc
                 assert controller.stderr is not None
