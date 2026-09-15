@@ -133,6 +133,10 @@ class LocalProcessController(OsProcessController):
         self.send_signal(os_signal.SIGTERM)
         return
 
+    def poll(self) -> typing.Optional[int]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._local_process.poll()
+
     def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
         assert timeout is None or type(timeout) in [int, float]
         assert type(self._local_process) is subprocess.Popen

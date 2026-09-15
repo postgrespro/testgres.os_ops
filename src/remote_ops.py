@@ -183,17 +183,7 @@ class RemoteProcessController(OsProcessController):
 
     @property
     def returncode(self) -> typing.Optional[int]:
-        assert type(self._local_process) is subprocess.Popen
-
-        rc: typing.Optional[int] = None
-
-        try:
-            rc = self.wait(0)
-        except ExecTimeoutException:
-            pass
-
-        assert rc is None or type(rc) is int
-        return rc
+        return self._poll()
 
     def communicate(
         self,
@@ -240,34 +230,23 @@ class RemoteProcessController(OsProcessController):
         self.send_signal(os_signal.SIGTERM)
         return
 
+    def poll(self) -> typing.Optional[int]:
+        assert type(self._local_process) is subprocess.Popen
+        return self._poll()
+
     def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
         assert timeout is None or type(timeout) in [int, float]
-        assert type(self._remote_rc_file) is str
-
-        if self._remote_rc is not None:
-            return self._remote_rc
 
         start_time = time.monotonic()
         nPass = 0
         while True:
             nPass += 1
 
-            # Читаем файл с кодом возврата
-            rc_bytes = self._remote_ops.read_binary(
-                self._remote_rc_file,
-                offset=0,
-                size=__class__._C_MAX_RESP_RC_FILE_SIZE,
-            )
+            r = self._poll()
 
-            if len(rc_bytes) == __class__._C_MAX_RESP_RC_FILE_SIZE:
-                raise RuntimeError("Responce rc-file [{}] is too long.".format(
-                    self._remote_rc_file,
-                ))
-
-            self._remote_rc = self._remote_ops._parse_resp_data(rc_bytes)
-
-            if self._remote_rc is not None:
-                break
+            if r is not None:
+                assert type(r) is int
+                return r
 
             if timeout is not None and (time.monotonic() - start_time) >= timeout:
                 raise ExecTimeoutException(
@@ -279,7 +258,27 @@ class RemoteProcessController(OsProcessController):
             time.sleep(0.05)
             continue
 
-        assert type(self._remote_rc) is int
+    def _poll(self) -> typing.Optional[int]:
+        assert type(self._remote_rc_file) is str
+
+        if self._remote_rc is not None:
+            return self._remote_rc
+
+        # Read the file containing the return code
+        rc_bytes = self._remote_ops.read_binary(
+            self._remote_rc_file,
+            offset=0,
+            size=__class__._C_MAX_RESP_RC_FILE_SIZE,
+        )
+
+        if len(rc_bytes) == __class__._C_MAX_RESP_RC_FILE_SIZE:
+            raise RuntimeError("Responce rc-file [{}] is too long.".format(
+                self._remote_rc_file,
+            ))
+
+        self._remote_rc = self._remote_ops._parse_resp_data(rc_bytes)
+
+        assert self._remote_rc is None or type(self._remote_rc) is int
         return self._remote_rc
 
 

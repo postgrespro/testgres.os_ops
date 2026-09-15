@@ -96,6 +96,9 @@ class OsProcessController:
     def terminate(self) -> None:
         RaiseError.MethodIsNotImplemented(__class__, "terminate")
 
+    def poll(self) -> typing.Optional[int]:
+        RaiseError.MethodIsNotImplemented(__class__, "poll")
+
     def wait(self, timeout: typing.Optional[T_OS_TIMEOUT] = None) -> int:
         assert timeout is None or type(timeout) in [int, float]
         RaiseError.MethodIsNotImplemented(__class__, "wait")
