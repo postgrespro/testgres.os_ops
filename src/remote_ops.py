@@ -789,7 +789,7 @@ class RemoteOperations(OsOperations):
             RaiseError.UtilityExitedWithNonZeroCode(
                 cmd=cmd,
                 exit_code=result.returncode,
-                msg_arg=None,
+                msg_arg=result.stderr,
                 error=result.stderr,
                 out=result.stdout,
             )

@@ -6099,6 +6099,100 @@ print('b', file=sys.stderr)
         assert result.stderr == ""
         return
 
+    def test_run_check_exception2__list(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        cmd = ["sh", "-c", "echo normal_out && echo error_err >&2 && exit 1"]
+
+        # 1. Check default behavior (check=True)
+        with pytest.raises(expected_exception=ExecUtilException) as x:
+            os_ops.run(cmd, text=True, encoding="utf-8", check=True)
+
+        assert x.type is ExecUtilException
+        assert type(x.value.out) is str
+        assert type(x.value.error) is str
+        assert x.value.exit_code == 1
+        assert x.value.out == "normal_out\n"
+        assert x.value.error == "error_err\n"
+        assert x.value.command == cmd
+        assert type(x.value.description) is str
+        assert x.value.description == (
+            """Utility exited with non-zero code (1). Error: `error_err`"""
+        )
+        assert type(x.value.message) is str
+        assert x.value.message == (
+            """Utility exited with non-zero code (1). Error: `error_err`\n"""
+            """Command: sh -c echo normal_out && echo error_err >&2 && exit 1\n"""
+            """Exit code: 1\n"""
+            """---- Error:\n"""
+            """error_err\n"""
+            """\n"""
+            """---- Out:\n"""
+            """normal_out\n"""
+        )
+
+        # 2. Test the negative scenario with validation disabled (check=False)
+        result = os_ops.run(cmd, text=True, encoding="utf-8", check=False)
+
+        assert isinstance(result, OsCommandResult)
+        assert result.returncode == 1
+        assert type(result.stdout) is str
+        assert type(result.stderr) is str
+        assert result.stdout == "normal_out\n"
+        assert result.stderr == "error_err\n"
+        return
+
+    def test_run_check_exception3__str(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        cmd = "sh -c \"echo normal_out && echo error_err >&2 && exit 1\""
+
+        # 1. Check default behavior (check=True)
+        with pytest.raises(expected_exception=ExecUtilException) as x:
+            os_ops.run(cmd, text=True, encoding="utf-8", shell=True, check=True)
+
+        assert x.type is ExecUtilException
+        assert type(x.value.out) is str
+        assert type(x.value.error) is str
+        assert x.value.exit_code == 1
+        assert x.value.out == "normal_out\n"
+        assert x.value.error == "error_err\n"
+        assert x.value.command == cmd
+        assert type(x.value.description) is str
+        assert x.value.description == (
+            """Utility exited with non-zero code (1). Error: `error_err`"""
+        )
+        assert type(x.value.message) is str
+        assert x.value.message == (
+            """Utility exited with non-zero code (1). Error: `error_err`\n"""
+            """Command: sh -c \"echo normal_out && echo error_err >&2 && exit 1\"\n"""
+            """Exit code: 1\n"""
+            """---- Error:\n"""
+            """error_err\n"""
+            """\n"""
+            """---- Out:\n"""
+            """normal_out\n"""
+        )
+
+        # 2. Test the negative scenario with validation disabled (check=False)
+        result = os_ops.run(cmd, text=True, encoding="utf-8", shell=True, check=False)
+
+        assert isinstance(result, OsCommandResult)
+        assert result.returncode == 1
+        assert type(result.stdout) is str
+        assert type(result.stderr) is str
+        assert result.stdout == "normal_out\n"
+        assert result.stderr == "error_err\n"
+        return
+
     @staticmethod
     def helper__get_os_ops(
         use_clone: bool,
