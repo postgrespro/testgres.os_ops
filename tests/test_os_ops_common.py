@@ -4799,6 +4799,7 @@ print('b', file=sys.stderr)
             r = controller.wait()
             assert controller.stdout is not None
             s = controller.stdout.read()
+            assert s == ""
             assert controller.stderr is not None
             s = controller.stderr.read()
             assert s == ""
