@@ -4169,6 +4169,7 @@ print('b', file=sys.stderr)
     )
     def popen_data2(self, request: pytest.FixtureRequest) -> tagPOpenTestData2:
         assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param).__name__ == "tagPOpenTestData2"
         return request.param
 
     def test_popen_stderr_and_stdout(
@@ -4201,7 +4202,7 @@ print('b', file=sys.stderr)
             v1 = controller.stdout.read()
             assert type(v1) is type(popen_data2.expected_result1)
             assert len(v1) > 0
-            logging.info("stderr: {!r}".format(v1))
+            logging.info("stdout: {!r}".format(v1))
             assert v1 == popen_data2.expected_result1
 
             assert controller.stderr is not None
