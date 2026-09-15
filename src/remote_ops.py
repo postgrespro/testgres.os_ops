@@ -21,7 +21,7 @@ from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
 from .os_ops import OsOperations, ConnectionParams, get_default_encoding
 from .os_ops import OsProcessController
-from .os_ops import T_CMD
+from .os_ops import T_OS_CMD
 from .os_ops import T_OS_SIGNAL
 from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
@@ -58,7 +58,7 @@ class RemoteProcessController(OsProcessController):
     _C_MAX_RESP_RC_FILE_SIZE = 32
 
     _remote_ops: RemoteOperations
-    _remote_cmd: T_CMD
+    _remote_cmd: T_OS_CMD
     _remote_rc_file: typing.Optional[str]
     _remote_pid: typing.Optional[int]
     _remote_rc: typing.Optional[int]
@@ -67,7 +67,7 @@ class RemoteProcessController(OsProcessController):
     def __init__(
         self,
         remote_ops: RemoteOperations,
-        remote_cmd: T_CMD,
+        remote_cmd: T_OS_CMD,
     ):
         assert isinstance(remote_ops, RemoteOperations)
         assert type(remote_cmd) is str or type(remote_cmd) is list
@@ -162,7 +162,7 @@ class RemoteProcessController(OsProcessController):
         return self._remote_pid
 
     @property
-    def args(self) -> T_CMD:
+    def args(self) -> T_OS_CMD:
         assert type(self._remote_cmd) is str or type(self._remote_cmd) is list
         return self._remote_cmd
 

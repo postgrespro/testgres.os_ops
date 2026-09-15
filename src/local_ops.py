@@ -25,7 +25,7 @@ from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
 from .os_ops import ConnectionParams, OsOperations, get_default_encoding
 from .os_ops import OsProcessController
-from .os_ops import T_CMD
+from .os_ops import T_OS_CMD
 from .os_ops import T_OS_SIGNAL
 from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
@@ -40,12 +40,12 @@ CMD_TIMEOUT_SEC = 60
 
 
 class LocalProcessController(OsProcessController):
-    _cmd: T_CMD
+    _cmd: T_OS_CMD
     _local_process: typing.Optional[subprocess.Popen]
 
     def __init__(
         self,
-        cmd: T_CMD,
+        cmd: T_OS_CMD,
     ):
         assert type(cmd) is str or type(cmd) is list
 
@@ -65,7 +65,7 @@ class LocalProcessController(OsProcessController):
         return self._local_process.__exit__(exc_type, value, traceback)
 
     @property
-    def args(self) -> T_CMD:
+    def args(self) -> T_OS_CMD:
         assert type(self._cmd) is str or type(self._cmd) is list
         return self._cmd
 
