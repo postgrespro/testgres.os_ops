@@ -183,6 +183,17 @@ class TestOsOpsCommon:
         assert v is None or type(v) is str
         return
 
+    def test_prop__get_user(self, os_ops_descr: OsOpsDescr):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        v = os_ops.get_user()
+        assert v is None or type(v) is str
+        return
+
     def test_get_platform(self, os_ops_descr: OsOpsDescr):
         assert type(os_ops_descr) is OsOpsDescr
         assert isinstance(os_ops_descr.os_ops, OsOperations)
