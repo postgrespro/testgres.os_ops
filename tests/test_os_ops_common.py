@@ -4114,6 +4114,59 @@ print('b', file=sys.stderr)
 
         return
 
+    def test_popen_stdin_stream(
+        self,
+        os_ops_descr: OsOpsDescr,
+        popen_data: tagPOpenTestData,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        file_mode = "w+t" if popen_data.param_text or popen_data.param_encoding else "w+b"
+
+        def LOCAL_f(data):
+            f = tempfile.TemporaryFile(
+                mode=file_mode,
+                encoding=popen_data.param_encoding,
+            )
+            f.write(data)
+            f.seek(0)
+            return f
+
+        with (
+            LOCAL_f(popen_data.expected_result) as tmp_stdin,
+            os_ops.popen(
+                cmd,
+                text=popen_data.param_text,
+                encoding=popen_data.param_encoding,
+                stdin = tmp_stdin,
+            ) as controller,
+        ):
+            assert isinstance(controller, OsProcessController)
+
+            returncode = controller.wait()
+            assert returncode == 0
+            assert controller.stdout is not None
+            v = controller.stdout.read()
+            assert type(v) is type(popen_data.expected_result)
+            assert len(v) > 0
+            logging.info("stdout: {!r}".format(v))
+            assert v == popen_data.expected_result
+
+            assert controller.stderr is not None
+            x = controller.stderr.read()
+            assert len(x) == 0
+            pass
+
+        return
+
     @dataclasses.dataclass
     class tagPOpenTestData2:
         param_text: typing.Optional[bool]
