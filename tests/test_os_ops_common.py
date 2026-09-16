@@ -2860,6 +2860,8 @@ print('b', file=sys.stderr)
         logging.info(f"Parent PID from stdout: {parent_pid}")
         logging.info(f"Expected Child PID from stdout: {expected_child_pid}")
 
+        assert parent_pid == p1.pid
+
         # A short pause to ensure registration in the OS
         # time.sleep(0.5)
 
@@ -2942,6 +2944,8 @@ print('b', file=sys.stderr)
 
         # A short pause to ensure registration in the OS
         # time.sleep(0.5)
+
+        assert parent_pid == p.pid
 
         childs = os_ops.get_process_children(parent_pid)
 
