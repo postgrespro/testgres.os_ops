@@ -2911,9 +2911,9 @@ print('b', file=sys.stderr)
         script = (
             "import time, os, subprocess; "
             "s = str(os.getpid()); "
-            "p1 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
-            "p2 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
-            "p3 = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
+            "p1 = subprocess.Popen(['sleep', '60'], shell=False, stdout=subprocess.PIPE); "
+            "p2 = subprocess.Popen(['sleep', '60'], shell=False, stdout=subprocess.PIPE); "
+            "p3 = subprocess.Popen(['sleep', '60'], shell=False, stdout=subprocess.PIPE); "
             "s += ':' + str(p1.pid) + ':' + str(p2.pid) + ':' + str(p3.pid); "
             "print(s, flush=True); "
             "time.sleep(60)"
@@ -2953,6 +2953,29 @@ print('b', file=sys.stderr)
         logging.info(f"Actual Child PIDs: {actual_child_pids}")
 
         assert actual_child_pids == expected_child_pids
+
+        for i in range(len(childs)):
+            child_cmdline = childs[i].cmdline()
+
+            logging.info("child cmdline: {}".format(
+                child_cmdline,
+            ))
+            assert type(child_cmdline) is list
+
+            if child_cmdline == ["sleep", "60"]:
+                pass
+            elif child_cmdline == ['/usr/bin/coreutils', '--coreutils-prog-shebang=sleep', '/usr/bin/sleep', '60']:
+                # Rocky Linux
+                pass
+            elif child_cmdline == ['/bin/sh', '-c', 'exec sleep 60']:
+                # Rocky Linux 10 (GitHub CI)
+                pass
+            else:
+                logging.error("Unknown child[{}] cmdline {}".format(
+                    i,
+                    child_cmdline,
+                ))
+            continue
 
         p.terminate()
         p.wait()
