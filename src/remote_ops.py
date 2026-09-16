@@ -921,39 +921,35 @@ class RemoteOperations(OsOperations):
 
         command = "test -x " + __class__._quote_path(file)
 
-        exec_r = self.exec_command(
+        exec_r = self._transport_run(
             cmd=command,
             encoding=get_default_encoding(),
-            ignore_errors=True,
-            verbose=True,
+            check=False,
         )
 
-        assert type(exec_r) is tuple
-        assert len(exec_r) == 3
+        assert type(exec_r) is __class__.tagTransportRunResult
 
-        exit_status, output, error = exec_r
+        assert type(exec_r.returncode) is int
+        assert type(exec_r.stdout) is str
+        assert type(exec_r.stderr) is str
 
-        assert type(exit_status) is int
-        assert type(output) is str
-        assert type(error) is str
-
-        if exit_status == 0:
+        if exec_r.returncode == 0:
             return True
 
-        if exit_status == 1:
+        if exec_r.returncode == 1:
             return False
 
         errMsg = "Test operation returns an unknown result code: {0}. File name is [{1}].".format(
-            exit_status,
+            exec_r.returncode,
             file,
         )
 
         RaiseError.CommandExecutionError(
             cmd=command,
-            exit_code=exit_status,
+            exit_code=exec_r.returncode,
             message=errMsg,
-            error=error,
-            out=output
+            error=exec_r.stderr,
+            out=exec_r.stdout,
         )
 
     def set_env(
