@@ -1558,29 +1558,22 @@ class RemoteOperations(OsOperations):
     def get_process_children(self, pid: int) -> typing.List:
         assert type(pid) is int
 
-        exec_r = self.exec_command(
+        exec_r = self._transport_run(
             [
                 "sh", "-c",
                 "[ -d /proc/{0} ] || exit 100; pgrep -P {0}".format(pid),
             ],
             encoding=get_default_encoding(),
-            verbose=True,
-            ignore_errors=True,
+            check=False,
         )
 
-        assert type(exec_r) is tuple
-        assert len(exec_r) == 3
-        assert type(exec_r[0]) is int
-        assert type(exec_r[1]) is str
-        assert type(exec_r[2]) is str
+        assert type(exec_r) is __class__.tagTransportRunResult
 
-        exit_code, stdout, stderr = exec_r
+        assert type(exec_r.returncode) is int
+        assert type(exec_r.stdout) is str
+        assert type(exec_r.stderr) is str
 
-        assert type(exit_code) is int
-        assert type(stdout) is str
-        assert type(stderr) is str
-
-        if exit_code == 100:
+        if exec_r.returncode == 100:
             err_msg = "Failed to get process children. Reason: No such process with PID {}.".format(
                 pid
             )
@@ -1590,8 +1583,8 @@ class RemoteOperations(OsOperations):
                 exit_code=1,  # ERR: NOT FOUND
             )
 
-        if exit_code == 0:
-            stdout_clean = stdout.strip()
+        if exec_r.returncode == 0:
+            stdout_clean = exec_r.stdout.strip()
             if not stdout_clean:
                 return []
             return [
@@ -1599,19 +1592,19 @@ class RemoteOperations(OsOperations):
                 for child_pid in stdout_clean.splitlines()
             ]
 
-        if exit_code == 1:
-            if not stderr.strip():
+        if exec_r.returncode == 1:
+            if not exec_r.stderr.strip():
                 # pgrep returns 1 when no children are found
                 return []
 
-        error_msg = stderr.strip() or "command exited with code {}".format(exit_code)  # noqa: E501
+        error_msg = exec_r.stderr.strip() or "command exited with code {}".format(exec_r.returncode)  # noqa: E501
 
         raise ExecUtilException(
             "Failed to get process children for PID {}. Reason: {}".format(
                 pid,
                 error_msg,
             ),
-            exit_code=exit_code,
+            exit_code=exec_r.returncode,
         )
 
     def is_port_free(self, number: int) -> bool:
