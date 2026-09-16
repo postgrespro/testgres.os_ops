@@ -2874,6 +2874,14 @@ print('b', file=sys.stderr)
 
         assert actual_child_pid == expected_child_pid
 
+        child_cmdline = childs[0].cmdline()
+
+        logging.info("child cmdline: {}".format(
+            childs[0].cmdline(),
+        ))
+        assert type(child_cmdline) is list
+        assert child_cmdline == ["sleep", "60"]
+
         p1.terminate()
         p1.wait()
         return
