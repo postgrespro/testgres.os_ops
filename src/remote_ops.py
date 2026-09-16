@@ -898,7 +898,7 @@ class RemoteOperations(OsOperations):
 
     def cwd(self) -> str:
         cmd = 'pwd'
-        stdout = self.exec_command(cmd, encoding=get_default_encoding())
+        stdout = self._transport_run(cmd, encoding=get_default_encoding()).stdout
         assert type(stdout) is str
         return stdout.rstrip()
 
