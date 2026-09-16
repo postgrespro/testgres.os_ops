@@ -5,6 +5,7 @@ from .types import T_OS_SIGNAL
 from .types import T_OS_TIMEOUT
 from .types import T_OS_IO
 from .types import T_OS_IO_ID
+from .types import T_OS_RUN_INPUT
 from .raise_error import RaiseError
 
 import locale
@@ -80,9 +81,10 @@ class OsProcessController:
 
     def communicate(
         self,
-        input=None,
+        input: typing.Optional[T_OS_RUN_INPUT] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None
     ) -> T_COMMUNICATE_RESULT:
+        assert input is None or type(input) in [str, bytes]
         assert timeout is not None or type(timeout) in [int, float]
         RaiseError.MethodIsNotImplemented(__class__, "communicate")
 
@@ -227,15 +229,13 @@ class OsOperations:
         assert cwd is None or type(cwd) is str
         RaiseError.MethodIsNotImplemented(__class__, "popen")
 
-    T_INPUT = typing.Union[str, bytes, typing.IO[typing.Any]]
-
     def run(
         self,
         cmd: T_OS_CMD,
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        input: typing.Optional[T_INPUT] = None,
+        input: typing.Optional[T_OS_RUN_INPUT] = None,
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
@@ -248,7 +248,7 @@ class OsOperations:
         assert text is None or type(text) is bool
         assert encoding is None or type(encoding) is str
         assert type(shell) is bool
-        assert input is None or type(input) in [str, bytes] or isinstance(input, typing.IO)
+        assert input is None or type(input) in [str, bytes]
         assert stdin is None or type(stdin) is int or isinstance(stdin, typing.IO)
         assert stdout is None or type(stdout) is int or isinstance(stdout, typing.IO)
         assert stderr is None or type(stderr) is int or isinstance(stderr, typing.IO)

@@ -32,6 +32,7 @@ from .os_ops import T_OS_SIGNAL
 from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
 from .os_ops import T_OS_IO_ID
+from .os_ops import T_OS_RUN_INPUT
 from .raise_error import RaiseError
 from .helpers import Helpers
 
@@ -44,15 +45,19 @@ CMD_TIMEOUT_SEC = 60
 class LocalProcessController(OsProcessController):
     _cmd: T_OS_CMD
     _local_process: typing.Optional[subprocess.Popen]
+    _encoding: typing.Optional[str]
 
     def __init__(
         self,
         cmd: T_OS_CMD,
+        encoding: typing.Optional[str],
     ):
         assert type(cmd) is str or type(cmd) is list
 
         self._cmd = copy.copy(cmd)
         assert type(self._cmd) is type(cmd)
+
+        self._encoding = encoding
 
         self._local_process = None
         return
@@ -98,11 +103,16 @@ class LocalProcessController(OsProcessController):
 
     def communicate(
         self,
-        input=None,
+        input: typing.Optional[T_OS_RUN_INPUT] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None,
     ) -> OsProcessController.T_COMMUNICATE_RESULT:
         assert timeout is None or type(timeout) in [int, float]
         assert type(self._local_process) is subprocess.Popen
+
+        input = Helpers.prepare_process_input(
+            input,
+            self._encoding,
+        )
 
         try:
             return self._local_process.communicate(
@@ -336,7 +346,7 @@ class LocalOperations(OsOperations):
         if not get_process:
             input_prepared = Helpers.prepare_process_input(input, encoding)  # throw
 
-        assert input_prepared is None or type(input_prepared) is bytes
+        assert input_prepared is None or isinstance(input_prepared, bytes)
 
         extParams: typing.Dict[str, typing.Any] = dict()
 
@@ -537,7 +547,10 @@ class LocalOperations(OsOperations):
         if encoding is not None and text is None:
             text = True
 
-        result = LocalProcessController(cmd)
+        result = LocalProcessController(
+            cmd,
+            encoding,
+        )
 
         result._local_process = subprocess.Popen(
             cmd,
@@ -559,7 +572,7 @@ class LocalOperations(OsOperations):
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        input: typing.Optional[OsOperations.T_INPUT] = None,
+        input: typing.Optional[T_OS_RUN_INPUT] = None,
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
@@ -572,7 +585,7 @@ class LocalOperations(OsOperations):
         assert text is None or type(text) is bool
         assert encoding is None or type(encoding) is str
         assert type(shell) is bool
-        assert input is None or type(input) in [str, bytes] or isinstance(input, io.IOBase)
+        assert input is None or type(input) in [str, bytes]
         assert stdin is None or type(stdin) is int or isinstance(stdin, io.IOBase)
         assert stdout is None or type(stdout) is int or isinstance(stdout, io.IOBase)
         assert stderr is None or type(stderr) is int or isinstance(stderr, io.IOBase)

@@ -1,5 +1,16 @@
+from __future__ import annotations
+
+from .types import T_OS_RUN_INPUT
+
 import locale
 import typing
+
+
+# Workaround for bug in Popen::_save_input:
+#  it tries to call input.encode when text_mode is true
+class _BinDataBox(bytes):
+    def encode(self, *args, **kwargs) -> _BinDataBox:
+        return self
 
 
 class Helpers:
@@ -41,24 +52,25 @@ class Helpers:
 
     @staticmethod
     def prepare_process_input(
-        input: typing.Optional[typing.Union[str, bytes]],
+        input: typing.Optional[T_OS_RUN_INPUT],
         encoding: typing.Optional[str],
     ) -> typing.Optional[bytes]:
         assert encoding is None or type(encoding) is str
 
-        if not input:
+        if input is None:
             return None
 
         if type(input) is str:
             if encoding is None:
-                return input.encode(__class__.get_default_encoding())
-
-            assert type(encoding) is str
-            return input.encode(encoding)
+                b = input.encode(__class__.get_default_encoding())
+            else:
+                assert type(encoding) is str
+                b = input.encode(encoding)
+            return _BinDataBox(b)
 
         # It is expected!
         assert type(input) is bytes
-        return input
+        return _BinDataBox(input)
 
     # OLD NAMES [DEPRECATED SINCE OS_OPS 3.1.0] -------------------------
 
