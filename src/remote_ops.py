@@ -1374,7 +1374,7 @@ class RemoteOperations(OsOperations):
 
         cmd = "touch " + __class__._quote_path(filename)
 
-        self.exec_command(cmd, encoding=get_default_encoding())
+        self._transport_run(cmd, encoding=get_default_encoding())
         return
 
     def read(
