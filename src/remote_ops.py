@@ -1502,7 +1502,7 @@ class RemoteOperations(OsOperations):
         assert type(filename_q) is str
 
         cmd = "test -f {}; echo $?".format(filename_q)
-        stdout = self.exec_command(cmd)
+        stdout = self._transport_run(cmd).stdout
         assert type(stdout) is bytes
         result = int(stdout.strip())
         return result == 0
