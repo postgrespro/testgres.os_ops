@@ -2832,7 +2832,7 @@ print('b', file=sys.stderr)
         script = (
             "import time, os, subprocess; "
             "s = str(os.getpid()); "
-            "p = subprocess.Popen('exec sleep 60', shell=True, stdout=subprocess.PIPE); "
+            "p = subprocess.Popen(['sleep', '60'], shell=False, stdout=subprocess.PIPE); "
             "s += ':' + str(p.pid); "
             "print(s, flush=True); "
             "time.sleep(60)"
