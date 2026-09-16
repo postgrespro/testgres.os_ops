@@ -1730,7 +1730,7 @@ class RemoteOperations(OsOperations):
         cmd = "stat -c '%s|%Y' " + filename_q
 
         # exec_command will throw ExecUtilException (e.g. with code 1) if the file does not exist
-        res = self.exec_command(cmd, encoding=get_default_encoding())
+        res = self._transport_run(cmd, encoding=get_default_encoding()).stdout
         assert type(res) is str
 
         parts = res.strip().split("|")
