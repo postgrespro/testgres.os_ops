@@ -1044,7 +1044,7 @@ class RemoteOperations(OsOperations):
     def makedir(self, path: str) -> None:
         assert type(path) is str
         cmd = "mkdir " + __class__._quote_path(path)
-        self.exec_command(cmd, encoding=get_default_encoding())
+        self._transport_run(cmd, encoding=get_default_encoding())
         return
 
     def rmdirs(
