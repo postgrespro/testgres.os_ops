@@ -2874,6 +2874,26 @@ print('b', file=sys.stderr)
 
         assert actual_child_pid == expected_child_pid
 
+        child_cmdline = childs[0].cmdline()
+
+        logging.info("child cmdline: {}".format(
+            child_cmdline,
+        ))
+        assert type(child_cmdline) is list
+
+        if child_cmdline == ["sleep", "60"]:
+            pass
+        elif child_cmdline == ['/usr/bin/coreutils', '--coreutils-prog-shebang=sleep', '/usr/bin/sleep', '60']:
+            # Rocky Linux
+            pass
+        elif child_cmdline == ['/bin/sh', '-c', 'exec sleep 60']:
+            # Rocky Linux 10 (GitHub CI)
+            pass
+        else:
+            raise RuntimeError("Unknown child_cmdline {}".format(
+                child_cmdline,
+            ))
+
         p1.terminate()
         p1.wait()
         return
