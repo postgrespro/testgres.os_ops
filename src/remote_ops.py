@@ -1514,7 +1514,7 @@ class RemoteOperations(OsOperations):
         dirname_q = __class__._quote_path(dirname)
 
         cmd = "if [ -d {} ]; then echo True; else echo False; fi".format(dirname_q)
-        stdout = self.exec_command(cmd)
+        stdout = self._transport_run(cmd).stdout
         assert type(stdout) is bytes
         return stdout.strip() == b"True"
 
