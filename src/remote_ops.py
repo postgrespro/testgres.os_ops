@@ -1710,10 +1710,10 @@ class RemoteOperations(OsOperations):
         #
         # "-m" is used to ignore not exist parts of path
         #
-        r = self.exec_command(
+        r = self._transport_run(
             cmd,
             encoding=get_default_encoding(),
-        )
+        ).stdout
         assert type(r) is str
         r = __class__._strip_last_eol(r)
         assert type(r) is str
