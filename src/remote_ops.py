@@ -544,7 +544,7 @@ class RemoteOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[dict] = None,
+        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> OsProcessController:
         assert type(cmd) is str or type(cmd) is list

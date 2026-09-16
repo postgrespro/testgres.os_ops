@@ -509,7 +509,7 @@ class LocalOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[dict] = None,
+        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> OsProcessController:
         assert text is None or type(text) is bool
