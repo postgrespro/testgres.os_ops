@@ -1631,34 +1631,30 @@ class RemoteOperations(OsOperations):
             grep_cmd_s,
         ]
 
-        exec_r = self.exec_command(
+        exec_r = self._transport_run(
             cmd=cmd,
             encoding=get_default_encoding(),
-            ignore_errors=True,
-            verbose=True,
+            check=False,
         )
 
-        assert type(exec_r) is tuple
-        assert len(exec_r) == 3
-
-        exit_status, output, error = exec_r
+        assert type(exec_r) is __class__.tagTransportRunResult
 
         # grep exit 0 -> port is busy
-        if exit_status == 0:
+        if exec_r.returncode == 0:
             return False
 
         # grep exit 1 -> port is free
-        if exit_status == 1:
+        if exec_r.returncode == 1:
             return True
 
         # any other code is an unexpected error
-        errMsg = f"grep returned unexpected exit code: {exit_status}"
+        errMsg = f"grep returned unexpected exit code: {exec_r.returncode}"
         raise RaiseError.CommandExecutionError(
             cmd=cmd,
-            exit_code=exit_status,
+            exit_code=exec_r.returncode,
             message=errMsg,
-            error=error,
-            out=output
+            error=exec_r.stderr,
+            out=exec_r.stdout,
         )
 
     def get_tempdir(self) -> str:
