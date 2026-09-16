@@ -1035,7 +1035,7 @@ class RemoteOperations(OsOperations):
 
         cmd = " ".join(cmd_p)
 
-        self.exec_command(
+        self._transport_run(
             cmd,
             encoding=get_default_encoding(),
         )
