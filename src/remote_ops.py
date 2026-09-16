@@ -1334,14 +1334,14 @@ class RemoteOperations(OsOperations):
         # 4. Execute ONE network request
         # Pass final_data to the stdin parameter of the exec_command method
         assert type(final_data) is bytes
-        self.exec_command(
+        self._transport_run(
             remote_cmd,
             input=final_data,
             # It does not touch our binary final_data (see PrepareProcessInput)
             # but allows to generate an error messages as text.
             encoding=get_default_encoding(),
             # Let it crash honestly if there are no rights or the disk is full
-            ignore_errors=False,
+            check=True,
         )
         return
 
