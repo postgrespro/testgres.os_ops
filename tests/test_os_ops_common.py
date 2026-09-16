@@ -2886,6 +2886,9 @@ print('b', file=sys.stderr)
         elif child_cmdline == ['/usr/bin/coreutils', '--coreutils-prog-shebang=sleep', '/usr/bin/sleep', '60']:
             # Rocky Linux
             pass
+        elif child_cmdline == ['/bin/sh', '-c', 'exec sleep 60']:
+            # Rocky Linux 10 (GitHub CI)
+            pass
         else:
             raise RuntimeError("Unknown child_cmdline {}".format(
                 child_cmdline,
