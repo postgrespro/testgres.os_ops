@@ -1092,7 +1092,7 @@ class RemoteOperations(OsOperations):
             assert a < attempts
             a += 1
             try:
-                self.exec_command(
+                self._transport_run(
                     cmd2,
                     encoding=Helpers.get_default_encoding(),
                 )
