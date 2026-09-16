@@ -864,36 +864,32 @@ class RemoteOperations(OsOperations):
 
         cmd = ["printenv", var_name]
 
-        exec_r = self.exec_command(
+        exec_r = self._transport_run(
             cmd,
             encoding=get_default_encoding(),
-            verbose=True,
-            ignore_errors=True,
+            check=False,
         )
 
-        assert type(exec_r) is tuple
-        assert len(exec_r) == 3
+        assert type(exec_r) is __class__.tagTransportRunResult
 
-        exit_code, stdout, stderr = exec_r
+        assert type(exec_r.returncode) is int
+        assert type(exec_r.stdout) is str
+        assert type(exec_r.stderr) is str
 
-        assert type(exit_code) is int
-        assert type(stdout) is str
-        assert type(stderr) is str
+        if exec_r.returncode == 0:
+            return __class__._strip_last_eol(exec_r.stdout)
 
-        if exit_code == 0:
-            return __class__._strip_last_eol(stdout)
-
-        if exit_code == 1:
+        if exec_r.returncode == 1:
             return None
 
         error = "Failed to read environment variable {!r} value.".format(var_name)
 
         RaiseError.UtilityExitedWithNonZeroCode(
             cmd=cmd,
-            exit_code=exit_code,
+            exit_code=exec_r.returncode,
             msg_arg=error,
-            error=stderr,
-            out=stdout,
+            error=exec_r.stderr,
+            out=exec_r.stdout,
         )
 
     def cwd(self) -> str:
