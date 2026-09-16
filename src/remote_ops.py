@@ -1454,7 +1454,7 @@ class RemoteOperations(OsOperations):
             assert type(encoding) is str
             pass
 
-        result = self.exec_command(cmd, encoding=encoding)
+        result = self._transport_run(cmd, encoding=encoding).stdout
         assert result is not None
 
         if binary:
