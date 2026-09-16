@@ -1237,31 +1237,28 @@ class RemoteOperations(OsOperations):
 
         command = " ".join(command_p)
 
-        exec_r = self.exec_command(
+        exec_r = self._transport_run(
             command,
-            verbose=True,
             encoding=get_default_encoding(),
-            ignore_errors=True,
+            check=False,
         )
 
-        assert type(exec_r) is tuple
-        assert len(exec_r) == 3
+        assert type(exec_r) is __class__.tagTransportRunResult
 
-        exec_exitcode, exec_output, exec_error = exec_r
+        assert type(exec_r.returncode) is int
+        assert type(exec_r.stdout) is str
+        assert type(exec_r.stderr) is str
 
-        assert type(exec_exitcode) is int
-        assert type(exec_output) is str
-        assert type(exec_error) is str
-
-        if exec_exitcode != 0:
+        if exec_r.returncode != 0:
             RaiseError.CommandExecutionError(
                 cmd=command,
-                exit_code=exec_exitcode,
+                exit_code=exec_r.returncode,
                 message="Could not create temporary file.",
-                error=exec_error,
-                out=exec_output)
+                error=exec_r.stderr,
+                out=exec_r.stdout,
+            )
 
-        temp_file = exec_output.strip()
+        temp_file = exec_r.stdout.strip()
         return temp_file
 
     def copytree(self, src: str, dst: str) -> str:
