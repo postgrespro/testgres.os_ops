@@ -1275,7 +1275,7 @@ class RemoteOperations(OsOperations):
             __class__._quote_path(src),
             __class__._quote_path(abs_dst),
         )
-        self.exec_command(cmd, encoding=get_default_encoding())
+        self._transport_run(cmd, encoding=get_default_encoding())
         return dst
 
     # Work with files
