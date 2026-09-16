@@ -1801,6 +1801,166 @@ class RemoteOperations(OsOperations):
         self.exec_command(cmd, encoding=get_default_encoding())
         return
 
+    def _transport_popen(
+        self,
+        cmd: T_OS_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None
+    ) -> subprocess.Popen:
+        assert type(cmd) in [str, list]
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert stdin is None or type(stdin) is int or isinstance(stdin, io.IOBase)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, io.IOBase)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, io.IOBase)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+
+        cmds = []
+
+        if cwd is not None:
+            cmds.append(__class__._build_cmdline(["cd", cwd]))
+
+        assert self._remote_env_guard is not None
+        assert type(self._remote_env) is dict
+
+        exec_env2: typing.Optional[__class__.T_ENVS] = None
+        with self._remote_env_guard:
+            if len(self._remote_env) > 0:
+                exec_env2 = self._remote_env.copy()
+
+        if exec_env2 is None:
+            exec_env2 = exec_env
+        elif exec_env is not None:
+            exec_env2.update(exec_env)
+
+        # Construct the final command, recording the PID and replacing the process via exec
+        cmd2 = __class__._ensure_cmdline(cmd)
+
+        target_cmdline = __class__._build_cmdline(cmd2, exec_env2)
+
+        cmds.append(target_cmdline)
+
+        cmdline = " && ".join(cmds)
+
+        assert type(self._ssh_cmd) is list
+        assert len(self._ssh_cmd) > 0
+        ssh_cmd = self._ssh_cmd + [cmdline]
+
+        if encoding is not None and text is None:
+            text = True
+
+        result = subprocess.Popen(
+            ssh_cmd,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            text=text,
+            encoding=encoding,
+            shell=False,
+        )
+
+        assert type(result) is subprocess.Popen
+        return result
+
+    class tagTransportRunResult:
+        T_IO_RESULT = typing.Union[str, bytes]
+
+        returncode: int
+        stdout: T_IO_RESULT
+        stderr: T_IO_RESULT
+
+        def __init__(
+            self,
+            returncode: int,
+            stdout: T_IO_RESULT,
+            stderr: T_IO_RESULT,
+        ):
+            assert type(returncode) is int
+            assert type(stdout) in [str, bytes]
+            assert type(stderr) in [str, bytes]
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+            return
+
+    def _transport_run(
+        self,
+        cmd: T_OS_CMD,
+        text: typing.Optional[bool] = None,
+        encoding: typing.Optional[str] = None,
+        shell: bool = False,
+        input: typing.Optional[T_OS_RUN_INPUT] = None,
+        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        cwd: typing.Optional[str] = None,
+        check: bool = True,
+    ) -> tagTransportRunResult:
+        assert type(cmd) in [str, list]
+        assert text is None or type(text) is bool
+        assert encoding is None or type(encoding) is str
+        assert type(shell) is bool
+        assert input is None or type(input) in [str, bytes]
+        assert stdin is None or type(stdin) is int or isinstance(stdin, io.IOBase)
+        assert stdout is None or type(stdout) is int or isinstance(stdout, io.IOBase)
+        assert stderr is None or type(stderr) is int or isinstance(stderr, io.IOBase)
+        assert exec_env is None or type(exec_env) is dict
+        assert cwd is None or type(cwd) is str
+
+        input = Helpers.prepare_process_input(
+            input,
+            encoding,
+        )
+
+        p = self._transport_popen(
+            cmd,
+            text=text,
+            encoding=encoding,
+            shell=shell,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            exec_env=exec_env,
+            cwd=cwd,
+        )
+        assert type(p) is subprocess.Popen
+
+        with p:
+            communicate_r = p.communicate(input=input)
+            assert type(communicate_r) is tuple
+            assert len(communicate_r) == 2
+
+            returncode = p.returncode
+            assert type(returncode) is int
+
+            result = __class__.tagTransportRunResult(
+                returncode,
+                communicate_r[0],
+                communicate_r[1],
+            )
+
+            if returncode == 0:
+                pass
+            elif check:
+                RaiseError.UtilityExitedWithNonZeroCode(
+                    cmd,
+                    result.returncode,
+                    msg_arg=result.stderr,
+                    error=result.stderr,
+                    out=result.stdout,
+                )
+
+            return result
+
     @staticmethod
     def _build_cmdline(
         cmd,
