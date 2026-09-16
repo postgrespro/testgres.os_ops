@@ -5239,6 +5239,143 @@ print('b', file=sys.stderr)
 
         return
 
+    @dataclasses.dataclass
+    class tagTextParams:
+        text: typing.Optional[bool]
+        encoding: typing.Optional[str]
+
+        @property
+        def sign(self) -> str:
+            return "text={}, encoding={}".format(
+                self.text,
+                self.encoding,
+            )
+
+    sm_text_params: typing.List[tagTextParams] = [
+        tagTextParams(
+            text=None,
+            encoding=None,
+        ),
+        tagTextParams(
+            text=True,
+            encoding=None,
+        ),
+        tagTextParams(
+            text=None,
+            encoding="utf-8",
+        ),
+        tagTextParams(
+            text=True,
+            encoding="utf-8",
+        ),
+        tagTextParams(
+            text=False,
+            encoding=None,
+        ),
+    ]
+
+    @pytest.fixture(
+        params=[
+            pytest.param(
+                x,
+                id=x.sign,
+            )
+            for x in sm_text_params
+        ]
+    )
+    def fx_text_params(self, request: pytest.FixtureRequest) -> tagTextParams:
+        assert isinstance(request, pytest.FixtureRequest)
+        assert type(request.param).__name__ == "tagTextParams"
+        return request.param
+
+    def test_popen_communicate_with_input__bin(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_text_params: tagTextParams,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        controller = os_ops.popen(
+            cmd,
+            text=fx_text_params.text,
+            encoding=fx_text_params.encoding,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            input = b"0" + "1234".encode()
+            assert type(input) is bytes
+            assert len(input) == 5
+            r = controller.communicate(input=input)
+            assert type(r) is tuple
+            assert len(r) == 2
+
+            x = r[0]
+            assert x is not None
+
+            if type(x) is str:
+                b = x.encode()
+            else:
+                assert type(x) is bytes
+                b = x
+
+            assert b == input
+            pass
+
+        return
+
+    def test_popen_communicate_with_input__str(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_text_params: tagTextParams,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        controller = os_ops.popen(
+            cmd,
+            text=fx_text_params.text,
+            encoding=fx_text_params.encoding,
+        )
+        assert isinstance(controller, OsProcessController)
+
+        with controller:
+            input = "1234"
+            assert type(input) is str
+            assert len(input) == 4
+            r = controller.communicate(input=input)
+            assert type(r) is tuple
+            assert len(r) == 2
+
+            x = r[0]
+            assert x is not None
+
+            if type(x) is bytes:
+                s = x.decode()
+            else:
+                assert type(x) is str
+                s = x
+
+            assert s == input
+            pass
+
+        return
+
     def test_popen_pool_stopped(
         self,
         os_ops_descr: OsOpsDescr,
@@ -6191,6 +6328,145 @@ print('b', file=sys.stderr)
         assert type(result.stderr) is str
         assert result.stdout == "normal_out\n"
         assert result.stderr == "error_err\n"
+        return
+
+    def test_run_with_input__bin(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_text_params: tagTextParams,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        input = b"0" + "1234".encode()
+        assert type(input) is bytes
+        assert len(input) == 5
+
+        exec_r = os_ops.run(
+            cmd,
+            text=fx_text_params.text,
+            encoding=fx_text_params.encoding,
+            input=input,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        if type(exec_r.stdout) is str:
+            b = exec_r.stdout.encode()
+        else:
+            assert type(exec_r.stdout) is bytes
+            b = exec_r.stdout
+
+        assert b == input
+        return
+
+    def test_run_with_input__str(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_text_params: tagTextParams,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        input = "1234"
+        assert type(input) is str
+        assert len(input) == 4
+
+        exec_r = os_ops.run(
+            cmd,
+            text=fx_text_params.text,
+            encoding=fx_text_params.encoding,
+            input=input,
+        )
+        assert type(exec_r) is OsCommandResult
+
+        if type(exec_r.stdout) is bytes:
+            s = exec_r.stdout.decode()
+        else:
+            assert type(exec_r.stdout) is str
+            s = exec_r.stdout
+
+        assert s == input
+        return
+
+    def test_exec_command_with_input__bin(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_text_params: tagTextParams,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        input = b"0" + "1234".encode()
+        assert type(input) is bytes
+        assert len(input) == 5
+
+        stdout = os_ops.exec_command(
+            cmd,
+            encoding=fx_text_params.encoding,
+            input=input,
+        )
+        if type(stdout) is str:
+            b = stdout.encode()
+        else:
+            assert type(stdout) is bytes
+            b = stdout
+
+        assert b == input
+        return
+
+    def test_exec_command_with_input__str(
+        self,
+        os_ops_descr: OsOpsDescr,
+        fx_text_params: tagTextParams,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+
+        os_ops = os_ops_descr.os_ops
+        assert isinstance(os_ops, OsOperations)
+
+        cmd = ["sh", "-c", "cat"]
+
+        input = "1234"
+        assert type(input) is str
+        assert len(input) == 4
+
+        stdout = os_ops.exec_command(
+            cmd,
+            encoding=fx_text_params.encoding,
+            input=input,
+        )
+
+        if type(stdout) is bytes:
+            s = stdout.decode()
+        else:
+            assert type(stdout) is str
+            s = stdout
+
+        assert s == input
         return
 
     @staticmethod

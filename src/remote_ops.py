@@ -27,6 +27,7 @@ from .os_ops import T_OS_SIGNAL
 from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
 from .os_ops import T_OS_IO_ID
+from .os_ops import T_OS_RUN_INPUT
 from .raise_error import RaiseError
 from .helpers import Helpers
 from .static_config import OsOperationStaticConfig
@@ -61,6 +62,7 @@ class RemoteProcessController(OsProcessController):
 
     _remote_ops: RemoteOperations
     _remote_cmd: T_OS_CMD
+    _encoding: typing.Optional[str]
     _remote_rc_file: typing.Optional[str]
     _remote_pid: typing.Optional[int]
     _remote_rc: typing.Optional[int]
@@ -70,12 +72,14 @@ class RemoteProcessController(OsProcessController):
         self,
         remote_ops: RemoteOperations,
         remote_cmd: T_OS_CMD,
+        encoding: typing.Optional[str],
     ):
         assert isinstance(remote_ops, RemoteOperations)
         assert type(remote_cmd) is str or type(remote_cmd) is list
 
         self._remote_ops = remote_ops
         self._remote_cmd = copy.copy(remote_cmd)
+        self._encoding = encoding
         self._remote_rc_file = None
         self._remote_pid = None
         self._remote_rc = None
@@ -189,11 +193,17 @@ class RemoteProcessController(OsProcessController):
 
     def communicate(
         self,
-        input=None,
+        input: typing.Optional[T_OS_RUN_INPUT] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None,
     ) -> OsProcessController.T_COMMUNICATE_RESULT:
         assert timeout is None or type(timeout) in [int, float]
+        assert input is None or type(input) in [str, bytes]
         assert type(self._local_process) is subprocess.Popen
+
+        input = Helpers.prepare_process_input(
+            input,
+            self._encoding,
+        )
 
         try:
             return self._local_process.communicate(
@@ -426,7 +436,7 @@ class RemoteOperations(OsOperations):
         if not get_process:
             input_prepared = Helpers.prepare_process_input(input, encoding)  # throw
 
-        assert input_prepared is None or type(input_prepared) is bytes
+        assert input_prepared is None or isinstance(input_prepared, bytes)
 
         cmds = []
 
@@ -550,6 +560,7 @@ class RemoteOperations(OsOperations):
         result = RemoteProcessController(
             self,
             cmd,
+            encoding,
         )
 
         # 1. Create a temporary file on the remote machine
