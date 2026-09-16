@@ -44,13 +44,13 @@ class PsUtilProcessProxy:
         assert isinstance(self.ssh, RemoteOperations)
         assert type(self.pid) is int
         command = ["kill", str(self.pid)]
-        self.ssh.exec_command(command, encoding=get_default_encoding())
+        self.ssh._transport_run(command, encoding=get_default_encoding())
 
     def cmdline(self):
         assert isinstance(self.ssh, RemoteOperations)
         assert type(self.pid) is int
         command = ["ps", "-p", str(self.pid), "-o", "cmd", "--no-headers"]
-        output = self.ssh.exec_command(command, encoding=get_default_encoding())
+        output = self.ssh._transport_run(command, encoding=get_default_encoding()).stdout
         assert type(output) is str
         cmdline = output.strip()
         # TODO: This code work wrong if command line contains quoted values. Yes?
