@@ -739,7 +739,7 @@ class RemoteOperations(OsOperations):
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        input: typing.Optional[OsOperations.T_INPUT] = None,
+        input: typing.Optional[T_OS_RUN_INPUT] = None,
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
