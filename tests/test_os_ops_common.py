@@ -2877,10 +2877,19 @@ print('b', file=sys.stderr)
         child_cmdline = childs[0].cmdline()
 
         logging.info("child cmdline: {}".format(
-            childs[0].cmdline(),
+            child_cmdline,
         ))
         assert type(child_cmdline) is list
-        assert child_cmdline == ["sleep", "60"]
+
+        if child_cmdline == ["sleep", "60"]:
+            pass
+        elif child_cmdline == ['/usr/bin/coreutils', '--coreutils-prog-shebang=sleep', '/usr/bin/sleep', '60']:
+            # Rocky Linux
+            pass
+        else:
+            raise RuntimeError("Unknown child_cmdline {}".format(
+                child_cmdline,
+            ))
 
         p1.terminate()
         p1.wait()
