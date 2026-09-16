@@ -1124,7 +1124,7 @@ class RemoteOperations(OsOperations):
         """
         assert type(path) is str
         command = "ls " + __class__._quote_path(path)
-        output = self.exec_command(cmd=command, encoding=get_default_encoding())
+        output = self._transport_run(cmd=command, encoding=get_default_encoding()).stdout
         assert type(output) is str
         result = output.splitlines()
         assert type(result) is list
