@@ -1490,7 +1490,7 @@ class RemoteOperations(OsOperations):
 
         cmd = " ".join(cmd_p)
 
-        r = self.exec_command(cmd)
+        r = self._transport_run(cmd).stdout
         assert type(r) is bytes
         return r
 
