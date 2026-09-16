@@ -1769,7 +1769,7 @@ class RemoteOperations(OsOperations):
             "(set -o noclobber; > {})".format(filename_q),
         ]
 
-        self.exec_command(cmd, encoding=get_default_encoding())
+        self._transport_run(cmd, encoding=get_default_encoding())
         return
 
     def _transport_popen(
