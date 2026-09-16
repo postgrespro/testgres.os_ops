@@ -1536,7 +1536,7 @@ class RemoteOperations(OsOperations):
         assert type(filename) is str
         assert filename != ""
         cmd = "rm " + __class__._quote_path(filename)
-        self.exec_command(cmd, encoding=get_default_encoding())
+        self._transport_run(cmd, encoding=get_default_encoding())
         return
 
     # Processes control
@@ -1546,12 +1546,12 @@ class RemoteOperations(OsOperations):
         assert type(signal) is int or type(signal) is os_signal.Signals
         assert int(signal) == signal
         cmd = "kill -{} {}".format(int(signal), pid)
-        self.exec_command(cmd, encoding=get_default_encoding())
+        self._transport_run(cmd, encoding=get_default_encoding())
         return
 
     def get_pid(self) -> int:
         # Get current process id
-        x = self.exec_command("echo $$", encoding=get_default_encoding())
+        x = self._transport_run("echo $$", encoding=get_default_encoding()).stdout
         assert type(x) is str
         return int(x)
 
