@@ -1413,7 +1413,7 @@ class RemoteOperations(OsOperations):
     def _read__binary(self, filename: str) -> bytes:
         assert type(filename) is str
         cmd = "cat " + __class__._quote_path(filename)
-        content = self.exec_command(cmd)
+        content = self._transport_run(cmd).stdout
         assert type(content) is bytes
         return content
 
