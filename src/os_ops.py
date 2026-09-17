@@ -6,6 +6,7 @@ from .types import T_OS_TIMEOUT
 from .types import T_OS_IO
 from .types import T_OS_IO_ID
 from .types import T_OS_RUN_INPUT
+from .types import T_OS_EXEC_ENV
 from .raise_error import RaiseError
 
 import locale
@@ -204,8 +205,6 @@ class OsOperations:
         assert cwd is None or type(cwd) is str
         RaiseError.MethodIsNotImplemented(__class__, "exec_command")
 
-    T_EXEC_ENV = typing.Dict[str, typing.Optional[str]]
-
     def popen(
         self,
         cmd: T_OS_CMD,
@@ -215,7 +214,7 @@ class OsOperations:
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> OsProcessController:
         assert type(cmd) is str or type(cmd) is list
@@ -239,7 +238,7 @@ class OsOperations:
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None,
         check: bool = True,

@@ -33,6 +33,7 @@ from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
 from .os_ops import T_OS_IO_ID
 from .os_ops import T_OS_RUN_INPUT
+from .os_ops import T_OS_EXEC_ENV
 from .raise_error import RaiseError
 from .helpers import Helpers
 
@@ -509,7 +510,7 @@ class LocalOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> OsProcessController:
         assert text is None or type(text) is bool
@@ -576,7 +577,7 @@ class LocalOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None,
         check: bool = True,

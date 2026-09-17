@@ -28,6 +28,7 @@ from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
 from .os_ops import T_OS_IO_ID
 from .os_ops import T_OS_RUN_INPUT
+from .os_ops import T_OS_EXEC_ENV
 from .raise_error import RaiseError
 from .helpers import Helpers
 from .static_config import OsOperationStaticConfig
@@ -544,7 +545,7 @@ class RemoteOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> OsProcessController:
         assert type(cmd) is str or type(cmd) is list
@@ -743,7 +744,7 @@ class RemoteOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None,
         check: bool = True,
@@ -1781,7 +1782,7 @@ class RemoteOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> subprocess.Popen:
         assert type(cmd) in [str, list]
@@ -1872,7 +1873,7 @@ class RemoteOperations(OsOperations):
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        exec_env: typing.Optional[OsOperations.T_EXEC_ENV] = None,
+        exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None,
         check: bool = True,
     ) -> tagTransportRunResult:
