@@ -75,6 +75,9 @@ class OsProcessController:
     def returncode(self) -> typing.Optional[int]:
         RaiseError.PropertyIsNotImplemented(__class__, "get_returncode")
 
+    def close(self) -> None:
+        RaiseError.MethodIsNotImplemented(__class__, "close")
+
     T_COMMUNICATE_RESULT = typing.Union[
         typing.Tuple[bytes, bytes],
         typing.Tuple[str, str],
