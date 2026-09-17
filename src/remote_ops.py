@@ -27,7 +27,7 @@ from .os_ops import T_OS_SIGNAL
 from .os_ops import T_OS_TIMEOUT
 from .os_ops import T_OS_IO
 from .os_ops import T_OS_IO_ID
-from .os_ops import T_OS_RUN_INPUT
+from .os_ops import T_OS_EXEC_INPUT
 from .os_ops import T_OS_EXEC_ENV
 from .raise_error import RaiseError
 from .helpers import Helpers
@@ -194,7 +194,7 @@ class RemoteProcessController(OsProcessController):
 
     def communicate(
         self,
-        input: typing.Optional[T_OS_RUN_INPUT] = None,
+        input: typing.Optional[T_OS_EXEC_INPUT] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None,
     ) -> OsProcessController.T_COMMUNICATE_RESULT:
         assert timeout is None or type(timeout) in [int, float]
@@ -740,7 +740,7 @@ class RemoteOperations(OsOperations):
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        input: typing.Optional[T_OS_RUN_INPUT] = None,
+        input: typing.Optional[T_OS_EXEC_INPUT] = None,
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
@@ -1869,7 +1869,7 @@ class RemoteOperations(OsOperations):
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        input: typing.Optional[T_OS_RUN_INPUT] = None,
+        input: typing.Optional[T_OS_EXEC_INPUT] = None,
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,

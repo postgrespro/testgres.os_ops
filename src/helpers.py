@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .types import T_OS_RUN_INPUT
+from .types import T_OS_EXEC_INPUT
 
 import locale
 import typing
@@ -52,7 +52,7 @@ class Helpers:
 
     @staticmethod
     def prepare_process_input(
-        input: typing.Optional[T_OS_RUN_INPUT],
+        input: typing.Optional[T_OS_EXEC_INPUT],
         encoding: typing.Optional[str],
     ) -> typing.Optional[bytes]:
         assert encoding is None or type(encoding) is str

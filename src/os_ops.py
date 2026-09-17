@@ -5,7 +5,7 @@ from .types import T_OS_SIGNAL
 from .types import T_OS_TIMEOUT
 from .types import T_OS_IO
 from .types import T_OS_IO_ID
-from .types import T_OS_RUN_INPUT
+from .types import T_OS_EXEC_INPUT
 from .types import T_OS_EXEC_ENV
 from .raise_error import RaiseError
 
@@ -82,7 +82,7 @@ class OsProcessController:
 
     def communicate(
         self,
-        input: typing.Optional[T_OS_RUN_INPUT] = None,
+        input: typing.Optional[T_OS_EXEC_INPUT] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None
     ) -> T_COMMUNICATE_RESULT:
         assert input is None or type(input) in [str, bytes]
@@ -234,7 +234,7 @@ class OsOperations:
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        input: typing.Optional[T_OS_RUN_INPUT] = None,
+        input: typing.Optional[T_OS_EXEC_INPUT] = None,
         stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
         stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
