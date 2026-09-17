@@ -546,9 +546,9 @@ class RemoteOperations(OsOperations):
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdin: typing.Optional[T_OS_IO_ID] = None,
+        stdout: typing.Optional[T_OS_IO_ID] = None,
+        stderr: typing.Optional[T_OS_IO_ID] = None,
         exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> OsProcessController:
@@ -662,9 +662,9 @@ class RemoteOperations(OsOperations):
             # 2. Run a local SSH client in the background
             result._local_process = subprocess.Popen(
                 ssh_cmd,
-                stdin=stdin,
-                stdout=stdout,
-                stderr=stderr,
+                stdin=self._get_stdin(stdin, None),
+                stdout=self._get_stdout(stdout),
+                stderr=self._get_stderr(stderr),
                 text=text,
                 encoding=encoding,
                 shell=False,
@@ -745,9 +745,9 @@ class RemoteOperations(OsOperations):
         encoding: typing.Optional[str] = None,
         shell: bool = False,
         input: typing.Optional[T_OS_EXEC_INPUT] = None,
-        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdin: typing.Optional[T_OS_IO_ID] = None,
+        stdout: typing.Optional[T_OS_IO_ID] = None,
+        stderr: typing.Optional[T_OS_IO_ID] = None,
         exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None,
         timeout: typing.Optional[T_OS_TIMEOUT] = None,
@@ -1783,9 +1783,9 @@ class RemoteOperations(OsOperations):
         text: typing.Optional[bool] = None,
         encoding: typing.Optional[str] = None,
         shell: bool = False,
-        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdin: typing.Optional[T_OS_IO_ID] = None,
+        stdout: typing.Optional[T_OS_IO_ID] = None,
+        stderr: typing.Optional[T_OS_IO_ID] = None,
         exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None
     ) -> subprocess.Popen:
@@ -1835,9 +1835,9 @@ class RemoteOperations(OsOperations):
 
         result = subprocess.Popen(
             ssh_cmd,
-            stdin=stdin,
-            stdout=stdout,
-            stderr=stderr,
+            stdin=self._transport_get_stdin(stdin, None),
+            stdout=self._transport_get_stdout(stdout),
+            stderr=self._transport_get_stderr(stderr),
             text=text,
             encoding=encoding,
             shell=False,
@@ -1874,9 +1874,9 @@ class RemoteOperations(OsOperations):
         encoding: typing.Optional[str] = None,
         shell: bool = False,
         input: typing.Optional[T_OS_EXEC_INPUT] = None,
-        stdin: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stdout: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
-        stderr: typing.Optional[T_OS_IO_ID] = subprocess.PIPE,
+        stdin: typing.Optional[T_OS_IO_ID] = None,
+        stdout: typing.Optional[T_OS_IO_ID] = None,
+        stderr: typing.Optional[T_OS_IO_ID] = None,
         exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
         cwd: typing.Optional[str] = None,
         check: bool = True,
@@ -1902,7 +1902,7 @@ class RemoteOperations(OsOperations):
             text=text,
             encoding=encoding,
             shell=shell,
-            stdin=stdin,
+            stdin=self._transport_get_stdin(stdin, input),
             stdout=stdout,
             stderr=stderr,
             exec_env=exec_env,
@@ -1936,6 +1936,40 @@ class RemoteOperations(OsOperations):
                 )
 
             return result
+
+    def _transport_get_stdin(
+        self,
+        stdin: typing.Optional[T_OS_IO_ID],
+        input: typing.Optional[T_OS_EXEC_INPUT],
+    ) -> typing.Optional[T_OS_IO_ID]:
+        if stdin is not None:
+            return stdin
+
+        if input is not None:
+            return subprocess.PIPE
+
+        # default
+        return subprocess.PIPE
+
+    def _transport_get_stdout(
+        self,
+        stdout: typing.Optional[T_OS_IO_ID],
+    ) -> typing.Optional[T_OS_IO_ID]:
+        if stdout is not None:
+            return stdout
+
+        # default
+        return subprocess.PIPE
+
+    def _transport_get_stderr(
+        self,
+        stderr: typing.Optional[T_OS_IO_ID],
+    ) -> typing.Optional[T_OS_IO_ID]:
+        if stderr is not None:
+            return stderr
+
+        # default
+        return subprocess.PIPE
 
     @staticmethod
     def _build_cmdline(
@@ -2110,6 +2144,40 @@ class RemoteOperations(OsOperations):
             assert type(item) is str
 
         return " ".join(__class__._quote_path(arg) for arg in cmd)
+
+    def _get_stdin(
+        self,
+        stdin: typing.Optional[T_OS_IO_ID],
+        input: typing.Optional[T_OS_EXEC_INPUT],
+    ) -> typing.Optional[T_OS_IO_ID]:
+        if stdin is not None:
+            return stdin
+
+        if input is not None:
+            return subprocess.PIPE
+
+        # default
+        return subprocess.PIPE
+
+    def _get_stdout(
+        self,
+        stdout: typing.Optional[T_OS_IO_ID],
+    ) -> typing.Optional[T_OS_IO_ID]:
+        if stdout is not None:
+            return stdout
+
+        # default
+        return subprocess.PIPE
+
+    def _get_stderr(
+        self,
+        stderr: typing.Optional[T_OS_IO_ID],
+    ) -> typing.Optional[T_OS_IO_ID]:
+        if stderr is not None:
+            return stderr
+
+        # default
+        return subprocess.PIPE
 
 
 def normalize_error(error):
