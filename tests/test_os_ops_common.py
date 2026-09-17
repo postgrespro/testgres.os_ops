@@ -10,6 +10,7 @@ from tests.helpers.local_check import OsOpsHelpers
 
 from src.os_ops import OsProcessController
 from src.os_ops import OsCommandResult
+from src.os_ops import T_OS_EXEC_ENV
 from src.exceptions import ExecTimeoutException
 
 import os
@@ -4874,7 +4875,7 @@ print('b', file=sys.stderr)
 
         os_ops = os_ops_descr.os_ops
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "AAA": "abcdefg",
         }
 
@@ -4957,7 +4958,7 @@ print('b', file=sys.stderr)
             s = controller.stdout.read()
             assert s != ""
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "PATH": None,
         }
 
@@ -5014,7 +5015,7 @@ print('b', file=sys.stderr)
             s = controller.stderr.read()
             assert s == ""
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "AAA": None,
         }
 
@@ -5071,7 +5072,7 @@ print('b', file=sys.stderr)
             s = controller.stderr.read()
             assert s == ""
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "AAA": "xyz",
         }
 
@@ -5912,7 +5913,7 @@ print('b', file=sys.stderr)
 
         os_ops = os_ops_descr.os_ops
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "AAA": "abcdefg",
         }
 
@@ -5985,7 +5986,7 @@ print('b', file=sys.stderr)
         assert exec_r.stdout is not None
         assert exec_r.stdout != ""
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "PATH": None,
         }
 
@@ -6035,7 +6036,7 @@ print('b', file=sys.stderr)
         s = exec_r.stderr
         assert s == ""
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "AAA": None,
         }
 
@@ -6091,7 +6092,7 @@ print('b', file=sys.stderr)
         s = exec_r.stderr
         assert s == ""
 
-        envs: OsOperations.T_EXEC_ENV = {
+        envs: T_OS_EXEC_ENV = {
             "AAA": "xyz",
         }
 
