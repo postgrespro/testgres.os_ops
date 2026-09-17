@@ -192,6 +192,10 @@ class RemoteProcessController(OsProcessController):
     def returncode(self) -> typing.Optional[int]:
         return self._poll()
 
+    def close(self) -> None:
+        self.__exit__(None, None, None)
+        return
+
     def communicate(
         self,
         input: typing.Optional[T_OS_EXEC_INPUT] = None,

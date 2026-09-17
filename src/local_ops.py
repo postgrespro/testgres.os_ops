@@ -102,6 +102,10 @@ class LocalProcessController(OsProcessController):
         assert type(self._local_process) is subprocess.Popen
         return self._local_process.poll()
 
+    def close(self) -> None:
+        self.__exit__(None, None, None)
+        return
+
     def communicate(
         self,
         input: typing.Optional[T_OS_EXEC_INPUT] = None,

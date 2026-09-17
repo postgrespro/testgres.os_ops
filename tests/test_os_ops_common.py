@@ -4199,17 +4199,22 @@ print('b', file=sys.stderr)
             f.seek(0)
             return f
 
-        # Yes, it it is not good. I know.
-        tmp_stdin = LOCAL_f(popen_data.expected_result)
+        tmp_stdin: typing.Optional[typing.IO[typing.Any]] = None
 
-        controller = os_ops.popen(
-            cmd,
-            text=popen_data.param_text,
-            encoding=popen_data.param_encoding,
-            stdin=tmp_stdin,
-        )
+        controller: typing.Optional[OsProcessController] = None
 
-        with tmp_stdin, controller:
+        try:
+            tmp_stdin = LOCAL_f(
+                popen_data.expected_result,
+            )
+
+            controller = os_ops.popen(
+                cmd,
+                text=popen_data.param_text,
+                encoding=popen_data.param_encoding,
+                stdin=tmp_stdin,
+            )
+
             assert isinstance(controller, OsProcessController)
 
             returncode = controller.wait()
@@ -4224,7 +4229,12 @@ print('b', file=sys.stderr)
             assert controller.stderr is not None
             x = controller.stderr.read()
             assert len(x) == 0
-            pass
+        finally:
+            if controller is not None:
+                controller.close()
+
+            if tmp_stdin is not None:
+                tmp_stdin.close()
 
         return
 
@@ -4355,18 +4365,21 @@ print('b', file=sys.stderr)
                 encoding=popen_data2.param_encoding,
             )
 
-        # Yes, it it is not good. I know.
-        tmp_stderr = LOCAL_f()
-        tmp_stdout = LOCAL_f()
-        controller = os_ops.popen(
-            cmd,
-            text=popen_data2.param_text,
-            encoding=popen_data2.param_encoding,
-            stdout=tmp_stdout,
-            stderr=tmp_stderr,
-        )
+        tmp_stderr: typing.Optional[typing.IO[typing.Any]] = None
+        tmp_stdout: typing.Optional[typing.IO[typing.Any]] = None
+        controller: typing.Optional[OsProcessController] = None
 
-        with tmp_stderr, tmp_stdout, controller:
+        try:
+            tmp_stderr = LOCAL_f()
+            tmp_stdout = LOCAL_f()
+            controller = os_ops.popen(
+                cmd,
+                text=popen_data2.param_text,
+                encoding=popen_data2.param_encoding,
+                stdout=tmp_stdout,
+                stderr=tmp_stderr,
+            )
+
             assert isinstance(controller, OsProcessController)
             assert controller.wait() == 0
             assert controller.returncode == 0
@@ -4386,6 +4399,15 @@ print('b', file=sys.stderr)
             assert len(v2) > 0
             logging.info("stderr: {!r}".format(v2))
             assert v2 == popen_data2.expected_result2
+        finally:
+            if controller is not None:
+                controller.close()
+
+            if tmp_stdout is not None:
+                tmp_stdout.close()
+
+            if tmp_stderr is not None:
+                tmp_stderr.close()
 
         return
 
