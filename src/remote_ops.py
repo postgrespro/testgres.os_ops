@@ -1,21 +1,5 @@
 from __future__ import annotations
 
-import getpass
-import os
-import posixpath
-import subprocess
-import io
-import logging
-import typing
-import copy
-import re
-import signal as os_signal
-import time
-import datetime
-import shlex
-import threading
-import warnings
-
 from .exceptions import ExecUtilException
 from .exceptions import ExecTimeoutException
 from .exceptions import InvalidOperationException
@@ -33,6 +17,22 @@ from .raise_error import RaiseError
 from .helpers import Helpers
 from .static_config import OsOperationStaticConfig
 
+import getpass
+import os
+import posixpath
+import subprocess
+import io
+import logging
+import typing
+import copy
+import re
+import signal as os_signal
+import time
+import datetime
+import shlex
+import threading
+import warnings
+
 
 class PsUtilProcessProxy:
     def __init__(self, ssh, pid):
@@ -40,12 +40,14 @@ class PsUtilProcessProxy:
         assert type(pid) is int
         self.ssh = ssh
         self.pid = pid
+        return
 
     def kill(self):
         assert isinstance(self.ssh, RemoteOperations)
         assert type(self.pid) is int
         command = ["kill", str(self.pid)]
         self.ssh._transport_run(command, encoding=get_default_encoding())
+        return
 
     def cmdline(self):
         assert isinstance(self.ssh, RemoteOperations)
@@ -425,7 +427,7 @@ class RemoteOperations(OsOperations):
         timeout=None,
         ignore_errors=False,
         exec_env: typing.Optional[T_ENVS] = None,
-        cwd: typing.Optional[str] = None
+        cwd: typing.Optional[str] = None,
     ) -> OsOperations.T_EXEC_COMMAND_RESULT:
         """
         Execute a command in the SSH session.
@@ -533,7 +535,8 @@ class RemoteOperations(OsOperations):
                 exit_code=run_r[0],
                 msg_arg=error,
                 error=run_r[2],
-                out=run_r[1])
+                out=run_r[1],
+            )
 
         if verbose:
             return run_r
@@ -550,7 +553,7 @@ class RemoteOperations(OsOperations):
         stdout: typing.Optional[T_OS_IO_ID] = None,
         stderr: typing.Optional[T_OS_IO_ID] = None,
         exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
-        cwd: typing.Optional[str] = None
+        cwd: typing.Optional[str] = None,
     ) -> OsProcessController:
         assert type(cmd) is str or type(cmd) is list
         assert text is None or type(text) is bool
@@ -639,7 +642,7 @@ class RemoteOperations(OsOperations):
             ]
 
             ping_pong_script2_s = self._join_command_arguments(
-                ping_pong_script2
+                ping_pong_script2,
             )
 
             # Run script within isolated env to get a true return codes of kill/terminate
@@ -1021,7 +1024,7 @@ class RemoteOperations(OsOperations):
                 "&&",
                 "mkdir",
                 "-p",
-                path_q
+                path_q,
             ]
         else:
             cmd_p = [
@@ -1077,7 +1080,7 @@ class RemoteOperations(OsOperations):
             "elif", "[", "-e", path_q, "]", ";",
             "then", "{", "echo", "cannot remove " + path_q + ": it is not a directory", ">&2", ";", "exit", "20", ";", "}", ";",
             "else", "{", "echo", "directory " + path_q + " does not exist", ">&2", ";", "exit", "2", ";", "}", ";",
-            "fi"
+            "fi",
         ]
 
         cmd1 = " ".join(cmd1_p)
@@ -1160,7 +1163,8 @@ class RemoteOperations(OsOperations):
 
         errMsg = "Test operation returns an unknown result code: {0}. Path is [{1}].".format(
             exec_r.returncode,
-            path)
+            path,
+        )
 
         RaiseError.CommandExecutionError(
             cmd=command,
@@ -1290,8 +1294,8 @@ class RemoteOperations(OsOperations):
         truncate: bool = False,
         binary: bool = False,
         read_and_write: bool = False,
-        encoding: typing.Optional[str] = None
-    ):
+        encoding: typing.Optional[str] = None,
+    ) -> None:
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert data is not None
@@ -1580,7 +1584,7 @@ class RemoteOperations(OsOperations):
 
         if exec_r.returncode == 100:
             err_msg = "Failed to get process children. Reason: No such process with PID {}.".format(
-                pid
+                pid,
             )
 
             raise ExecUtilException(
@@ -1787,7 +1791,7 @@ class RemoteOperations(OsOperations):
         stdout: typing.Optional[T_OS_IO_ID] = None,
         stderr: typing.Optional[T_OS_IO_ID] = None,
         exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
-        cwd: typing.Optional[str] = None
+        cwd: typing.Optional[str] = None,
     ) -> subprocess.Popen:
         assert type(cmd) in [str, list]
         assert text is None or type(text) is bool

@@ -147,7 +147,7 @@ class ExecTimeoutException(TestgresException):
         timeout: T_OS_TIMEOUT,
         output: typing.Optional[T_OUT_DATA] = None,
         error: typing.Optional[T_ERR_DATA] = None,
-        source: typing.Optional[str] = None
+        source: typing.Optional[str] = None,
     ):
         assert type(cmd) in [str, list]
         assert type(timeout) in [int, float]

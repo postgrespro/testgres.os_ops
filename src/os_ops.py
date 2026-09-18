@@ -195,7 +195,7 @@ class OsOperations:
         timeout=None,
         ignore_errors=False,
         exec_env: typing.Optional[dict] = None,
-        cwd: typing.Optional[str] = None
+        cwd: typing.Optional[str] = None,
     ) -> T_EXEC_COMMAND_RESULT:
         assert type(cmd) is str or type(cmd) is list
         assert type(verbose) is bool
@@ -218,7 +218,7 @@ class OsOperations:
         stdout: typing.Optional[T_OS_IO_ID] = None,
         stderr: typing.Optional[T_OS_IO_ID] = None,
         exec_env: typing.Optional[T_OS_EXEC_ENV] = None,
-        cwd: typing.Optional[str] = None
+        cwd: typing.Optional[str] = None,
     ) -> OsProcessController:
         assert type(cmd) is str or type(cmd) is list
         assert text is None or type(text) is bool
@@ -394,7 +394,7 @@ class OsOperations:
         binary: bool = False,
         read_and_write: bool = False,
         encoding: typing.Optional[str] = None
-    ):
+    ) -> None:
         assert type(filename) is str
         assert encoding is None or type(encoding) is str
         assert data is not None
@@ -491,7 +491,7 @@ class OsOperations:
         assert type(pid) is int
         RaiseError.MethodIsNotImplemented(__class__, "get_process_children")
 
-    def is_port_free(self, number: int):
+    def is_port_free(self, number: int) -> bool:
         assert type(number) is int
         RaiseError.MethodIsNotImplemented(__class__, "is_port_free")
 
