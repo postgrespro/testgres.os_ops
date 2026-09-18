@@ -1,5 +1,24 @@
 from __future__ import annotations
 
+from .exceptions import ExecUtilException
+from .exceptions import ExecTimeoutException
+from .exceptions import InvalidOperationException
+from .os_ops import ConnectionParams, OsOperations, get_default_encoding
+from .os_ops import OsProcessController
+from .os_ops import OsCommandResult
+from .os_ops import T_OS_CMD
+from .os_ops import T_OS_SIGNAL
+from .os_ops import T_OS_TIMEOUT
+from .os_ops import T_OS_IO
+from .os_ops import T_OS_IO_ID
+from .os_ops import T_OS_EXEC_INPUT
+from .os_ops import T_OS_EXEC_ENV
+from .raise_error import RaiseError
+from .helpers import Helpers
+
+from shutil import which as find_executable
+from shutil import rmtree
+
 import getpass
 import logging
 import os
@@ -20,25 +39,6 @@ import signal as os_signal
 import datetime
 import pathlib
 import io
-
-from .exceptions import ExecUtilException
-from .exceptions import ExecTimeoutException
-from .exceptions import InvalidOperationException
-from .os_ops import ConnectionParams, OsOperations, get_default_encoding
-from .os_ops import OsProcessController
-from .os_ops import OsCommandResult
-from .os_ops import T_OS_CMD
-from .os_ops import T_OS_SIGNAL
-from .os_ops import T_OS_TIMEOUT
-from .os_ops import T_OS_IO
-from .os_ops import T_OS_IO_ID
-from .os_ops import T_OS_EXEC_INPUT
-from .os_ops import T_OS_EXEC_ENV
-from .raise_error import RaiseError
-from .helpers import Helpers
-
-from shutil import which as find_executable
-from shutil import rmtree
 
 CMD_TIMEOUT_SEC = 60
 
@@ -385,7 +385,7 @@ class LocalOperations(OsOperations):
             cwd=cwd,
             text=get_process and (encoding is not None),
             encoding=encoding if get_process else None,
-            **extParams
+            **extParams,
         )
         assert process is not None
         assert isinstance(process, subprocess.Popen)
@@ -498,7 +498,8 @@ class LocalOperations(OsOperations):
                 exit_code=run_r[0],
                 msg_arg=run_r[2] or run_r[1],
                 error=run_r[2],
-                out=run_r[1])
+                out=run_r[1],
+            )
 
         if verbose:
             return run_r
@@ -825,8 +826,8 @@ class LocalOperations(OsOperations):
         truncate: bool = False,
         binary: bool = False,
         read_and_write: bool = False,
-        encoding: typing.Optional[str] = None
-    ):
+        encoding: typing.Optional[str] = None,
+    ) -> None:
         """
         Write data to a file locally
         Args:

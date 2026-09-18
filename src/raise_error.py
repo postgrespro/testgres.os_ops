@@ -34,7 +34,13 @@ class RaiseError:
         raise NotImplementedError(err_msg)
 
     @staticmethod
-    def UtilityExitedWithNonZeroCode(cmd, exit_code, msg_arg, error, out) -> typing.NoReturn:
+    def UtilityExitedWithNonZeroCode(
+        cmd,
+        exit_code,
+        msg_arg,
+        error,
+        out,
+    ) -> typing.NoReturn:
         assert type(exit_code) is int
 
         msg_arg_s = __class__._TranslateDataIntoString(msg_arg)
@@ -50,10 +56,17 @@ class RaiseError:
             command=cmd,
             exit_code=exit_code,
             out=out,
-            error=error)
+            error=error,
+        )
 
     @staticmethod
-    def CommandExecutionError(cmd, exit_code, message, error, out) -> typing.NoReturn:
+    def CommandExecutionError(
+        cmd,
+        exit_code,
+        message,
+        error,
+        out,
+    ) -> typing.NoReturn:
         assert type(exit_code) is int
         assert type(message) is str
         assert message != ""
@@ -63,7 +76,8 @@ class RaiseError:
             command=cmd,
             exit_code=exit_code,
             out=out,
-            error=error)
+            error=error,
+        )
 
     @staticmethod
     def _TranslateDataIntoString(data):
@@ -71,7 +85,9 @@ class RaiseError:
             return ""
 
         if type(data) is bytes:
-            return __class__._TranslateDataIntoString__FromBinary(data)
+            return __class__._TranslateDataIntoString__FromBinary(
+                data,
+            )
 
         return str(data)
 
