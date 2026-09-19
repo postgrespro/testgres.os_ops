@@ -46,10 +46,10 @@ def get_default_encoding():
 
 class OsProcessController:
     def __enter__(self) -> OsProcessController:
-        RaiseError.PropertyIsNotImplemented(__class__, "__enter__")
+        RaiseError.MethodIsNotImplemented(__class__, "__enter__")
 
     def __exit__(self, exc_type, value, traceback) -> typing.Optional[bool]:
-        RaiseError.PropertyIsNotImplemented(__class__, "__exit__")
+        RaiseError.MethodIsNotImplemented(__class__, "__exit__")
 
     @property
     def args(self) -> T_OS_CMD:
