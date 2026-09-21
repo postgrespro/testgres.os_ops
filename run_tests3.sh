@@ -17,6 +17,6 @@ pip install -r tests/requirements.txt
 export -p
 
 # run builtin tests
-pytest -l -vvv -n 4 --color=auto -k "${TEST_FILTER}"
+pytest -l -vvv -n 4 --color=yes -k "${TEST_FILTER}"
 
 set +eux
