@@ -67,7 +67,7 @@ jobs:
       run: |
         twine check dist/*
 
-  test:
+  test-linux-container:
     runs-on: ubuntu-latest
     needs: build-check
     strategy:
@@ -250,3 +250,107 @@ jobs:
         docker rm -f "${{ env.RUN_CFG__MACHINE2_NAME }}" || true
         # Delete the network (it will be deleted successfully, since all containers in it have already been destroyed)
         docker network rm "${{ env.RUN_CFG__NETWORK_NAME }}" || true
+
+  test-macos-14:
+    runs-on: macos-14
+    needs: build-check
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    env:
+      BASE_SIGN: "macos-py${{ matrix.python }}"
+
+    steps:
+    - name: Prepare variables
+      run: |
+        echo "RUN_CFG__NOW=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
+        echo "RUN_CFG__LOGS_DIR=logs-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
+        echo "RUN_CFG__SSH_KEY_NAME=id_ed25519-${{ env.BASE_SIGN }}" >> $GITHUB_ENV
+        echo "---------- [$GITHUB_ENV]"
+        cat $GITHUB_ENV
+
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Prepare logs folder on the host
+      run: mkdir -p "${{ env.RUN_CFG__LOGS_DIR }}"
+
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v7
+      with:
+        python-version: ${{ matrix.python }}
+
+    - name: Generate temporary SSH Key pair for CI
+      run: |
+        # Generate a temporary key in the root of the workspace (like in the Linux version)
+        ssh-keygen -q -t ed25519 -N "" -f ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}
+
+    - name: Create Remote User and Configure SSH
+      run: |
+        # 1. Create a new user in macOS (similar to machine2)
+        # In macOS, this is done via dscl (Directory Service command line)
+        sudo dscl . -create /Users/test_remote
+        sudo dscl . -create /Users/test_remote UserShell /bin/bash
+        sudo dscl . -create /Users/test_remote RealName "Test Remote User"
+        sudo dscl . -create /Users/test_remote UniqueID 555
+        sudo dscl . -create /Users/test_remote PrimaryGroupID 20 # staff group
+        sudo dscl . -create /Users/test_remote NFSHomeDirectory /Users/test_remote
+        
+        # Create a home directory and set permissions
+        sudo mkdir -p /Users/test_remote/.ssh
+        sudo chmod 700 /Users/test_remote
+        sudo chmod 700 /Users/test_remote/.ssh
+
+        # 2. Add the created public key to the authorized_keys of the test_remote user
+        cat ${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}.pub | sudo tee -a /Users/test_remote/.ssh/authorized_keys > /dev/null
+        sudo chmod 600 /Users/test_remote/.ssh/authorized_keys
+        
+        # Change the owner of all created files to the new user
+        sudo chown -R test_remote:staff /Users/test_remote
+
+        #3. Enable and configure the SSH server on macOS
+        sudo systemsetup -setremotelogin on
+        
+        # Setting up the client for the current runner user to avoid questions about Fingerprint
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        cat << 'EOF' > ~/.ssh/config
+        Host localhost 127.0.0.1
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+        EOF
+        chmod 600 ~/.ssh/config
+
+    - name: Run native tests (Machine 1 emulation)
+      run: |
+        set -eux
+
+        # We pass environment variables that the tests are linked to
+        export TEST_CFG__LOG_DIR="${{ github.workspace }}/${{ env.RUN_CFG__LOGS_DIR }}"
+
+        export TEST_CFG__REMOTE_HOST="127.0.0.1"
+        export TEST_CFG__REMOTE_PORT="22"
+        export TEST_CFG__REMOTE_USERNAME="test_remote"
+        export TEST_CFG__REMOTE_SSH_KEY="${{ github.workspace }}/${{ env.RUN_CFG__SSH_KEY_NAME }}"
+
+        # Run the test script
+        export PYTHON_BINARY="python3"
+
+        bash run_tests3.sh
+
+    - name: Upload Logs
+      uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: testgres.os_ops--test_logs--${{ env.RUN_CFG__NOW }}-${{ env.BASE_SIGN }}-id${{ github.run_id }}
+        path: "${{ env.RUN_CFG__LOGS_DIR }}/"
+
+    - name: Cleanup macOS Remote User
+      if: always()
+      run: |
+        echo "=== Garbage Collection ==="
+        # Delete the created user and his files
+        sudo dscl . -delete /Users/test_remote || true
+        sudo rm -rf /Users/test_remote || true
