@@ -257,10 +257,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - python: "3.9"
+            case_suffix: "py3_09_xx"
+          - python: "3.10"
+            case_suffix: "py3_10_xx"
+          - python: "3.11"
+            case_suffix: "py3_11_xx"
+          - python: "3.12"
+            case_suffix: "py3_12_xx"
+          - python: "3.13"
+            case_suffix: "py3_13_xx"
+          - python: "3.14"
+            case_suffix: "py3_14_xx"
+
+    name: "test: macos_14 | ${{ matrix.case_suffix }}"
 
     env:
-      BASE_SIGN: "macos-py${{ matrix.python }}"
+      BASE_SIGN: "macos_14-py${{ matrix.python }}"
 
     steps:
     - name: Prepare variables
