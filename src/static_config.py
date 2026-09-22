@@ -87,4 +87,11 @@ class OsOperationStaticConfig:
         4 * 3600.0,
     )
 
+    remote_process_controller__terminate_wait_timeout = _get_opt_float(
+        10.0,
+        "TESTGRES_OS_OPS_CFG__REMOTE_PROCESS_CONTROLLER__TERMINATE_WAIT_TIMEOUT",
+        0.0,
+        60.0,
+    )
+
 # //////////////////////////////////////////////////////////////////////////////

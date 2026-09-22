@@ -8,6 +8,8 @@ from tests.helpers.run_conditions import RunConditions
 from tests.helpers.local_check import LocalCheck
 from tests.helpers.local_check import OsOpsHelpers
 
+from tests.conftest_helpers import TestServices
+
 from src.os_ops import OsProcessController
 from src.os_ops import OsCommandResult
 from src.os_ops import T_OS_EXEC_ENV
@@ -4710,7 +4712,98 @@ print('b', file=sys.stderr)
                     type(os_ops).__name__,
                 ))
             pass
-            pass
+        return
+
+    def test_popen_terminate_mt(
+        self,
+        os_ops_descr: OsOpsDescr,
+    ):
+        assert type(os_ops_descr) is OsOpsDescr
+        assert isinstance(os_ops_descr.os_ops, OsOperations)
+
+        RunConditions.skip_if_windows()
+        os_ops = os_ops_descr.os_ops
+
+        controller: typing.Optional[OsProcessController] = None
+
+        try:
+            N_WORKERS = 100
+
+            logging.info("Process is creating ...")
+            cmd1 = ["sleep", "100"]
+            controller = os_ops.popen(cmd1)
+            assert isinstance(controller, OsProcessController)
+
+            logging.info("Worker are creating ...")
+            threadPool = ThreadPoolExecutor(
+                max_workers=N_WORKERS,
+                thread_name_prefix="ex_creator",
+            )
+
+            class tadWorkerData:
+                future: ThreadFuture
+
+            workerDatas: typing.List[tadWorkerData] = list()
+
+            nErrors = 0
+
+            try:
+                for n in range(N_WORKERS):
+                    logging.info("worker #{} is creating ...".format(n))
+
+                    workerDatas.append(tadWorkerData())
+
+                    workerDatas[n].future = threadPool.submit(
+                        controller.terminate,
+                    )
+
+                    assert workerDatas[n].future is not None
+
+                logging.info("OK. All the workers were created!")
+            except BaseException as e:
+                nErrors += 1
+                logging.error("A problem is detected ({}): {}".format(
+                    type(e).__name__,
+                    TestServices.ExceptionToHumanText(e),
+                ))
+
+            logging.info("Will wait for stop of all the workers...")
+
+            nWorkers = 0
+
+            assert type(workerDatas) is list
+
+            for i in range(len(workerDatas)):
+                worker = workerDatas[i].future
+
+                if worker is None:
+                    break
+
+                nWorkers += 1
+
+                assert isinstance(worker, ThreadFuture)
+
+                try:
+                    logging.info("Wait for worker #{}".format(i))
+                    worker.result()
+                except BaseException as e:
+                    nErrors += 1
+                    logging.error("Worker #{} finished with error ({}): {}".format(
+                        i,
+                        type(e).__name__,
+                        TestServices.ExceptionToHumanText(e),
+                    ))
+                continue
+
+            assert nWorkers == N_WORKERS
+
+            if nErrors != 0:
+                raise RuntimeError("Some problems were detected. Please examine the log messages.")
+
+        finally:
+            if controller is not None:
+                controller.close()
+
         return
 
     def test_popen_kill(self, os_ops_descr: OsOpsDescr):

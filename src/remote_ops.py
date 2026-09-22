@@ -250,7 +250,21 @@ class RemoteProcessController(OsProcessController):
         if self._read_remote_rc() is not None:
             return
 
-        self.send_signal(os_signal.SIGTERM)
+        try:
+            self.send_signal(os_signal.SIGTERM)
+        except ExecUtilException as e1:
+            if e1.exit_code != 1:
+                raise
+
+            assert type(e1.exit_code) is int
+            assert e1.exit_code == 1  # No such process
+
+            try:
+                self.wait(
+                    OsOperationStaticConfig.remote_process_controller__terminate_wait_timeout,
+                )
+            except ExecTimeoutException:
+                raise e1
         return
 
     def poll(self) -> typing.Optional[int]:
