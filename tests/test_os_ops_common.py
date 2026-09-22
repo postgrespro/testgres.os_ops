@@ -7,6 +7,7 @@ from tests.helpers.global_data import OsOperations
 from tests.helpers.run_conditions import RunConditions
 from tests.helpers.local_check import LocalCheck
 from tests.helpers.local_check import OsOpsHelpers
+from tests.helpers.multi_try_call import MultiTryCall
 
 from tests.conftest_helpers import TestServices
 
@@ -2930,7 +2931,10 @@ print('b', file=sys.stderr)
 
         assert actual_child_pid == expected_child_pid
 
-        child_cmdline = childs[0].cmdline()
+        child_cmdline = __class__.helper__wait_for_not_empty_proc_cmdline(
+            childs[0],
+        )
+        assert type(child_cmdline) is list
 
         logging.info("child cmdline: {}".format(
             child_cmdline,
@@ -3013,7 +3017,10 @@ print('b', file=sys.stderr)
         assert actual_child_pids == expected_child_pids
 
         for i in range(len(childs)):
-            child_cmdline = childs[i].cmdline()
+            child_cmdline = __class__.helper__wait_for_not_empty_proc_cmdline(
+                childs[i],
+            )
+            assert type(child_cmdline) is list
 
             logging.info("child cmdline: {}".format(
                 child_cmdline,
@@ -6760,3 +6767,28 @@ print('b', file=sys.stderr)
             type(os_ops).__name__,
         )
         raise RuntimeError(err_msg)
+
+    @staticmethod
+    def helper__wait_for_not_empty_proc_cmdline(
+        proc_info,
+    ) -> typing.List[str]:
+        assert proc_info is not None
+
+        def LOCAL__not_empty(v: typing.List[str]) -> bool:
+            assert v is not None
+            assert type(v) is list
+            return len(v) != 0
+
+        r = MultiTryCall.exec__until(
+            proc_info.cmdline,
+            LOCAL__not_empty,
+            "wait not empty read proc cmdline",
+            MultiTryCall.tagSETTINGS(
+                10,
+                1,
+            ),
+        )
+
+        assert type(r) is list
+        assert len(r) > 0
+        return r
