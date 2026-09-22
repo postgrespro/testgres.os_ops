@@ -68,6 +68,7 @@ class RemoteProcessController(OsProcessController):
     _encoding: typing.Optional[str]
     _remote_rc_file: typing.Optional[str]
     _remote_pid: typing.Optional[int]
+    _remote_rc_guard: typing.Any
     _remote_rc: typing.Optional[int]
     _local_process: typing.Optional[subprocess.Popen]
 
@@ -85,7 +86,10 @@ class RemoteProcessController(OsProcessController):
         self._encoding = encoding
         self._remote_rc_file = None
         self._remote_pid = None
+        self._remote_rc_guard = threading.Lock()
         self._remote_rc = None
+
+        assert self._remote_rc_guard is not None
 
         # IT IS LAST STATEMENT !
         self._local_process = None
@@ -243,7 +247,7 @@ class RemoteProcessController(OsProcessController):
     def terminate(self) -> None:
         assert type(self._local_process) is subprocess.Popen
 
-        if self._remote_rc is not None:
+        if self._read_remote_rc() is not None:
             return
 
         self.send_signal(os_signal.SIGTERM)
@@ -280,8 +284,9 @@ class RemoteProcessController(OsProcessController):
     def _poll(self) -> typing.Optional[int]:
         assert type(self._remote_rc_file) is str
 
-        if self._remote_rc is not None:
-            return self._remote_rc
+        rc = self._read_remote_rc()
+        if rc is not None:
+            return rc
 
         # Read the file containing the return code
         rc_bytes = self._remote_ops.read_binary(
@@ -295,10 +300,51 @@ class RemoteProcessController(OsProcessController):
                 self._remote_rc_file,
             ))
 
-        self._remote_rc = self._remote_ops._parse_resp_data(rc_bytes)
+        rc = self._remote_ops._parse_resp_data(rc_bytes)
+        assert rc is None or type(rc) is int
 
-        assert self._remote_rc is None or type(self._remote_rc) is int
-        return self._remote_rc
+        if rc is not None:
+            self._assign_once_remote_rc(rc)
+
+        return rc
+
+    def _read_remote_rc(self) -> typing.Optional[int]:
+        assert self._remote_rc_guard is not None
+        with self._remote_rc_guard:
+            assert self._remote_rc is None or type(self._remote_rc) is int
+            return self._remote_rc
+
+    def _assign_once_remote_rc(self, value: int) -> None:
+        assert self._remote_rc_guard is not None
+        assert type(value) is int
+
+        with self._remote_rc_guard:
+            if self._remote_rc is None:
+                self._remote_rc = value
+            elif self._remote_rc == value:
+                pass
+            else:
+                __class__._raise_bug_check__return_code_is_already_installed(
+                    self._remote_rc,
+                    value,
+                )
+                pass
+        return
+
+    @staticmethod
+    def _raise_bug_check__return_code_is_already_installed(
+        cur_value: int,
+        new_value: int,
+    ) -> typing.NoReturn:
+        assert type(cur_value) is int
+        assert type(new_value) is int
+        assert cur_value != new_value
+
+        err_msg = "[BUG CHECK] RemoteProcessController::_remote_rc already was assigned with value [{}]. New value is [{}].".format(
+            cur_value,
+            new_value,
+        )
+        raise RuntimeError(err_msg)
 
 
 class RemoteOperations(OsOperations):
