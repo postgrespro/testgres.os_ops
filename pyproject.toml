@@ -56,7 +56,6 @@ classifiers = [
 
 dependencies = [
     "psutil",
-    "six>=1.9.0",
     "testgres.common>=1.0.1,<2.0.0",
 ]
 
