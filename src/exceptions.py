@@ -6,7 +6,6 @@ from .types import T_OS_TIMEOUT
 from testgres.common.exceptions import TestgresException
 from testgres.common.exceptions import InvalidOperationException
 
-import six
 import typing
 
 
@@ -126,12 +125,12 @@ class ExecUtilException(TestgresException):
     def convert_and_join(msg_list):
         # Convert each byte element in the list to str
         str_list = [
-            six.text_type(item, 'utf-8') if isinstance(item, bytes) else six.text_type(item)
+            item.decode('utf-8') if isinstance(item, bytes) else str(item)
             for item in msg_list
         ]
 
         # Join the list into a single string with the specified delimiter
-        return six.text_type('\n').join(str_list)
+        return '\n'.join(str_list)
 
 
 class ExecTimeoutException(TestgresException):
