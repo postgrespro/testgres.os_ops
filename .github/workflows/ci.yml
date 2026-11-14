@@ -254,8 +254,8 @@ jobs:
         # Delete the network (it will be deleted successfully, since all containers in it have already been destroyed)
         docker network rm "${{ env.RUN_CFG__NETWORK_NAME }}" || true
 
-  test-macos-14:
-    runs-on: macos-14
+  test-macos:
+    runs-on: macos-latest
     needs: build-check
     strategy:
       fail-fast: false
