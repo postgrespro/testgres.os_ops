@@ -15,8 +15,10 @@ class _BinDataBox(bytes):
 
 def _make_get_default_encoding_func() -> typing.Callable:
     # locale.getencoding is added in Python 3.11
-    if hasattr(locale, 'getencoding'):
-        return locale.getencoding
+    func = getattr(locale, 'getencoding', None)
+    if func is not None:
+        assert isinstance(func, typing.Callable)
+        return func
 
     # It must exist
     return locale.getpreferredencoding
@@ -27,7 +29,7 @@ class Helpers:
     _get_default_encoding_func = _make_get_default_encoding_func()
 
     @staticmethod
-    def get_default_encoding():
+    def get_default_encoding() -> str:
         #
         #   Original idea/source was:
         #

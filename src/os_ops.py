@@ -8,8 +8,9 @@ from .types import T_OS_IO_ID
 from .types import T_OS_EXEC_INPUT
 from .types import T_OS_EXEC_ENV
 from .raise_error import RaiseError
+from .helpers import Helpers
 
-import locale
+
 import typing
 import signal as os_signal
 import subprocess
@@ -38,10 +39,8 @@ class ConnectionParams:
         return
 
 
-def get_default_encoding():
-    if not hasattr(locale, 'getencoding'):
-        locale.getencoding = locale.getpreferredencoding
-    return locale.getencoding() or 'UTF-8'
+def get_default_encoding() -> str:
+    return Helpers.get_default_encoding()
 
 
 class OsProcessController:
