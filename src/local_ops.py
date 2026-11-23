@@ -847,7 +847,6 @@ class LocalOperations(OsOperations):
             encoding: Code page of text data.
         """
         assert type(filename) is str
-        assert encoding is None or type(encoding) is str
         assert data is not None
         assert type(data) in [str, bytes, list]
         assert type(truncate) is bool
@@ -855,26 +854,95 @@ class LocalOperations(OsOperations):
         assert type(read_and_write) is bool
         assert encoding is None or type(encoding) is str
 
+        if binary:
+            return self._write_binary(
+                filename,
+                data,
+                truncate,
+                read_and_write,
+                encoding,
+            )
+
+        return self._write_text(
+            filename,
+            data,
+            truncate,
+            read_and_write,
+            encoding,
+        )
+
+    def _write_binary(
+        self,
+        filename: str,
+        data: OsOperations.T_WRITE_DATA,
+        truncate: bool,
+        read_and_write: bool,
+        encoding: typing.Optional[str],
+    ) -> None:
+        assert type(filename) is str
+        assert data is not None
+        assert type(data) in [str, bytes, list]
+        assert type(truncate) is bool
+        assert type(read_and_write) is bool
+        assert encoding is None or type(encoding) is str
+
         if not encoding:
             encoding = get_default_encoding()
 
-        mode = "w" if truncate else "a"
+        file = open(
+            filename,
+            "wb" if truncate else "ab",
+        )
+        assert file is not None
 
-        # If it is a bytes str or list
-        if binary:
-            mode += "b"
-
-        assert type(mode) is str
-        assert mode != ""
-
-        with open(filename, mode, encoding=None if binary else encoding) as file:
+        with file:
             if isinstance(data, list):
                 for s in data:
-                    data2 = __class__._prepare_data_to_write(s, binary, encoding)
+                    data2 = __class__._prepare_data_to_write(s, True, encoding)
+                    assert type(data2) is bytes
                     file.write(data2)
                     continue
             else:
-                data2 = __class__._prepare_data_to_write(data, binary, encoding)
+                data2 = __class__._prepare_data_to_write(data, True, encoding)
+                assert type(data2) is bytes
+                file.write(data2)
+        return
+
+    def _write_text(
+        self,
+        filename: str,
+        data: OsOperations.T_WRITE_DATA,
+        truncate: bool,
+        read_and_write: bool,
+        encoding: typing.Optional[str],
+    ) -> None:
+        assert type(filename) is str
+        assert data is not None
+        assert type(data) in [str, bytes, list]
+        assert type(truncate) is bool
+        assert type(read_and_write) is bool
+        assert encoding is None or type(encoding) is str
+
+        if not encoding:
+            encoding = get_default_encoding()
+
+        file = open(
+            filename,
+            mode="w" if truncate else "a",
+            encoding=encoding,
+        )
+        assert file is not None
+
+        with file:
+            if isinstance(data, list):
+                for s in data:
+                    data2 = __class__._prepare_data_to_write(s, False, encoding)
+                    assert type(data2) is str
+                    file.write(data2)
+                    continue
+            else:
+                data2 = __class__._prepare_data_to_write(data, False, encoding)
+                assert type(data2) is str
                 file.write(data2)
         return
 
