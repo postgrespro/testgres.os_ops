@@ -386,7 +386,7 @@ class LocalOperations(OsOperations):
             text=get_process and (encoding is not None),
             encoding=encoding if get_process else None,
             **extParams,
-        )
+        )  # type: subprocess.Popen[typing.Any]
         assert process is not None
         assert isinstance(process, subprocess.Popen)
         if get_process:
@@ -400,10 +400,16 @@ class LocalOperations(OsOperations):
         assert type(output) is bytes
         assert type(error) is bytes
 
-        if encoding:
-            output = output.decode(encoding)
-            error = error.decode(encoding)
-        return process.returncode, output, error
+        if not encoding:
+            return process.returncode, output, error
+
+        output_s = output.decode(encoding)
+        error_s = error.decode(encoding)
+
+        assert type(output_s) is str
+        assert type(error_s) is str
+        assert type(process.returncode) is int
+        return process.returncode, output_s, error_s
 
     def _run_command(
             self,
