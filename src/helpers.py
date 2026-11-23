@@ -13,18 +13,18 @@ class _BinDataBox(bytes):
         return self
 
 
+def _make_get_default_encoding_func() -> typing.Callable:
+    # locale.getencoding is added in Python 3.11
+    if hasattr(locale, 'getencoding'):
+        return locale.getencoding
+
+    # It must exist
+    return locale.getpreferredencoding
+
+
 class Helpers:
-    @staticmethod
-    def _make_get_default_encoding_func():
-        # locale.getencoding is added in Python 3.11
-        if hasattr(locale, 'getencoding'):
-            return locale.getencoding
-
-        # It must exist
-        return locale.getpreferredencoding
-
     # Prepared pointer on function to get a name of system codepage
-    _get_default_encoding_func = _make_get_default_encoding_func.__func__()
+    _get_default_encoding_func = _make_get_default_encoding_func()
 
     @staticmethod
     def get_default_encoding():
